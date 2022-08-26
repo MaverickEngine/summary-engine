@@ -1,0 +1,47 @@
+#headlineengine-score-container {
+    display: flex;
+    flex-direction: row;
+    margin: 10px 0px;
+    max-width: 650px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+
+    .headlineengine-score {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        text-align: center;
+        padding: 2px 4px;
+        .headlineengine-score-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    }
+    .headlineengine-score-good {
+        background-color: rgba(31, 120, 31, 0.6);
+        border-color:rgba(31, 120, 31, 0.2)
+    }
+    
+    .headlineengine-score-bad {
+        background-color: rgba(179, 179, 179, 1);
+        border-color:rgba(109, 109, 109, 0.6)
+    }
+    
+    .headlineengine-score-okay {
+        background-color: rgba(250, 180, 10, 0.6);
+        border-color:rgba(250, 180, 10, 0.6)
+    }
+    .headlineengine-analysis {
+        margin-left: 10px;
+        font-size: 0.9em;
+    }
+    .headlineengine-score-title {
+        line-height: 110%;
+    }
+    .headlineengine-divisor {
+        border-top: 2px solid #3c434a;
+        margin-top: 3px;
+        padding-top: 3px;
+    }
+}
