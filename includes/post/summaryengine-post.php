@@ -46,8 +46,8 @@ class SummaryEnginePost {
         }
         wp_enqueue_script( "summaryengine-post-script", plugin_dir_url(__FILE__) . "../../dist/summaryengine.js", [], HEADLINEENGINE_SCRIPT_VERSION, true );
         wp_enqueue_style( "summaryengine-post-style", plugin_dir_url(__FILE__) . "../../dist/summaryengine.css", [], HEADLINEENGINE_SCRIPT_VERSION );
-        $script = "var summaryengine_openapi_apikey = " . json_encode(get_option('summaryengine_openapi_apikey')) . ";";
-        wp_add_inline_script('summaryengine-post-script', $script, 'before');
+        // $script = "var summaryengine_openapi_apikey = " . json_encode(get_option('summaryengine_openapi_apikey')) . ";";
+        // wp_add_inline_script('summaryengine-post-script', $script, 'before');
     }
 
 }

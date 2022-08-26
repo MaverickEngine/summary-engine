@@ -1,5 +1,4 @@
 import "./summaryengine.scss";
-import summarise from "./libs/summarise.ts";
 
 async function main() {
     const get_content = () => {
@@ -18,21 +17,39 @@ async function main() {
             return wp.data.select( "core/editor" ).getEditedPostContent();
         }
     }
-    let editor_type = "gututenberg";
     jQuery(async () => {
-        if (jQuery("#titlewrap").length) {
-            editor_type = "classic";
-        }
         jQuery("#summaryEngineMetaBlockSummariseButton").on("click", async () => {
             const content = get_content();
             if (!content.length) {
                 alert("Nothing to summarise yet...");
                 return;
             }
-            jQuery("#summaryEngineMetaBlockSummariseButtonContainer").addClass("summaryengine-loading");
-            const summarised = await summarise(content);
-            jQuery("#summaryEngineSummary").val(summarised);
-            jQuery("#summaryEngineMetaBlockSummariseButtonContainer").removeClass("summaryengine-loading");
+            try {
+                jQuery("#summaryEngineMetaBlockSummariseButtonContainer").addClass("summaryengine-loading");
+                wp.apiRequest({
+                    path: "summaryengine/v1/summarise",
+                    data: {
+                        content: content,
+                    },
+                    type: "POST",
+                })
+                .done(async (response) => {
+                    if (response.error) {
+                        alert(response.error.message || response.error);
+                        return;
+                    }
+                    jQuery("#summaryEngineSummary").val(response.choices[0].text.trim());
+                })
+                .fail(async (response) => {
+                    throw response.error.message || response.error;
+                }).always(async () => {
+                    jQuery("#summaryEngineMetaBlockSummariseButtonContainer").removeClass("summaryengine-loading");
+                });
+                return;
+            } catch (err) {
+                console.error(err);
+                alert(err);
+            }
         });
     });
 }
