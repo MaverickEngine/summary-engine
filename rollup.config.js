@@ -50,18 +50,18 @@ if (test) {
 } else {
 	config = [
 		{
-			input: "src/summaryengine-gutenberg.js",
+			input: "src/summaryengine.js",
 			output: [
 				{
 					sourcemap: true,
 					format: 'iife',
-					name: "summaryengine_gutenberg",
-					file: "dist/summaryengine-gutenberg.js"
+					name: "summaryengine",
+					file: "dist/summaryengine.js"
 				},
 			],
 			plugins: [
 				scss(),
-				css({ output: "summaryengine-gutenberg.css" }),
+				css({ output: "summaryengine.css" }),
 				nodeResolve({
 					browser: true,
 				}),

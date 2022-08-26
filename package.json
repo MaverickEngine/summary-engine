@@ -21,8 +21,7 @@
   },
   "homepage": "https://github.com/MaverickEngine/summary-engine#readme",
   "dependencies": {
-    "linear-scale": "0.0.3",
-    "syllable": "^5.0.0"
+    "openai": "^3.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.1",

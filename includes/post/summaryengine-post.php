@@ -14,33 +14,39 @@ class SummaryEnginePost {
     }
 
     public function __construct() {
-        add_action('admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+        add_action('add_meta_boxes', [ $this, 'summary_meta_block' ]);
+        add_action('admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
+        add_action( 'save_post', [ $this, 'save_meta_block_postdata' ] );
+    }
+
+    public function summary_meta_block() {
+        if (in_array(get_post_type(), get_option('summaryengine_post_types'))) {
+            add_meta_box('summaryengine-meta-box', __('Summary', 'summaryengine'), [ $this, 'summary_meta_block_view' ], get_post_type(), "normal", "high");
+        }
+    }
+
+    public function summary_meta_block_view() {
+        global $post;
+        require_once plugin_dir_path( dirname( __FILE__ ) ).'admin/views/summary-meta-block.php';
+    }
+
+    public function save_meta_block_postdata( $post_id ) {
+        if ( array_key_exists( 'summaryengine_summary', $_POST ) ) {
+            update_post_meta(
+                $post_id,
+                'summaryengine_summary',
+                $_POST['summaryengine_summary']
+            );
+        }
     }
 
     public function enqueue_scripts() {
         if (!in_array(get_post_type(), get_option('summaryengine_post_types'))) {
             return false;
         }
-        wp_enqueue_script( "summaryengine-post-script", plugin_dir_url(__FILE__) . "../../dist/summaryengine-gutenberg.js", [], HEADLINEENGINE_SCRIPT_VERSION, true );
-        wp_enqueue_style( "summaryengine-post-style", plugin_dir_url(__FILE__) . "../../dist/summaryengine-gutenberg.css", [], HEADLINEENGINE_SCRIPT_VERSION );
-        $script = "var summaryengine_readability_range_min = " . intval(get_option('summaryengine_readability_range_min', 45)) . ";";
-        $script .= "var summaryengine_readability_target = " . intval(get_option('summaryengine_readability_target', 55)) . ";";
-        $script .= "var summaryengine_readability_range_max = " . intval(get_option('summaryengine_readability_range_max', 90)) . ";";
-        $script .= "var summaryengine_length_range_min = " . intval(get_option('summaryengine_length_range_min', 40)) . ";";
-        $script .= "var summaryengine_length_target = " . intval(get_option('summaryengine_length_target', 82)) . ";";
-        $script .= "var summaryengine_length_range_max = " . intval(get_option('summaryengine_length_range_max', 90)) . ";";
-        $script .= "var summaryengine_powerwords_api = '" . get_rest_url( null, "/summaryengine/v1/powerwords") . "';";
-        $script .= "var summaryengine_reading_grade_target = " . intval(get_option('summaryengine_reading_grade_target', 7)) . ";";
-        $script .= "var summaryengine_reading_grade_range_min = " . intval(get_option('summaryengine_reading_grade_range_min', 5)) . ";";
-        $script .= "var summaryengine_reading_grade_range_max = " . intval(get_option('summaryengine_reading_grade_range_max', 12)) . ";";
-        $script .= "var summaryengine_wordcount_target = " . intval(get_option('summaryengine_wordcount_target', 200)) . ";";
-        $script .= "var summaryengine_wordcount_range_min = " . intval(get_option('summaryengine_wordcount_range_min', 100)) . ";";
-        $script .= "var summaryengine_wordcount_range_max = " . intval(get_option('summaryengine_wordcount_range_max', 300)) . ";";
-        $script .= "var summaryengine_readability_enable = " . (get_option('summaryengine_readability_enable') ? 'true' : 'false') . ";";
-        $script .= "var summaryengine_length_enable = " . (get_option('summaryengine_length_enable') ? 'true' : 'false') . ";";
-        $script .= "var summaryengine_powerwords_enable = " . (get_option('summaryengine_powerwords_enable') ? 'true' : 'false') . ";";
-        $script .= "var summaryengine_reading_grade_enable = " . (get_option('summaryengine_reading_grade_enable') ? 'true' : 'false') . ";";
-        $script .= "var summaryengine_wordcount_enable = " . (get_option('summaryengine_wordcount_enable') ? 'true' : 'false') . ";";
+        wp_enqueue_script( "summaryengine-post-script", plugin_dir_url(__FILE__) . "../../dist/summaryengine.js", [], HEADLINEENGINE_SCRIPT_VERSION, true );
+        wp_enqueue_style( "summaryengine-post-style", plugin_dir_url(__FILE__) . "../../dist/summaryengine.css", [], HEADLINEENGINE_SCRIPT_VERSION );
+        $script = "var summaryengine_openapi_apikey = " . json_encode(get_option('summaryengine_openapi_apikey')) . ";";
         wp_add_inline_script('summaryengine-post-script', $script, 'before');
     }
 
