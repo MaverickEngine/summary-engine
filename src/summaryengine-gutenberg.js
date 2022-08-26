@@ -1,5 +1,5 @@
 import "./headlineengine-gutenberg.scss";
-import Calc_Score from "./headlineengine-score.ts";
+import Calc_Score from "./summaryengine-score.ts";
 import LinearScale from "linear-scale";
 
 let editor_type = "gututenberg";

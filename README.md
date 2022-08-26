@@ -1,24 +1,9 @@
-# Headline Engine
+# Summary Engine
 
-A/B Headline Testing for Wordpress
+Use machine learning to help editors generate summaries to articles. A MavEngine Wordpress plugin.
 
 ## Features
-- Ability to enter multiple headlines;
-- Instant scoring feedback while entering headlines;
-- Serve multiple headlines;
-- Track score of each headline;
-- Report on score of headlines;
-- Automatically decide which headline to choose;
-- Ability to add another headline (or multiple headlines) after publishing to re-enter testing phase.
-
-### Free Features
-- Two headlines to test;
-- Add more headlines after publishing.
-- Manual choosing of winner;
-
-### Paid Features
-- Multiple headlines;
-- Headline scoring as you type;
-- ML suggested Headlines 
-- Automatically choose the best-performing headline;
-- Reports with insights;
+- A "Summary" box will appear in articles. (Below the body in Classic view, in the sidebar in Gutenburg view)
+- A button labeled "Generate summary" will send the article to GPT-3, and return a summarised version
+- The editor can then edit the summary manually before saving
+- A dedicated RSS feed will serve the summarised versions, which can be ingested into custom newsletters, etc.

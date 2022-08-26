@@ -50,18 +50,18 @@ if (test) {
 } else {
 	config = [
 		{
-			input: "src/headlineengine-gutenberg.js",
+			input: "src/summaryengine-gutenberg.js",
 			output: [
 				{
 					sourcemap: true,
 					format: 'iife',
-					name: "headlineengine_gutenberg",
-					file: "dist/headlineengine-gutenberg.js"
+					name: "summaryengine_gutenberg",
+					file: "dist/summaryengine-gutenberg.js"
 				},
 			],
 			plugins: [
 				scss(),
-				css({ output: "headlineengine-gutenberg.css" }),
+				css({ output: "summaryengine-gutenberg.css" }),
 				nodeResolve({
 					browser: true,
 				}),
@@ -73,13 +73,13 @@ if (test) {
 			]
 		},
 		{
-			input: "src/headlineengine-admin.js",
+			input: "src/summaryengine-admin.js",
 			output: [
 				{
 					sourcemap: true,
 					format: 'iife',
-					name: "headlineengine_admin",
-					file: "dist/headlineengine-admin.js"
+					name: "summaryengine_admin",
+					file: "dist/summaryengine-admin.js"
 				},
 			],
 			plugins: [
