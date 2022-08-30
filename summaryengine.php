@@ -39,3 +39,9 @@ function summaryengine_post_init() {
     new SummaryEnginePost();
 }
 add_action( 'admin_init', 'summaryengine_post_init', 3 );
+
+function summaryengine_rss_init() {
+    require_once(plugin_dir_path( __FILE__ ) . 'includes/rss/summaryengine-rss.php' );
+    new SummaryEngineRSS();
+}
+add_action( 'init', 'summaryengine_rss_init' );
