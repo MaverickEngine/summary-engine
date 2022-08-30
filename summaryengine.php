@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 const SUMMARYENGINE_SCRIPT_VERSION = "0.1.3";
+const SUMMARYENGINE_PLUGIN_VERSION = "0.0.2";
 
 function summaryengine_admin_init() {
     if (!is_admin()) {

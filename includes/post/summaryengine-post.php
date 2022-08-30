@@ -1,18 +1,6 @@
 <?php
 
 class SummaryEnginePost {
-    private function wpse_is_gutenberg_editor() { // https://wordpress.stackexchange.com/questions/309862/check-if-gutenberg-is-currently-in-use
-        if( function_exists( 'is_gutenberg_page' ) && is_gutenberg_page() ) { 
-            return true;
-        }   
-        
-        $current_screen = get_current_screen();
-        if ( method_exists( $current_screen, 'is_block_editor' ) && $current_screen->is_block_editor() ) {
-            return true;
-        }
-        return false;
-    }
-
     public function __construct() {
         add_action('add_meta_boxes', [ $this, 'summary_meta_block' ]);
         add_action('admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
