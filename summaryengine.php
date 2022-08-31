@@ -17,7 +17,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 const SUMMARYENGINE_SCRIPT_VERSION = "0.1.3";
-const SUMMARYENGINE_PLUGIN_VERSION = "0.0.2";
+const SUMMARYENGINE_PLUGIN_VERSION = "0.0.3";
+const SUMMARYENGINE_DB_VERSION = "0.0.2";
+
+// Setup database tables
+function summaryengine_database_setup() {
+    require_once( plugin_dir_path( __FILE__ ) . 'includes/db/summaryengine-db.php' );
+    $summaryengine_db = new SummaryEngineDB();
+    $summaryengine_db->setup();
+}
+add_action( 'init', 'summaryengine_database_setup', 2 );
 
 function summaryengine_admin_init() {
     if (!is_admin()) {

@@ -12,6 +12,7 @@ class SummaryEngineAdminSettings {
         "summaryengine_openai_temperature",
         "summaryengine_openai_top_p",
         "summaryengine_openai_prompt",
+        "summaryengine_max_number_of_submissions_per_post",
     ];
 
     public $defaults = [
@@ -26,6 +27,7 @@ class SummaryEngineAdminSettings {
         "summaryengine_openai_temperature" => 0.6,
         "summaryengine_openai_top_p" => 1,
         "summaryengine_openai_prompt" => "Summarize in 100 words: ",
+        "summaryengine_max_number_of_submissions_per_post" => 3,
     ];
     
     public function __construct() {

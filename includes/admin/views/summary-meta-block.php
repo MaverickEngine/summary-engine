@@ -15,6 +15,11 @@
                     <div></div>
                 </div>
             </div>
+        
+            <div id="summaryEngineCounter">
+                <span id="summaryEngineSubmissionsLeft">...</span>
+                <span id="summaryEngineSubmissionsLeftLabel">submissions left</span>
+            </div>
         </div>
     </p>
 </div>

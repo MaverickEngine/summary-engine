@@ -52,6 +52,13 @@
                     </td>
                 </tr>
                 <tr>
+                    <th scope="row"><?php _e("Maximum number of submissions per post", "summaryengine") ?></th>
+                    <td>
+                        <input type="number" name="summaryengine_max_number_of_submissions_per_post" value="<?php echo esc_attr(get_option('summaryengine_max_number_of_submissions_per_post')); ?>" class="regular-text" min="-1">
+                        <p>Set to -1 to allow unlimited submissions per post.</p>
+                    </td>
+                </tr>
+                <tr>
                     <th scope="row"><?php _e("Max tokens", "summaryengine") ?></th>
                     <td>
                         <input type="number" name="summaryengine_openai_max_tokens" value="<?php echo esc_attr(get_option('summaryengine_openai_max_tokens')); ?>" class="regular-text" min="0" max="2048" step="1">

@@ -4,10 +4,29 @@
         width: 100%;
     }
 
+    #summaryEngineMetaBlockSummariseButtonContainer {
+        display: flex;
+        flex-direction: row;
+    }
+
+    #summaryEngineCounter {
+        margin-left: 1em;
+        display: flex;
+        flex-direction: column;
+    }
+    #summaryEngineSubmissionsLeft {
+        padding: 8px;
+        background-color: #135516;
+        color: #fff;
+        border-radius: 2px;
+        text-align: center;
+        font-size: 1.2em;
+    }
     
     #summaryEngineMetaBlockSummariseButtonContainer .summaryengine-spinner {
         display: none;
         height: 32px;
+        width: 32px;
     }
     
 

@@ -2,9 +2,27 @@
   height: 8em !important;
   width: 100%;
 }
+#summaryEngineMetaBlock #summaryEngineMetaBlockSummariseButtonContainer {
+  display: flex;
+  flex-direction: row;
+}
+#summaryEngineMetaBlock #summaryEngineCounter {
+  margin-left: 1em;
+  display: flex;
+  flex-direction: column;
+}
+#summaryEngineMetaBlock #summaryEngineSubmissionsLeft {
+  padding: 8px;
+  background-color: #135516;
+  color: #fff;
+  border-radius: 2px;
+  text-align: center;
+  font-size: 1.2em;
+}
 #summaryEngineMetaBlock #summaryEngineMetaBlockSummariseButtonContainer .summaryengine-spinner {
   display: none;
   height: 32px;
+  width: 32px;
 }
 #summaryEngineMetaBlock .summaryengine-loading .summaryengine-spinner {
   display: block !important;
