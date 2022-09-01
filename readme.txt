@@ -1,4 +1,4 @@
-=== HeadlineEngine ===
+=== SummaryEngine ===
 Contributors: jasonny
 Tags: summary, news, article, rss, gpt-3, machine learning
 Requires at least: 5.8
