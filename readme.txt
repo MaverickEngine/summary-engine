@@ -3,7 +3,7 @@ Contributors: jasonny
 Tags: summary, news, article, rss, gpt-3, machine learning
 Requires at least: 5.8
 Tested up to: 6.0
-Stable tag: 0.1.0
+Stable tag: 0.1.1
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -31,6 +31,9 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 2. Fine-tune your GPT-3 settings.
 
 == Changelog ==
+
+= 0.1.1 =
+* Fixed breaking bug using wrong DB version constant
 
 = 0.1.0 =
 * Initial release
