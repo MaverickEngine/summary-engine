@@ -36,6 +36,6 @@ class SummaryEngineDB {
             INDEX post_id_created_at (post_id, created_at)
         ) $charset_collate;";
         dbDelta( $summaryengine_tests_sql );
-        update_option( "summaryengine_db_version", ABENGINE_DB_VERSION );
+        update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
     }
 }
