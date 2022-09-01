@@ -1,7 +1,7 @@
 === HeadlineEngine ===
 Contributors: jasonny
-Tags: summary, news, article, rss
-Requires at least: 
+Tags: summary, news, article, rss, gpt-3, machine learning
+Requires at least: 5.8
 Tested up to: 6.0
 Stable tag: 0.1.0
 Requires PHP: 7.0
