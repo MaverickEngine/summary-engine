@@ -171,7 +171,7 @@ class SummaryEngineAPI {
             if (empty($content)) {
                 return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
             }
-            $openapi = new OpenAPI(get_option('summaryengine_openapi_aikey'));
+            $openapi = new OpenAPI(get_option('summaryengine_openai_apikey'));
             $params = array(
                 'model' => get_option( 'summaryengine_openai_model'),
                 'frequency_penalty' => floatval(get_option( 'summaryengine_openai_frequency_penalty')),
