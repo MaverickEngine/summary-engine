@@ -148,7 +148,7 @@ class SummaryEngineAPI {
     public function post_summarise() {
         global $wpdb;
         try {
-            $content = strip_tags($_POST['content']);
+            $content = strip_all_tags($_POST['content']);
             $post_id = intval($_POST['post_id']);
             // Make sure we still have submissions left
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
