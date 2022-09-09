@@ -1,3 +1,6 @@
+#summaryEngineMetaBlock .summaryengine-hidden {
+  display: none !important;
+}
 #summaryEngineMetaBlock .summaryengine-textarea {
   height: 8em !important;
   width: 100%;
@@ -18,6 +21,23 @@
   border-radius: 2px;
   text-align: center;
   font-size: 1.2em;
+}
+#summaryEngineMetaBlock #summaryEngineRate {
+  margin-left: 1em;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+#summaryEngineMetaBlock #summaryEngineRate #summaryEngineRateIcons {
+  font-size: 1.5em;
+}
+#summaryEngineMetaBlock #summaryEngineRate #summaryEngineRateIcons .summaryengine-rate-icon {
+  cursor: pointer;
+  margin: 0 0.2em;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  padding: 0.2em;
 }
 #summaryEngineMetaBlock #summaryEngineMetaBlockSummariseButtonContainer .summaryengine-spinner {
   display: none;

@@ -56,12 +56,12 @@ async function main() {
     }
 
     const check_submissions = () => {
-        if (summaryengine_max_number_of_submissions_per_post < 0) {
+        if (Number(summaryengine_max_number_of_submissions_per_post) < 0) {
             jQuery("#summaryEngineSubmissionsLeft").html("&infin;");
             return;
         };
         const submissions_left = Number(summaryengine_max_number_of_submissions_per_post) - submission_count;
-        if (submission_count >= summaryengine_max_number_of_submissions_per_post) {
+        if (submission_count >= Number(summaryengine_max_number_of_submissions_per_post)) {
             jQuery("#summaryEngineSubmissionsLeft").text(0);
             jQuery("#summaryEngineMetaBlockSummariseButton").attr("disabled", "disabled");
             jQuery("#summaryEngineMetaBlockSummariseButtonContainer").addClass("summaryengine-disabled");
@@ -74,22 +74,60 @@ async function main() {
         jQuery("#summaryEngineSubmissionsLeft").text(submissions_left);
     }
 
-    jQuery(async () => {
-        submission_count = await get_submissions_count();
-        check_submissions();
-        jQuery("#summaryEngineMetaBlockSummariseButton").on("click", async () => {
-            const content = get_content();
-            if (!content.length) {
-                alert("Nothing to summarise yet...");
-                return;
-            }
+    const submit = async () => {
+        const content = get_content();
+        if (!content.length) {
+            alert("Nothing to summarise yet...");
+            return;
+        }
+        try {
+            jQuery("#summaryEngineMetaBlockSummariseButtonContainer").addClass("summaryengine-loading");
+            wp.apiRequest({
+                path: "summaryengine/v1/summarise",
+                data: {
+                    content: content,
+                    post_id: jQuery("#post_ID").val(),
+                },
+                type: "POST",
+            })
+            .done(async (response) => {
+                if (response.error) {
+                    alert(response.error.message || response.error);
+                    return;
+                }
+                use_submission();
+                jQuery("#summaryEngineSummaryId").val(response.summary_id);
+                jQuery("#summaryEngineSummary").val(response.choices[0].text.trim());
+                jQuery("#summaryEngineRate").removeClass("summaryengine-hidden");
+                jQuery("#summaryEngineRateLabel").removeClass("summaryengine-hidden");
+                jQuery("#summaryEngineFeedback").addClass("summaryengine-hidden");
+                jQuery("#summaryEngineRateIcons").removeClass("summaryengine-hidden");
+            })
+            .fail(async (response) => {
+                if (response.responseJSON?.message) {
+                    alert(response.responseJSON?.message);
+                    return;
+                }
+                throw response.error?.message || response.error || response;
+            }).always(async () => {
+                jQuery("#summaryEngineMetaBlockSummariseButtonContainer").removeClass("summaryengine-loading");
+            });
+            return;
+        } catch (err) {
+            console.error(err);
+            alert(err);
+        }
+    }
+
+    const saveRate = async (rating) => {
+        {
             try {
-                jQuery("#summaryEngineMetaBlockSummariseButtonContainer").addClass("summaryengine-loading");
+                const summary_id = jQuery("#summaryEngineSummaryId").val();
+                if (!summary_id) throw "Could not find summary ID";
                 wp.apiRequest({
-                    path: "summaryengine/v1/summarise",
+                    path: "summaryengine/v1/rate/" + jQuery("#summaryEngineSummaryId").val(),
                     data: {
-                        content: content,
-                        post_id: jQuery("#post_ID").val(),
+                        rating,
                     },
                     type: "POST",
                 })
@@ -98,23 +136,34 @@ async function main() {
                         alert(response.error.message || response.error);
                         return;
                     }
-                    use_submission();
-                    jQuery("#summaryEngineSummary").val(response.choices[0].text.trim());
+                    jQuery("#summaryEngineRateLabel").addClass("summaryengine-hidden");
+                    jQuery("#summaryEngineFeedback").removeClass("summaryengine-hidden");
+                    jQuery("#summaryEngineRateIcons").addClass("summaryengine-hidden");
                 })
                 .fail(async (response) => {
                     if (response.responseJSON?.message) {
                         alert(response.responseJSON?.message);
                         return;
                     }
-                    throw response.error.message || response.error;
+                    throw response.error?.message || response.error || response;
                 }).always(async () => {
-                    jQuery("#summaryEngineMetaBlockSummariseButtonContainer").removeClass("summaryengine-loading");
+                    jQuery("#summaryEngineRate").removeClass("summaryengine-loading");
                 });
                 return;
             } catch (err) {
                 console.error(err);
                 alert(err);
             }
+        }
+    }
+
+    jQuery(async () => {
+        submission_count = await get_submissions_count();
+        check_submissions();
+        jQuery("#summaryEngineMetaBlockSummariseButton").on("click", submit);
+        jQuery(".summaryengine-rate-icon").on("click", async (e) => {
+            const rating = jQuery(e.target).data("rating");
+            await saveRate(rating);
         });
     });
 }

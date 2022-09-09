@@ -31,6 +31,13 @@ class SummaryEngineAPI {
                 return current_user_can( 'edit_others_posts' );
             }
         ));
+        register_rest_route('summaryengine/v1', '/rate/(?P<id>\d+)', array(
+            'methods' => 'POST',
+            'callback' => array( $this, 'post_rate_post' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
     }
 
     protected function cut_at_paragraph($content, $wordcount) {
@@ -66,24 +73,6 @@ class SummaryEngineAPI {
 
     protected function save_results($post_id, $content, $params, $summary_result) {
         global $wpdb;
-        // $table_name = $wpdb->prefix . 'summaryengine_summaries';
-        // created_at datetime DEFAULT NOW() NOT NULL,
-        //     post_id mediumint(9) NOT NULL,
-        //     user_id mediumint(9) NOT NULL,
-        //     submitted_text text NOT NULL,
-        //     summary text NOT NULL,
-        //     openai_id varchar(100) NOT NULL,
-        //     openai_model varchar(100) NOT NULL,
-        //     frequency_penalty float NOT NULL,
-        //     max_tokens int NOT NULL,
-        //     presence_penalty float NOT NULL,
-        //     temperature float NOT NULL,
-        //     top_p float NOT NULL,
-        //     prompt varchar(100) NOT NULL,
-        //     openai_object varchar(100) NOT NULL,
-        //     openai_usage_completion_tokens mediumint(9) NOT NULL,
-        //     openai_usage_prompt_tokens mediumint(9) NOT NULL,
-        //     openai_usage_total_tokens mediumint(9) NOT NULL,
         $wpdb->insert(
             $this->table_name,
             array(
@@ -123,6 +112,7 @@ class SummaryEngineAPI {
                 '%d',
             )
         );
+        return $wpdb->insert_id;
     }
 
     public function get_post_summaries(WP_REST_Request $request) {
@@ -145,11 +135,11 @@ class SummaryEngineAPI {
         return array("count" => $result);
     }
 
-    public function post_summarise() {
+    public function post_summarise(WP_REST_Request $request) {
         global $wpdb;
         try {
-            $content = strip_all_tags($_POST['content']);
-            $post_id = intval($_POST['post_id']);
+            $content = strip_tags($request->get_param('content'));
+            $post_id = intval($request->get_param('post_id'));
             // Make sure we still have submissions left
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
@@ -182,10 +172,29 @@ class SummaryEngineAPI {
                 'prompt' => $content . '\n' . get_option('summaryengine_openai_prompt') . ' ',
             );
             $summary = $openapi->summarise($content, $params);
-            $this->save_results($post_id, $content, $params, $summary);
+            $summary["summary_id"] = $this->save_results($post_id, $content, $params, $summary);
             return $summary;
         } catch (Exception $e) {
             return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content', 'summaryengine' ), array( 'status' => 500 ) );
         }
     }
+
+    public function post_rate_post(WP_REST_Request $request) {
+        global $wpdb;
+        $id = $request->get_param('id');
+        $rating = $request->get_param('rating');
+        $wpdb->update(
+            $this->table_name,
+            array(
+                'rating' => $rating,
+            ),
+            array(
+                'ID' => $id,
+            )
+        );
+        // echo $wpdb->last_query;
+        return $wpdb->last_query;
+        return array("success" => true);
+    }
+
 }

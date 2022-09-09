@@ -2,11 +2,11 @@
 
 class SummaryEngineDB {
     public function setup() {
+        global $wpdb;
         $summaryengine_db_version = get_option("summaryengine_db_version", 0 );
         if ((string) $summaryengine_db_version == (string) SUMMARYENGINE_DB_VERSION) {
             return;
         }
-        global $wpdb;
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         $charset_collate = $wpdb->get_charset_collate();
 
@@ -30,10 +30,12 @@ class SummaryEngineDB {
             openai_usage_completion_tokens mediumint(9) NOT NULL,
             openai_usage_prompt_tokens mediumint(9) NOT NULL,
             openai_usage_total_tokens mediumint(9) NOT NULL,
+            rating int DEFAULT 0 NOT NULL,
             INDEX post_id (post_id),
             INDEX user_id (user_id),
             INDEX created_at (created_at),
-            INDEX post_id_created_at (post_id, created_at)
+            INDEX post_id_created_at (post_id, created_at),
+            INDEX rating (rating)
         ) $charset_collate;";
         dbDelta( $summaryengine_tests_sql );
         update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
