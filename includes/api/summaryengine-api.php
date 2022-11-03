@@ -119,7 +119,7 @@ class SummaryEngineAPI {
         global $wpdb;
         $id = $request->get_param('id');
         $result = $wpdb->get_results( $wpdb->prepare(
-            "SELECT * FROM $this->table_name WHERE post_id = %d ORDER BY created_at DESC",
+            "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d ORDER BY created_at DESC",
             $id
         ));
         return $result;
@@ -129,7 +129,7 @@ class SummaryEngineAPI {
         global $wpdb;
         $id = $request->get_param('id');
         $result = $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(*) FROM $this->table_name WHERE post_id = %d ORDER BY created_at DESC",
+            "SELECT COUNT(*) FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d ORDER BY created_at DESC",
             $id
         ));
         return array("count" => $result);
@@ -144,7 +144,7 @@ class SummaryEngineAPI {
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
                 $number_of_submissions = $wpdb->get_var( $wpdb->prepare(
-                    "SELECT COUNT(*) FROM $this->table_name WHERE post_id = %d",
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d",
                     $post_id
                 ));
                 if ($number_of_submissions >= $max_number_of_submissions_per_post) {
@@ -192,8 +192,6 @@ class SummaryEngineAPI {
                 'ID' => $id,
             )
         );
-        // echo $wpdb->last_query;
-        return $wpdb->last_query;
         return array("success" => true);
     }
 
