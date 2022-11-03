@@ -1,0 +1,11 @@
+{
+    "phpcs.enable": true,
+    "php.validate.executablePath": "/opt/homebrew/bin/php",
+    "phpcs.executablePath": "/Users/jasonnorwood-young/.composer/vendor/bin/phpcs",
+    "phpcs.standard": "WordPress-VIP-Go",
+    "phpcbf.enable": true,
+    "phpcbf.executablePath": "/Users/jasonnorwood-young/.composer/vendor/bin/phpcbf",
+    "phpcbf.standard": "WordPress-VIP-Go",
+    "phpcbf.documentFormattingProvider": true,
+    "phpcbf.onsave": true,
+}
