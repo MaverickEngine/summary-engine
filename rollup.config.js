@@ -1,11 +1,11 @@
-// import svelte from 'rollup-plugin-svelte';
+import svelte from 'rollup-plugin-svelte';
 import commonjs from '@rollup/plugin-commonjs';
 // import resolve from '@rollup/plugin-node-resolve';
 // import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import scss from 'rollup-plugin-scss'
 import css from 'rollup-plugin-css-only';
-// import preprocess from 'svelte-preprocess';
+import preprocess from 'svelte-preprocess';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
 import strip from '@rollup/plugin-strip';
@@ -60,6 +60,10 @@ if (test) {
 				},
 			],
 			plugins: [
+				svelte({
+					preprocess: preprocess(),
+					// emitCss: false,
+				}),
 				scss(),
 				css({ output: "summaryengine.css" }),
 				nodeResolve({

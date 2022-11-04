@@ -4,7 +4,7 @@ class SummaryEngineAdmin {
 
     function __construct() {
         add_action('admin_menu', [ $this, 'menu' ]);
-        add_action('admin_init', [ $this, 'scripts' ]);
+        add_action('admin_enqueue_scripts', [ $this, 'scripts' ]);
         require_once('summaryengine-admin-settings.php' );
         new SummaryEngineAdminSettings();
     }
@@ -30,8 +30,11 @@ class SummaryEngineAdmin {
 	}
 
     public function scripts() {
+        global $post;
+        if (empty($post)) {
+            return;
+        }
         wp_enqueue_script( "summaryengine-admin-script", plugin_dir_url(__FILE__) . "../../dist/summaryengine-admin.js", [], SUMMARYENGINE_SCRIPT_VERSION, true );
-        // wp_enqueue_style( "summaryengine-admin-style", plugin_dir_url(__FILE__) . "../../dist/summaryengine-admin.css", [], SUMMARYENGINE_SCRIPT_VERSION );
-        // wp_add_inline_script( "summaryengine-admin-script", "var summaryengine_powerwords_url = '" . plugin_dir_url( __DIR__ ) . "assets/powerwords.txt';", "before" );
+        wp_add_inline_script( "summaryengine-admin-script", "var summaryengine_summary = " . json_encode(get_post_meta( $post->ID, 'summaryengine_summary', true )) .  ";", "before" );
     }
 }

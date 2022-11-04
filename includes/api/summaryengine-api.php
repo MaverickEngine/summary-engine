@@ -33,7 +33,21 @@ class SummaryEngineAPI {
         ));
         register_rest_route('summaryengine/v1', '/rate/(?P<id>\d+)', array(
             'methods' => 'POST',
-            'callback' => array( $this, 'post_rate_post' ),
+            'callback' => array( $this, 'post_rate_summary' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+        register_rest_route('summaryengine/v1', '/summary/(?P<id>\d+)', array(
+            'methods' => 'POST',
+            'callback' => array( $this, 'post_summary' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+        register_rest_route('summaryengine/v1', '/summary/(?P<id>\d+)', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_summary' ),
             'permission_callback' => function () {
                 return current_user_can( 'edit_others_posts' );
             }
@@ -73,26 +87,27 @@ class SummaryEngineAPI {
 
     protected function save_results($post_id, $content, $params, $summary_result) {
         global $wpdb;
+        $data = array(
+            'post_id' => $post_id,
+            'user_id' => get_current_user_id(),
+            'submitted_text' => $content,
+            'summary' => trim($summary_result['choices'][0]['text']),
+            'openai_id' => $summary_result['id'],
+            'openai_model' => $summary_result['model'],
+            'frequency_penalty' => $params['frequency_penalty'],
+            'max_tokens' => $params['max_tokens'],
+            'presence_penalty' => $params['presence_penalty'],
+            'temperature' => $params['temperature'],
+            'top_p' => $params['top_p'],
+            'prompt' => get_option('summaryengine_openai_prompt'),
+            'openai_object' => $summary_result['object'],
+            'openai_usage_completion_tokens' => $summary_result['usage']['completion_tokens'],
+            'openai_usage_prompt_tokens' => $summary_result['usage']['prompt_tokens'],
+            'openai_usage_total_tokens' => $summary_result['usage']['total_tokens'],
+        );
         $wpdb->insert(
             $this->table_name,
-            array(
-                'post_id' => $post_id,
-                'user_id' => get_current_user_id(),
-                'submitted_text' => $content,
-                'summary' => $summary_result['choices'][0]['text'],
-                'openai_id' => $summary_result['id'],
-                'openai_model' => $summary_result['model'],
-                'frequency_penalty' => $params['frequency_penalty'],
-                'max_tokens' => $params['max_tokens'],
-                'presence_penalty' => $params['presence_penalty'],
-                'temperature' => $params['temperature'],
-                'top_p' => $params['top_p'],
-                'prompt' => get_option('summaryengine_openai_prompt'),
-                'openai_object' => $summary_result['object'],
-                'openai_usage_completion_tokens' => $summary_result['usage']['completion_tokens'],
-                'openai_usage_prompt_tokens' => $summary_result['usage']['prompt_tokens'],
-                'openai_usage_total_tokens' => $summary_result['usage']['total_tokens'],
-            ),
+            $data,
             array(
                 '%d',
                 '%d',
@@ -112,7 +127,8 @@ class SummaryEngineAPI {
                 '%d',
             )
         );
-        return $wpdb->insert_id;
+        $data["ID"] = $wpdb->insert_id;
+        return $data;
     }
 
     public function get_post_summaries(WP_REST_Request $request) {
@@ -172,14 +188,17 @@ class SummaryEngineAPI {
                 'prompt' => $content . '\n' . get_option('summaryengine_openai_prompt') . ' ',
             );
             $summary = $openapi->summarise($content, $params);
-            $summary["summary_id"] = $this->save_results($post_id, $content, $params, $summary);
-            return $summary;
+            $result = $this->save_results($post_id, $content, $params, $summary);
+            // Set meta data for post
+            update_post_meta($post_id, 'summaryengine_summary', trim($result['summary']));
+            update_post_meta($post_id, 'summaryengine_summary_id', $result['ID']);
+            return $result;
         } catch (Exception $e) {
             return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content', 'summaryengine' ), array( 'status' => 500 ) );
         }
     }
 
-    public function post_rate_post(WP_REST_Request $request) {
+    public function post_rate_summary(WP_REST_Request $request) {
         global $wpdb;
         $id = $request->get_param('id');
         $rating = $request->get_param('rating');
@@ -190,9 +209,41 @@ class SummaryEngineAPI {
             ),
             array(
                 'ID' => $id,
-            )
+            ),
+            array(
+                '%d',
+            ),
         );
+        // Check for errors
+        if ($wpdb->last_error !== '') {
+            return new WP_Error( 'summaryengine_api_error', __( 'Error rating summary', 'summaryengine' ), array( 'status' => 500 ) );
+        }
         return array("success" => true);
+    }
+
+    public function post_summary(WP_REST_Request $request) {
+        $post_id = $request->get_param('id');
+        $summary = $request->get_param('summary');
+        $summary_id = $request->get_param('summary_id');
+        if (empty($summary_id)) {
+            return new WP_Error('rest_custom_error', 'summary_id is required', array('status' => 400));
+        }
+        if (empty($summary)) {
+            return new WP_Error('rest_custom_error', 'summary is required', array('status' => 400));
+        }
+        update_post_meta($post_id, 'summaryengine_summary', sanitize_text_field(trim($summary)));
+        update_post_meta($post_id, 'summaryengine_summary_id', intval($summary_id));
+        return array("success" => true);
+    }
+
+    public function get_summary(WP_REST_Request $request) {
+        $post_id = $request->get_param('id');
+        $summary = get_post_meta($post_id, 'summaryengine_summary', true);
+        $summary_id = get_post_meta($post_id, 'summaryengine_summary_id', true);
+        return array(
+            "summary" => $summary,
+            "summary_id" => $summary_id,
+        );
     }
 
 }

@@ -1,7 +1,16 @@
-import "./summaryengine.scss";
+// import "./summaryengine.scss";
+import App from './App.svelte'
+
+const app = new App({
+    target: document.getElementById('summaryEngineApp'),
+})
+
+export default app
 
 async function main() {
     let submission_count = 0;
+    let submissions = [];
+    let current_submission = 0;
 
     const get_content = () => {
         if (jQuery("#titlewrap").length) { // Classic editor
@@ -18,6 +27,12 @@ async function main() {
         } else {
             return wp.data.select( "core/editor" ).getEditedPostContent();
         }
+    }
+
+    const strip_tags = (html) => {
+        let tmp = document.createElement("DIV");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
     }
 
     const get_submissions_count = async () => {
@@ -49,6 +64,31 @@ async function main() {
         });
     }
 
+    const get_submissions = async () => {
+        return new Promise((resolve, reject) => {
+            jQuery("#summaryEngineMetaBlockSummariseButtonContainer").addClass("summaryengine-loading");
+            wp.apiRequest({
+                path: "summaryengine/v1/post/" + jQuery("#post_ID").val(),
+                type: "GET",
+            })
+            .fail(async (response) => {
+                console.log("Error getting submissions");
+                console.log(response);
+                reject(response);
+            })
+            .done(async (response) => {
+                if (response.error) {
+                    console.log("Error getting submissions");
+                    console.log(response);
+                    reject(response);
+                }
+                resolve(response);
+            }).always(async () => {
+                jQuery("#summaryEngineMetaBlockSummariseButtonContainer").removeClass("summaryengine-loading");
+            });
+        });
+    }
+
     const use_submission = () => {
         submission_count++;
         jQuery("#summaryEngineSubmissionsLeft").text(Number(summaryengine_max_number_of_submissions_per_post) - submission_count);
@@ -72,10 +112,13 @@ async function main() {
             jQuery("#summaryEngineSubmissionsLeftLabel").text("submissions left");
         }
         jQuery("#summaryEngineSubmissionsLeft").text(submissions_left);
+        if (submissions) {
+            console.log("Submissions:", submissions);
+        }
     }
 
     const submit = async () => {
-        const content = get_content();
+        const content = strip_tags(get_content());
         if (!content.length) {
             alert("Nothing to summarise yet...");
             return;
@@ -159,13 +202,22 @@ async function main() {
 
     jQuery(async () => {
         submission_count = await get_submissions_count();
+        submissions = await get_submissions();
+        current_submission = submissions.length - 1;
         check_submissions();
         jQuery("#summaryEngineMetaBlockSummariseButton").on("click", submit);
         jQuery(".summaryengine-rate-icon").on("click", async (e) => {
             const rating = jQuery(e.target).data("rating");
             await saveRate(rating);
         });
+        jQuery("#summaryEngineNavigatorPrev").on("click", async (e) => {
+            console.log("Previous");
+            console.log({current_submission});
+            current_submission--;
+            if (current_submission < 0) current_submission = 0;
+            jQuery("#summaryEngineSummary").val(submissions[current_submission].summary.trim());
+        });
     });
 }
 
-main();
+// main();
