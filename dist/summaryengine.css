@@ -1,11 +1,12 @@
-.summaryengine-textarea.svelte-1auiv06 {
+.summaryengine-textarea.svelte-tmklmc {
   height: 8em !important;
   width: 100%;
 }
 
-#summaryEngineMetaBlockSummariseButtonContainer.svelte-1auiv06 {
+#summaryEngineMetaBlockSummariseButtonContainer.svelte-tmklmc {
   display: flex;
   flex-direction: row;
+  margin-top: 10px;
 }
 
 #summaryEngineCounter.svelte-1ebs6qp.svelte-1ebs6qp {

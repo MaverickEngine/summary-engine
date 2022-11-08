@@ -34,8 +34,12 @@
     <div id="summaryEngineMetaBlockSummariseButtonContainer">
         <Generate />
         <SubmissionsLeft />
-        <Navigation />
-        <Rate />
+        {#if $summaries.length > 1}
+            <Navigation />
+        {/if}
+        {#if $summary_id > 0}
+            <Rate />
+        {/if}
     </div>
 </div>
 
@@ -48,6 +52,7 @@
     #summaryEngineMetaBlockSummariseButtonContainer {
         display: flex;
         flex-direction: row;
+        margin-top: 10px;
     }
 
     

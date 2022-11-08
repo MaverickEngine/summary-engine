@@ -1,5 +1,5 @@
 <script>
-    import { submissions_left, summaries, summary_text } from '../stores.js';
+    import { submissions_left, summaries, summary_text, summary_id, summary_index } from '../stores.js';
     import { apiPost } from '../libs/ajax.js';
 
     let loading = false;
@@ -41,7 +41,9 @@
                     post_id: jQuery("#post_ID").val(),
                 }
             );
+            $summary_id = response.ID;
             $summaries.unshift(response);
+            $summary_index = 0;
             $summaries = $summaries;
             $summary_text = response.summary.trim();
             loading = false;
