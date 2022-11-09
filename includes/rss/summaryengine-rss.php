@@ -45,6 +45,11 @@ class SummaryEngineRSS {
                    'key' => 'summaryengine_summary',
                    'compare' => 'EXISTS'
                 ),
+                array(
+                     'key' => 'summaryengine_summary',
+                     'value' => '',
+                     'compare' => '!='
+                )
             ),
         ));
         foreach($posts as $post) {
@@ -76,7 +81,7 @@ class SummaryEngineRSS {
             return $post->modified_date;
         }, $posts);
         rsort($sorted_modified_dates); // Stupid fucking PHP
-        $latest_modified_date_rss = date( 'r', strtotime($sorted_modified_dates[0]) );
+        $latest_modified_date_rss = gmdate( 'r', strtotime($sorted_modified_dates[0]) );
         require_once plugin_dir_path( dirname( __FILE__ ) ).'rss/views/rss-summary.php';
     }
 }
