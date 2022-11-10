@@ -15,13 +15,18 @@
                             usort($post_types, function($a, $b) {
                                 return strcmp($a->name, $b->name);
                             });
-                            foreach($post_types as $post_type) {
-                                $checked = (get_option('summaryengine_post_types') && in_array($post_type->name, get_option('summaryengine_post_types'))) ? 'checked' : '';
-                                echo '<input type="checkbox" name="summaryengine_post_types[]" value="' . esc_attr($post_type->name) . '" ' . $checked . '> ' . esc_html($post_type->label) . '<br>';
+                            foreach($post_types as $pt) {
+                                $checked = (get_option('summaryengine_post_types') && in_array($pt->name, get_option('summaryengine_post_types'))) ? 'checked' : '';
+                                echo '<input type="checkbox" name="summaryengine_post_types[]" value="' . esc_attr($pt->name) . '" ' . esc_attr($checked) . '> ' . esc_html($pt->label) . '<br>';
                             }
                         ?>
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row"><?php _e("RSS post limit", "summaryengine") ?></th>
+                    <td>
+                        <input type="number" name="summaryengine_rss_limit" value="<?php echo esc_attr( get_option('summaryengine_rss_limit') ); ?>" class="regular-text" />
+                    </td>
                 <tr>
                     <th scope="row"><?php _e("OpenAI API Key", "summaryengine") ?></th>
                     <td>

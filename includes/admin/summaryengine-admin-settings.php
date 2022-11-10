@@ -13,6 +13,7 @@ class SummaryEngineAdminSettings {
         "summaryengine_openai_top_p",
         "summaryengine_openai_prompt",
         "summaryengine_max_number_of_submissions_per_post",
+        "summaryengine_rss_limit",
     ];
 
     public $defaults = [
@@ -28,6 +29,7 @@ class SummaryEngineAdminSettings {
         "summaryengine_openai_top_p" => 1,
         "summaryengine_openai_prompt" => "Summarize in 100 words: ",
         "summaryengine_max_number_of_submissions_per_post" => 3,
+        "summaryengine_rss_limit" => 10,
     ];
     
     public function __construct() {
@@ -49,7 +51,7 @@ class SummaryEngineAdminSettings {
 
     public function summaryengine_settings() {
         if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have sufficient permissions to access this page.'));
+            wp_die('You do not have sufficient permissions to access this page.');
         }
         
         require_once plugin_dir_path( dirname( __FILE__ ) ).'admin/views/settings.php';

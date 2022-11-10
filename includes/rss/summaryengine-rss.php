@@ -37,7 +37,7 @@ class SummaryEngineRSS {
         $posts = get_posts(array(
             'post_type' => get_option('summaryengine_post_types'),
             'post_status' => 'publish',
-            'posts_per_page' => 5,
+            'posts_per_page' => get_option('summaryengine_rss_limit', 10),
             'orderby' => 'date',
             'order' => 'DESC',
             'meta_query' => array(
