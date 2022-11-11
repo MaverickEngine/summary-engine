@@ -6,8 +6,8 @@
     // Components
     import SubmissionsLeft from './components/SubmissionsLeft.svelte';
     import Navigation from './components/Navigation.svelte';
-    import Generate from './components/Generate.svelte';
     import Rate from './components/Rate.svelte';
+    import GenerateSummary from './components/GenerateSummary.svelte';
 
     const post_id = jQuery("#post_ID").val();
 
@@ -32,7 +32,7 @@
     <label class="screen-reader-text" for="summary">Summary</label>
     <textarea rows="1" cols="40" name="summaryengine_summary" id="summaryEngineSummary" class="summaryengine-textarea" bind:value={$summary_text}></textarea>
     <div id="summaryEngineMetaBlockSummariseButtonContainer">
-        <Generate />
+        <GenerateSummary />
         <SubmissionsLeft />
         {#if $summaries.length > 1}
             <Navigation />

@@ -49,8 +49,8 @@
             loading = false;
             return;
         } catch (err) {
-            console.error(err);
             alert(err);
+            loading = false;
         }
     }
 </script>
