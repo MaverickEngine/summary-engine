@@ -195,7 +195,7 @@ class SummaryEngineAPI {
             update_post_meta($post_id, 'summaryengine_summary_id', $result['ID']);
             return $result;
         } catch (Exception $e) {
-            return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content', 'summaryengine' ), array( 'status' => 500 ) );
+            return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content: ' . $e->getMessage(), 'summaryengine' ), array( 'status' => 500 ) );
         }
     }
 
