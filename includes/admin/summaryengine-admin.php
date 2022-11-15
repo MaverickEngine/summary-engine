@@ -35,6 +35,18 @@ class SummaryEngineAdmin {
             return;
         }
         wp_enqueue_script( "summaryengine-admin-script", plugin_dir_url(__FILE__) . "../../dist/summaryengine-admin.js", [], SUMMARYENGINE_SCRIPT_VERSION, true );
-        wp_add_inline_script( "summaryengine-admin-script", "var summaryengine_summary = " . json_encode(get_post_meta( $post->ID, 'summaryengine_summary', true )) .  ";", "before" );
+        wp_add_inline_script( "summaryengine-admin-script", 
+        "var summaryengine_summary = " . wp_json_encode(get_post_meta( $post->ID, 'summaryengine_summary', true )) .  "; 
+        var summaryengine_settings = {
+            openai_model: '" . esc_js(get_option("summaryengine_openai_model"), "text-davinci-002") . "',
+            openai_word_limit: " . intval(get_option("summaryengine_openai_word_limit", 750)) . ", 
+            openai_frequency_penalty: " . intval(get_option("summaryengine_openai_frequency_penalty", 0.5)) . ",
+            openai_max_tokens: " . intval(get_option("summaryengine_openai_max_tokens", 300)) . ",
+            openai_presence_penalty: " . intval(get_option("summaryengine_openai_presence_penalty", 0)) . ",
+            openai_temperature: " . intval(get_option("summaryengine_openai_temperature", 0.6)) . ",
+            openai_top_p: " . intval(get_option("summaryengine_openai_top_p", 1)) . ",
+            openai_prompt: '" . esc_js(get_option("summaryengine_openai_prompt", "Summarize in 100 words: ")) . "'
+        };    
+        ", "before" );
     }
 }

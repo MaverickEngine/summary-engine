@@ -85,7 +85,7 @@ class SummaryEngineAPI {
         return $summary;
     }
 
-    protected function save_results($post_id, $content, $params, $summary_result) {
+    protected function save_results($post_id, $content, $original_prompt, $params, $summary_result) {
         global $wpdb;
         $data = array(
             'post_id' => $post_id,
@@ -99,7 +99,7 @@ class SummaryEngineAPI {
             'presence_penalty' => $params['presence_penalty'],
             'temperature' => $params['temperature'],
             'top_p' => $params['top_p'],
-            'prompt' => get_option('summaryengine_openai_prompt'),
+            'prompt' => $original_prompt ?? get_option('summaryengine_openai_prompt'),
             'openai_object' => $summary_result['object'],
             'openai_usage_completion_tokens' => $summary_result['usage']['completion_tokens'],
             'openai_usage_prompt_tokens' => $summary_result['usage']['prompt_tokens'],
@@ -156,6 +156,7 @@ class SummaryEngineAPI {
         try {
             $content = strip_tags($request->get_param('content'));
             $post_id = intval($request->get_param('post_id'));
+            $settings = json_decode($request->get_param('settings'), true);
             // Make sure we still have submissions left
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
@@ -178,6 +179,7 @@ class SummaryEngineAPI {
                 return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
             }
             $openapi = new OpenAPI(get_option('summaryengine_openai_apikey'));
+            $original_prompt =  $settings["openai_prompt"] ?? get_option('summaryengine_openai_prompt');
             $params = array(
                 'model' => get_option( 'summaryengine_openai_model'),
                 'frequency_penalty' => floatval(get_option( 'summaryengine_openai_frequency_penalty')),
@@ -185,11 +187,29 @@ class SummaryEngineAPI {
                 'presence_penalty' => floatval(get_option( 'summaryengine_openai_presence_penalty')),
                 'temperature' => floatval(get_option( 'summaryengine_openai_temperature')),
                 'top_p' => floatval(get_option( 'summaryengine_openai_top_p')),
-                'prompt' => $content . '\n' . get_option('summaryengine_openai_prompt') . ' ',
+                'prompt' => $original_prompt . "\n\n" . $content,
             );
+            if (isset($settings["openai_model"])) {
+                $params['model'] = $settings["openai_model"];
+            }
+            if (isset($settings["openai_frequency_penalty"])) {
+                $params['frequency_penalty'] = floatval($settings["openai_frequency_penalty"]);
+            }
+            if (isset($settings["openai_max_tokens"])) {
+                $params['max_tokens'] = intval($settings["openai_max_tokens"]);
+            }
+            if (isset($settings["openai_presence_penalty"])) {
+                $params['presence_penalty'] = floatval($settings["openai_presence_penalty"]);
+            }
+            if (isset($settings["openai_temperature"])) {
+                $params['temperature'] = floatval($settings["openai_temperature"]);
+            }
+            if (isset($settings["openai_top_p"])) {
+                $params['top_p'] = floatval($settings["openai_top_p"]);
+            }
             $summary = $openapi->summarise($content, $params);
             if (empty($summary)) throw new Exception("Response from OpenAI is empty");
-            $result = $this->save_results($post_id, $content, $params, $summary);
+            $result = $this->save_results($post_id, $content, $original_prompt, $params, $summary);
             // Set meta data for post
             update_post_meta($post_id, 'summaryengine_summary', trim($result['summary']));
             update_post_meta($post_id, 'summaryengine_summary_id', $result['ID']);

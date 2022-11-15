@@ -1,5 +1,5 @@
 <script>
-    import { submissions_left, summaries, summary_text, summary_id, summary_index } from '../stores.js';
+    import { submissions_left, summaries, summary_text, summary_id, summary_index, custom_settings } from '../stores.js';
     import { apiPost } from '../libs/ajax.js';
 
     let loading = false;
@@ -7,7 +7,6 @@
     const get_content = () => {
         if (jQuery("#titlewrap").length) { // Classic editor
             if (jQuery(".wp-editor-area").is(":visible")) { // The code editor is visible
-                // console.log("Code editor is visible");
                 return jQuery(".wp-editor-area").val();
             } else { // The visual editor is visible
                 let content = tinymce.editors.content.getContent();
@@ -39,6 +38,7 @@
                 {
                     content: content,
                     post_id: jQuery("#post_ID").val(),
+                    settings: JSON.stringify($custom_settings)
                 }
             );
             $summary_id = response.ID;
