@@ -52,6 +52,21 @@ class SummaryEngineAPI {
                 return current_user_can( 'edit_others_posts' );
             }
         ));
+        register_rest_route('summaryengine/v1', '/reports', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_reports' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+        
+        register_rest_route('summaryengine/v1', '/report/by_period', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_reports_by_period' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
     }
 
     protected function cut_at_paragraph($content, $wordcount) {
@@ -265,6 +280,46 @@ class SummaryEngineAPI {
             "summary" => $summary,
             "summary_id" => $summary_id,
         );
+    }
+
+    protected function rated_summaries($rating, $size) {
+        global $wpdb;
+        $results = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE rating = %d ORDER BY created_at DESC LIMIT %d", [$rating, $size]));
+        foreach($results as $result) {
+            $result->post_title = get_the_title($result->post_id);
+            $result->post_permalink = get_permalink($result->post_id);
+            $result->user = get_user_by('id', $result->user_id)->display_name;
+        }
+        return $results;
+    }
+
+    protected function count_rated_summaries() {
+        global $wpdb;
+        $results = $wpdb->get_results($wpdb->prepare("SELECT COUNT(*) as count, rating FROM {$wpdb->prefix}summaryengine_summaries GROUP BY rating"));
+        return $results;
+    }
+
+    protected function summaries_by_period($start, $end) {
+        global $wpdb;
+        $results = $wpdb->get_results($wpdb->prepare("SELECT DATE(created_at) as date, COUNT(*) as count, rating FROM {$wpdb->prefix}summaryengine_summaries WHERE created_at > %s AND created_at <= %s GROUP BY DATE(created_at), rating", [$start, $end]));
+        return $results;
+    }
+
+    public function get_reports(WP_REST_Request $request) {
+        $good_summaries = $this->rated_summaries(1, 10);
+        $bad_summaries = $this->rated_summaries(-1, 10);
+        $counts = $this->count_rated_summaries();
+        return array(
+            "good_summaries" => $good_summaries,
+            "bad_summaries" => $bad_summaries,
+            "counts" => $counts,
+        );
+    }
+
+    public function get_reports_by_period(WP_REST_Request $request) {
+        $start = $request->get_param('start') ?? gmdate('Y-m-d', strtotime('-30 days'));
+        $end = $request->get_param('end') ?? gmdate('Y-m-d');
+        return $this->summaries_by_period($start, $end);
     }
 
 }

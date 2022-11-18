@@ -7,6 +7,8 @@ class SummaryEngineAdmin {
         add_action('admin_enqueue_scripts', [ $this, 'scripts' ]);
         require_once('summaryengine-admin-settings.php' );
         new SummaryEngineAdminSettings();
+        require_once('summaryengine-admin-reports.php' );
+        new SummaryEngineReports();
     }
 
     function menu() {

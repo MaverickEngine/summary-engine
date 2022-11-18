@@ -729,11 +729,11 @@ var summaryengine = (function () {
     			span1 = element("span");
     			span1.textContent = "submissions left";
     			attr(span0, "id", "summaryEngineSubmissionsLeft");
-    			attr(span0, "class", "svelte-1ebs6qp");
+    			attr(span0, "class", "svelte-1r1igx2");
     			toggle_class(span0, "zero", /*$submissions_left*/ ctx[0] === 0);
     			attr(span1, "id", "summaryEngineSubmissionsLeftLabel");
     			attr(div, "id", "summaryEngineCounter");
-    			attr(div, "class", "svelte-1ebs6qp");
+    			attr(div, "class", "svelte-1r1igx2");
     		},
     		m(target, anchor) {
     			insert(target, div, anchor);
@@ -812,14 +812,14 @@ var summaryengine = (function () {
     			t2 = text("Next");
     			attr(button0, "id", "summaryEngineNavigatorPrev");
     			attr(button0, "type", "button");
-    			attr(button0, "class", "button button-secondary svelte-7ckp25");
+    			attr(button0, "class", "button button-secondary svelte-kp38k9");
     			button0.disabled = button0_disabled_value = /*$summary_index*/ ctx[0] === 0;
     			attr(button1, "id", "summaryEngineNavigatorNext");
     			attr(button1, "type", "button");
-    			attr(button1, "class", "button button-secondary svelte-7ckp25");
+    			attr(button1, "class", "button button-secondary svelte-kp38k9");
     			button1.disabled = button1_disabled_value = /*$summary_index*/ ctx[0] === /*$summaries*/ ctx[1].length - 1;
     			attr(div, "id", "summaryEngineNavigator");
-    			attr(div, "class", "svelte-7ckp25");
+    			attr(div, "class", "svelte-kp38k9");
     		},
     		m(target, anchor) {
     			insert(target, div, anchor);
@@ -994,15 +994,15 @@ var summaryengine = (function () {
     			t3 = space();
     			if_block.c();
     			attr(span0, "id", "summaryEngineRateGood");
-    			attr(span0, "class", "summaryengine-rate-icon svelte-l91exy");
+    			attr(span0, "class", "summaryengine-rate-icon svelte-1977rci");
     			toggle_class(span0, "summaryengine-rate-icon-selected", /*rating*/ ctx[1] === 1);
     			attr(span1, "id", "summaryEngineRateBad");
-    			attr(span1, "class", "summaryengine-rate-icon svelte-l91exy");
+    			attr(span1, "class", "summaryengine-rate-icon svelte-1977rci");
     			toggle_class(span1, "summaryengine-rate-icon-selected", /*rating*/ ctx[1] === -1);
     			attr(div0, "id", "summaryEngineRateIcons");
-    			attr(div0, "class", "svelte-l91exy");
+    			attr(div0, "class", "svelte-1977rci");
     			attr(div1, "id", "summaryEngineRate");
-    			attr(div1, "class", "svelte-l91exy");
+    			attr(div1, "class", "svelte-1977rci");
     		},
     		m(target, anchor) {
     			insert(target, div1, anchor);
@@ -1116,10 +1116,10 @@ var summaryengine = (function () {
     			div6 = element("div");
 
     			div6.innerHTML = `<div class="screen-reader-text">Loading...</div> 
-    <div class="summaryengine-spinner svelte-55i5mm"><div class="svelte-55i5mm"></div> 
-        <div class="svelte-55i5mm"></div> 
-        <div class="svelte-55i5mm"></div> 
-        <div class="svelte-55i5mm"></div></div>`;
+    <div class="summaryengine-spinner svelte-vk24ki"><div class="svelte-vk24ki"></div> 
+        <div class="svelte-vk24ki"></div> 
+        <div class="svelte-vk24ki"></div> 
+        <div class="svelte-vk24ki"></div></div>`;
 
     			attr(div6, "id", "summaryEngineMetaBlockLoading");
     		},
@@ -1339,7 +1339,7 @@ var summaryengine = (function () {
     			div1 = element("div");
     			div1.innerHTML = `<div class="summaryEngineSettings__header"><h2>Summary Engine Settings</h2></div>`;
     			attr(div1, "id", "summaryEngineSettings");
-    			attr(div1, "class", "svelte-1xxi5yx");
+    			attr(div1, "class", "svelte-156vzdz");
     		},
     		m(target, anchor) {
     			insert(target, div1, anchor);
@@ -1469,7 +1469,7 @@ var summaryengine = (function () {
     			attr(input0, "type", "text");
     			attr(input0, "name", "summaryengine_openai_prompt");
     			attr(input0, "id", "summaryengine_openai_prompt");
-    			attr(div0, "class", "summaryengine-settings-section svelte-1xxi5yx");
+    			attr(div0, "class", "summaryengine-settings-section svelte-156vzdz");
     			attr(label1, "for", "summaryengine_openai_model");
     			option0.__value = "text-davinci-002";
     			option0.value = option0.__value;
@@ -1481,14 +1481,14 @@ var summaryengine = (function () {
     			option3.value = option3.__value;
     			attr(select, "name", "summaryengine_openai_model");
     			if (/*$custom_settings*/ ctx[1].openai_model === void 0) add_render_callback(() => /*select_change_handler*/ ctx[5].call(select));
-    			attr(div1, "class", "summaryengine-settings-section svelte-1xxi5yx");
+    			attr(div1, "class", "summaryengine-settings-section svelte-156vzdz");
     			attr(label2, "for", "summaryengine_openai_max_tokens");
     			attr(input1, "type", "number");
     			attr(input1, "max", "1000");
     			attr(input1, "min", "0");
     			attr(input1, "name", "summaryengine_openai_max_tokens");
     			attr(input1, "id", "summaryengine_openai_max_tokens");
-    			attr(div2, "class", "summaryengine-settings-section svelte-1xxi5yx");
+    			attr(div2, "class", "summaryengine-settings-section svelte-156vzdz");
     			attr(label3, "for", "summaryengine_openai_temperature");
     			attr(input2, "type", "number");
     			attr(input2, "max", "1");
@@ -1496,7 +1496,7 @@ var summaryengine = (function () {
     			attr(input2, "step", "0.1");
     			attr(input2, "name", "summaryengine_openai_temperature");
     			attr(input2, "id", "summaryengine_openai_temperature");
-    			attr(div3, "class", "summaryengine-settings-section svelte-1xxi5yx");
+    			attr(div3, "class", "summaryengine-settings-section svelte-156vzdz");
     			attr(label4, "for", "summaryengine_openai_top_p");
     			attr(input3, "type", "number");
     			attr(input3, "max", "1");
@@ -1504,7 +1504,7 @@ var summaryengine = (function () {
     			attr(input3, "step", "0.1");
     			attr(input3, "name", "summaryengine_openai_top_p");
     			attr(input3, "id", "summaryengine_openai_top_p");
-    			attr(div4, "class", "summaryengine-settings-section svelte-1xxi5yx");
+    			attr(div4, "class", "summaryengine-settings-section svelte-156vzdz");
     			attr(label5, "for", "summaryengine_openai_frequency_penalty");
     			attr(input4, "type", "number");
     			attr(input4, "max", "1");
@@ -1512,7 +1512,7 @@ var summaryengine = (function () {
     			attr(input4, "step", "0.1");
     			attr(input4, "name", "summaryengine_openai_frequency_penalty");
     			attr(input4, "id", "summaryengine_openai_frequency_penalty");
-    			attr(div5, "class", "summaryengine-settings-section svelte-1xxi5yx");
+    			attr(div5, "class", "summaryengine-settings-section svelte-156vzdz");
     			attr(label6, "for", "summaryengine_openai_presence_penalty");
     			attr(input5, "type", "number");
     			attr(input5, "max", "1");
@@ -1520,9 +1520,9 @@ var summaryengine = (function () {
     			attr(input5, "step", "0.1");
     			attr(input5, "name", "summaryengine_openai_presence_penalty");
     			attr(input5, "id", "summaryengine_openai_presence_penalty");
-    			attr(div6, "class", "summaryengine-settings-section svelte-1xxi5yx");
+    			attr(div6, "class", "summaryengine-settings-section svelte-156vzdz");
     			attr(div7, "id", "summaryEngineSettingsContainer");
-    			attr(div7, "class", "svelte-1xxi5yx");
+    			attr(div7, "class", "svelte-156vzdz");
     		},
     		m(target, anchor) {
     			insert(target, div7, anchor);
@@ -1661,9 +1661,9 @@ var summaryengine = (function () {
     			t1 = space();
     			if (if_block1) if_block1.c();
     			if_block1_anchor = empty();
-    			attr(span, "class", "dashicons dashicons-admin-settings summaryengine-settings-icon svelte-1xxi5yx");
+    			attr(span, "class", "dashicons dashicons-admin-settings summaryengine-settings-icon svelte-156vzdz");
     			attr(div, "id", "summaryEngineSettingsHeaderContainer");
-    			attr(div, "class", "svelte-1xxi5yx");
+    			attr(div, "class", "svelte-156vzdz");
     		},
     		m(target, anchor) {
     			insert(target, div, anchor);
@@ -1930,9 +1930,9 @@ var summaryengine = (function () {
     			attr(textarea, "cols", "40");
     			attr(textarea, "name", "summaryengine_summary");
     			attr(textarea, "id", "summaryEngineSummary");
-    			attr(textarea, "class", "summaryengine-textarea svelte-tmklmc");
+    			attr(textarea, "class", "summaryengine-textarea svelte-r2uvfc");
     			attr(div0, "id", "summaryEngineMetaBlockSummariseButtonContainer");
-    			attr(div0, "class", "svelte-tmklmc");
+    			attr(div0, "class", "svelte-r2uvfc");
     			attr(div1, "id", "summaryEngineMetaBlock");
     		},
     		m(target, anchor) {
@@ -2076,13 +2076,9 @@ var summaryengine = (function () {
     	}
     }
 
-    // import "./summaryengine.scss";
-
     const app = new App({
         target: document.getElementById('summaryEngineApp'),
     });
-
-    // main();
 
     return app;
 

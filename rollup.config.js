@@ -77,20 +77,28 @@ if (test) {
 			]
 		},
 		{
-			input: "src/summaryengine-admin.js",
+			input: "src/summaryengine-reports.js",
 			output: [
 				{
 					sourcemap: true,
 					format: 'iife',
 					name: "summaryengine_admin",
-					file: "dist/summaryengine-admin.js"
+					file: "dist/summaryengine-reports.js"
 				},
 			],
 			plugins: [
+				svelte({
+					preprocess: preprocess(),
+					// emitCss: false,
+				}),
+				scss(),
+				css({ output: "summaryengine-reports.css" }),
 				nodeResolve({
 					browser: true,
 				}),
 				commonjs(),
+				typescript(),
+				json(),
 				!production && serve(),
 				production && terser() && strip()
 			]
