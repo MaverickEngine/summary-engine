@@ -32,6 +32,9 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= 0.4.0 =
+* Reporting
+
 = 0.3.0 =
 * Ability to customise the settings
 
