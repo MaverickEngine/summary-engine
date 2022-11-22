@@ -42,11 +42,11 @@ class SummaryEngineAdmin {
         var summaryengine_settings = {
             openai_model: '" . esc_js(get_option("summaryengine_openai_model"), "text-davinci-002") . "',
             openai_word_limit: " . intval(get_option("summaryengine_openai_word_limit", 750)) . ", 
-            openai_frequency_penalty: " . intval(get_option("summaryengine_openai_frequency_penalty", 0.5)) . ",
-            openai_max_tokens: " . intval(get_option("summaryengine_openai_max_tokens", 300)) . ",
-            openai_presence_penalty: " . intval(get_option("summaryengine_openai_presence_penalty", 0)) . ",
-            openai_temperature: " . intval(get_option("summaryengine_openai_temperature", 0.6)) . ",
-            openai_top_p: " . intval(get_option("summaryengine_openai_top_p", 1)) . ",
+            openai_frequency_penalty: " . floatval(get_option("summaryengine_openai_frequency_penalty", 0.5)) . ",
+            openai_max_tokens: " . floatval(get_option("summaryengine_openai_max_tokens", 300)) . ",
+            openai_presence_penalty: " . floatval(get_option("summaryengine_openai_presence_penalty", 0)) . ",
+            openai_temperature: " . floatval(get_option("summaryengine_openai_temperature", 0.6)) . ",
+            openai_top_p: " . floatval(get_option("summaryengine_openai_top_p", 1)) . ",
             openai_prompt: '" . esc_js(get_option("summaryengine_openai_prompt", "Summarize in 100 words: ")) . "'
         };    
         ", "before" );
