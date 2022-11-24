@@ -32,6 +32,9 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= 0.5.0 =
+* Customisable types
+
 = 0.4.1 =
 * Fix bug with floats being mistakenly converted to ints
 
