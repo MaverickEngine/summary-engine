@@ -10,9 +10,37 @@ class SummaryEngineDB {
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         $charset_collate = $wpdb->get_charset_collate();
 
+        // Create the summaryengine types table
+        $summaryengine_types_tablename = $wpdb->prefix . "summaryengine_types";
+        $summaryengine_types_sql = "CREATE TABLE $summaryengine_types_tablename (
+            ID mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            created_at datetime DEFAULT NOW() NOT NULL,
+            name varchar(100) NOT NULL,
+            slug varchar(100) NOT NULL,
+            summaryengine_openai_model varchar(100) NOT NULL DEFAULT 'text-curie-001',
+            summaryengine_openai_word_limit int(11) NOT NULL DEFAULT 750,
+            summaryengine_cut_at_paragraph tinyint(1) NOT NULL DEFAULT 1,
+            summaryengine_openai_frequency_penalty float NOT NULL DEFAULT 0.5,
+            summaryengine_openai_max_tokens int(11) NOT NULL DEFAULT 300,
+            summaryengine_openai_presence_penalty float NOT NULL DEFAULT 0,
+            summaryengine_openai_temperature float NOT NULL DEFAULT 0.6,
+            summaryengine_openai_top_p float NOT NULL DEFAULT 1,
+            summaryengine_openai_prompt varchar(100) NOT NULL DEFAULT 'Summarize in 100 words: ',
+            INDEX created_at (created_at),
+            UNIQUE KEY unique_name (name),
+            UNIQUE KEY unique_slug (slug)
+        ) $charset_collate;";
+        dbDelta( $summaryengine_types_sql );
+
+        // Insert the default types
+        $rows_affected = $wpdb->insert( $summaryengine_types_tablename, array( 'name' => 'Summary', 'slug' => 'summary', 'ID' => 1 ) );
+        dbDelta( $rows_affected );
+        
+        // Create the summaryengine summaries table
         $summaryengine_tests_tablename = $wpdb->prefix . "summaryengine_summaries";
         $summaryengine_tests_sql = "CREATE TABLE $summaryengine_tests_tablename (
             ID mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            type_id mediumint(9) NOT NULL DEFAULT 1,
             created_at datetime DEFAULT NOW() NOT NULL,
             post_id mediumint(9) NOT NULL,
             user_id mediumint(9) NOT NULL,
@@ -31,13 +59,15 @@ class SummaryEngineDB {
             openai_usage_prompt_tokens mediumint(9) NOT NULL,
             openai_usage_total_tokens mediumint(9) NOT NULL,
             rating int DEFAULT 0 NOT NULL,
+            INDEX type_id (type_id),
             INDEX post_id (post_id),
             INDEX user_id (user_id),
             INDEX created_at (created_at),
             INDEX post_id_created_at (post_id, created_at),
-            INDEX rating (rating)
+            INDEX rating (rating),
         ) $charset_collate;";
         dbDelta( $summaryengine_tests_sql );
+        
         update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
     }
 }

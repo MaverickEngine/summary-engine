@@ -1,4 +1,4 @@
-export function apiPost(path, data){
+export function apiPost(path, data) {
     return new Promise((resolve, reject) => {
         wp.apiRequest({
             path,
@@ -17,11 +17,29 @@ export function apiPost(path, data){
     });
 }
 
-export function apiGet(path){
+export function apiGet(path) {
     return new Promise((resolve, reject) => {
         wp.apiRequest({
             path,
             type: "GET",
+        })
+        .done(async (response) => {
+            if (response.error) {
+                reject(response);
+            }
+            resolve(response);
+        })
+        .fail(async (response) => {
+            reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+        });
+    });
+}
+
+export function apiDelete(path) {
+    return new Promise((resolve, reject) => {
+        wp.apiRequest({
+            path,
+            type: "DELETE",
         })
         .done(async (response) => {
             if (response.error) {

@@ -439,7 +439,7 @@ var summaryengine_admin = (function () {
         }
     }
 
-    function apiGet(path){
+    function apiGet(path) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,

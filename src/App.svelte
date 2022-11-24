@@ -8,7 +8,6 @@
     import Navigation from './components/Navigation.svelte';
     import Rate from './components/Rate.svelte';
     import GenerateSummary from './components/GenerateSummary.svelte';
-    import Settings from './components/Settings.svelte';
 
     const post_id = jQuery("#post_ID").val();
 
@@ -27,7 +26,6 @@
 
 <div id="summaryEngineMetaBlock">
     <input type="hidden" name="summaryengine_summary_id" id="summaryEngineSummaryId" value="<?php echo esc_attr(get_post_meta($post->ID, 'summaryengine_summary_id', -1)); ?>" />
-    <Settings />
     <label class="screen-reader-text" for="summary">Summary</label>
     <textarea rows="1" cols="40" name="summaryengine_summary" id="summaryEngineSummary" class="summaryengine-textarea" bind:value={$summary_text}></textarea>
     <div id="summaryEngineMetaBlockSummariseButtonContainer">
@@ -42,7 +40,7 @@
     </div>
 </div>
 
-<style lang="scss">
+<style>
     .summaryengine-textarea {
         height: 8em !important;
         width: 100%;
@@ -52,9 +50,5 @@
         display: flex;
         flex-direction: row;
         margin-top: 10px;
-    }
-
-    
-    
-    
+    }  
 </style>

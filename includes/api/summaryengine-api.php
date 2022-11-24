@@ -67,6 +67,39 @@ class SummaryEngineAPI {
                 return current_user_can( 'edit_others_posts' );
             }
         ));
+
+        register_rest_route('summaryengine/v1', '/types', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_types' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+
+        register_rest_route('summaryengine/v1', '/type/(?P<id>\d+)', array(
+            'methods' => 'POST',
+            'callback' => array( $this, 'post_type' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+
+        register_rest_route('summaryengine/v1', '/type/(?P<id>\d+)', array(
+            'methods' => 'DELETE',
+            'callback' => array( $this, 'delete_type' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+
+        register_rest_route('summaryengine/v1', '/type', array(
+            'methods' => 'POST',
+            'callback' => array( $this, 'post_type' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+        
     }
 
     protected function cut_at_paragraph($content, $wordcount) {
@@ -320,6 +353,118 @@ class SummaryEngineAPI {
         $start = $request->get_param('start') ?? gmdate('Y-m-d', strtotime('-30 days'));
         $end = $request->get_param('end') ?? gmdate('Y-m-d');
         return $this->summaries_by_period($start, $end);
+    }
+
+    public function get_types(WP_REST_Request $request) {
+        global $wpdb;
+        $results = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}summaryengine_types ORDER BY name ASC");
+        return $results;
+    }
+
+    public function post_type(WP_REST_Request $request) {
+        global $wpdb;
+        $id = intval($request->get_param('id'));
+        $name = $request->get_param('name');
+        $slug = $request->get_param('slug');
+        $summaryengine_openai_model = $request->get_param('summaryengine_openai_model');
+        $summaryengine_openai_word_limit = $request->get_param('summaryengine_openai_word_limit');
+        $summaryengine_cut_at_paragraph = $request->get_param('summaryengine_cut_at_paragraph');
+        $summaryengine_openai_frequency_penalty = $request->get_param('summaryengine_openai_frequency_penalty');
+        $summaryengine_openai_max_tokens = $request->get_param('summaryengine_openai_max_tokens');
+        $summaryengine_openai_presence_penalty = $request->get_param('summaryengine_openai_presence_penalty');
+        $summaryengine_openai_temperature = $request->get_param('summaryengine_openai_temperature');
+        $summaryengine_openai_top_p = $request->get_param('summaryengine_openai_top_p');
+        $summaryengine_openai_prompt = $request->get_param('summaryengine_openai_prompt');
+        $data = array(
+            'name' => $name,
+            'slug' => $slug,
+            'summaryengine_openai_model' => $summaryengine_openai_model,
+            'summaryengine_openai_word_limit' => $summaryengine_openai_word_limit,
+            'summaryengine_cut_at_paragraph' => $summaryengine_cut_at_paragraph,
+            'summaryengine_openai_frequency_penalty' => $summaryengine_openai_frequency_penalty,
+            'summaryengine_openai_max_tokens' => $summaryengine_openai_max_tokens,
+            'summaryengine_openai_presence_penalty' => $summaryengine_openai_presence_penalty,
+            'summaryengine_openai_temperature' => $summaryengine_openai_temperature,
+            'summaryengine_openai_top_p' => $summaryengine_openai_top_p,
+            'summaryengine_openai_prompt' => $summaryengine_openai_prompt,
+        );
+        $pattern = array(
+            '%s',
+            '%s',
+            '%s',
+            '%d',
+            '%d',
+            '%f',
+            '%d',
+            '%f',
+            '%f',
+            '%s',
+        );
+        if (!empty($id)) {
+            $name = $request->get_param('name');
+            $wpdb->update(
+                "{$wpdb->prefix}summaryengine_types",
+                $data,
+                array(
+                    'ID' => $id,
+                ),
+                $pattern,
+            );
+        } else {
+            $name = $request->get_param('name');
+            $wpdb->insert(
+                "{$wpdb->prefix}summaryengine_types",
+                $data,
+                $pattern,
+            );
+            $id = $wpdb->insert_id;
+        }
+        // Check for errors
+        if ($wpdb->last_error !== '') {
+            return new WP_Error( 'summaryengine_api_error', $wpdb->last_error, array( 'status' => 500 ) );
+        }
+        return array("success" => true, "id" => $id);
+    }
+
+    public function delete_type(WP_REST_Request $request) {
+        global $wpdb;
+        $id = intval($request->get_param('id'));
+        $wpdb->delete(
+            "{$wpdb->prefix}summaryengine_types",
+            array(
+                'ID' => $id,
+            ),
+        );
+        // Check for errors
+        if ($wpdb->last_error !== '') {
+            return new WP_Error( 'summaryengine_api_error', $wpdb->last_error, array( 'status' => 500 ) );
+        }
+        return array("success" => true);
+    }
+
+    public function get_articles(WP_REST_Request $request) {
+        $args = array(
+            'post_type' => 'post',
+            'post_status' => 'publish',
+            'posts_per_page' => 10,
+            'orderby' => 'date',
+            'order' => 'DESC',
+        );
+        $query = new WP_Query($args);
+        $posts = $query->get_posts();
+        $results = array();
+        foreach($posts as $post) {
+            $summary = get_post_meta($post->ID, 'summaryengine_summary', true);
+            $summary_id = get_post_meta($post->ID, 'summaryengine_summary_id', true);
+            $results[] = array(
+                "id" => $post->ID,
+                "title" => $post->post_title,
+                "permalink" => get_permalink($post->ID),
+                "summary" => $summary,
+                "summary_id" => $summary_id,
+            );
+        }
+        return $results;
     }
 
 }

@@ -33,7 +33,7 @@ class SummaryEngineAdminSettings {
     ];
     
     public function __construct() {
-        add_action('admin_menu', [ $this, 'settings_page' ]);
+        add_action('admin_menu', [ $this, 'settings_page' ], 30);
         add_action('admin_init', [ $this, 'register_settings' ]);
         add_action('admin_init', [ $this, 'set_defaults' ]);
     }
@@ -44,7 +44,7 @@ class SummaryEngineAdminSettings {
 			'SummaryEngine Settings',
 			'Settings',
 			'manage_options',
-			'summaryengine',
+			'summaryengine-settings',
 			[ $this, 'summaryengine_settings' ]
 		);
     }
@@ -53,7 +53,6 @@ class SummaryEngineAdminSettings {
         if (!current_user_can('manage_options')) {
             wp_die('You do not have sufficient permissions to access this page.');
         }
-        
         require_once plugin_dir_path( dirname( __FILE__ ) ).'admin/views/settings.php';
     }
 

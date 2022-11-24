@@ -5,8 +5,12 @@ class SummaryEngineAdmin {
     function __construct() {
         add_action('admin_menu', [ $this, 'menu' ]);
         add_action('admin_enqueue_scripts', [ $this, 'scripts' ]);
+        require_once('summaryengine-admin-review.php' );
+        new SummaryEngineReview();
         require_once('summaryengine-admin-settings.php' );
         new SummaryEngineAdminSettings();
+        require_once('summaryengine-admin-types.php' );
+        new SummaryEngineAdminTypes();
         require_once('summaryengine-admin-reports.php' );
         new SummaryEngineReports();
     }

@@ -27,6 +27,7 @@
                     <td>
                         <input type="number" name="summaryengine_rss_limit" value="<?php echo esc_attr( get_option('summaryengine_rss_limit') ); ?>" class="regular-text" />
                     </td>
+                </tr>
                 <tr>
                     <th scope="row"><?php _e("OpenAI API Key", "summaryengine") ?></th>
                     <td>

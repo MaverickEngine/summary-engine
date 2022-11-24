@@ -62,7 +62,6 @@ if (test) {
 			plugins: [
 				svelte({
 					preprocess: preprocess(),
-					// emitCss: false,
 				}),
 				scss(),
 				css({ output: "summaryengine.css" }),
@@ -76,6 +75,7 @@ if (test) {
 				production && terser() && strip()
 			]
 		},
+		// Reports
 		{
 			input: "src/summaryengine-reports.js",
 			output: [
@@ -89,10 +89,63 @@ if (test) {
 			plugins: [
 				svelte({
 					preprocess: preprocess(),
-					// emitCss: false,
 				}),
 				scss(),
 				css({ output: "summaryengine-reports.css" }),
+				nodeResolve({
+					browser: true,
+				}),
+				commonjs(),
+				typescript(),
+				json(),
+				!production && serve(),
+				production && terser() && strip()
+			]
+		},
+		// Review
+		{
+			input: "src/summaryengine-review.js",
+			output: [
+				{
+					sourcemap: true,
+					format: 'iife',
+					name: "summaryengine_review",
+					file: "dist/summaryengine-review.js"
+				},
+			],
+			plugins: [
+				svelte({
+					preprocess: preprocess(),
+				}),
+				scss(),
+				css({ output: "summaryengine-review.css" }),
+				nodeResolve({
+					browser: true,
+				}),
+				commonjs(),
+				typescript(),
+				json(),
+				!production && serve(),
+				production && terser() && strip()
+			]
+		},
+		// Types
+		{
+			input: "src/summaryengine-types.js",
+			output: [
+				{
+					sourcemap: true,
+					format: 'iife',
+					name: "summaryengine_types",
+					file: "dist/summaryengine-types.js"
+				},
+			],
+			plugins: [
+				svelte({
+					preprocess: preprocess(),
+				}),
+				scss(),
+				css({ output: "summaryengine-types.css" }),
 				nodeResolve({
 					browser: true,
 				}),

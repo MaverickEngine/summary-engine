@@ -1,8 +1,7 @@
-var summaryengine = (function () {
+var summaryengine = (function (exports) {
     'use strict';
 
     function noop() { }
-    const identity = x => x;
     function run(fn) {
         return fn();
     }
@@ -35,61 +34,8 @@ var summaryengine = (function () {
         store.set(value);
         return ret;
     }
-
-    const is_client = typeof window !== 'undefined';
-    let now = is_client
-        ? () => window.performance.now()
-        : () => Date.now();
-    let raf = is_client ? cb => requestAnimationFrame(cb) : noop;
-
-    const tasks = new Set();
-    function run_tasks(now) {
-        tasks.forEach(task => {
-            if (!task.c(now)) {
-                tasks.delete(task);
-                task.f();
-            }
-        });
-        if (tasks.size !== 0)
-            raf(run_tasks);
-    }
-    /**
-     * Creates a new task that runs on each raf frame
-     * until it returns a falsy value or is aborted
-     */
-    function loop(callback) {
-        let task;
-        if (tasks.size === 0)
-            raf(run_tasks);
-        return {
-            promise: new Promise(fulfill => {
-                tasks.add(task = { c: callback, f: fulfill });
-            }),
-            abort() {
-                tasks.delete(task);
-            }
-        };
-    }
     function append(target, node) {
         target.appendChild(node);
-    }
-    function get_root_for_style(node) {
-        if (!node)
-            return document;
-        const root = node.getRootNode ? node.getRootNode() : node.ownerDocument;
-        if (root && root.host) {
-            return root;
-        }
-        return node.ownerDocument;
-    }
-    function append_empty_stylesheet(node) {
-        const style_element = element('style');
-        append_stylesheet(get_root_for_style(node), style_element);
-        return style_element.sheet;
-    }
-    function append_stylesheet(node, style) {
-        append(node.head || node, style);
-        return style.sheet;
     }
     function insert(target, node, anchor) {
         target.insertBefore(node, anchor || null);
@@ -119,9 +65,6 @@ var summaryengine = (function () {
         else if (node.getAttribute(attribute) !== value)
             node.setAttribute(attribute, value);
     }
-    function to_number(value) {
-        return value === '' ? null : +value;
-    }
     function children(element) {
         return Array.from(element.childNodes);
     }
@@ -133,92 +76,8 @@ var summaryengine = (function () {
     function set_input_value(input, value) {
         input.value = value == null ? '' : value;
     }
-    function select_option(select, value) {
-        for (let i = 0; i < select.options.length; i += 1) {
-            const option = select.options[i];
-            if (option.__value === value) {
-                option.selected = true;
-                return;
-            }
-        }
-        select.selectedIndex = -1; // no option should be selected
-    }
-    function select_value(select) {
-        const selected_option = select.querySelector(':checked') || select.options[0];
-        return selected_option && selected_option.__value;
-    }
     function toggle_class(element, name, toggle) {
         element.classList[toggle ? 'add' : 'remove'](name);
-    }
-    function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
-        const e = document.createEvent('CustomEvent');
-        e.initCustomEvent(type, bubbles, cancelable, detail);
-        return e;
-    }
-
-    // we need to store the information for multiple documents because a Svelte application could also contain iframes
-    // https://github.com/sveltejs/svelte/issues/3624
-    const managed_styles = new Map();
-    let active = 0;
-    // https://github.com/darkskyapp/string-hash/blob/master/index.js
-    function hash(str) {
-        let hash = 5381;
-        let i = str.length;
-        while (i--)
-            hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
-        return hash >>> 0;
-    }
-    function create_style_information(doc, node) {
-        const info = { stylesheet: append_empty_stylesheet(node), rules: {} };
-        managed_styles.set(doc, info);
-        return info;
-    }
-    function create_rule(node, a, b, duration, delay, ease, fn, uid = 0) {
-        const step = 16.666 / duration;
-        let keyframes = '{\n';
-        for (let p = 0; p <= 1; p += step) {
-            const t = a + (b - a) * ease(p);
-            keyframes += p * 100 + `%{${fn(t, 1 - t)}}\n`;
-        }
-        const rule = keyframes + `100% {${fn(b, 1 - b)}}\n}`;
-        const name = `__svelte_${hash(rule)}_${uid}`;
-        const doc = get_root_for_style(node);
-        const { stylesheet, rules } = managed_styles.get(doc) || create_style_information(doc, node);
-        if (!rules[name]) {
-            rules[name] = true;
-            stylesheet.insertRule(`@keyframes ${name} ${rule}`, stylesheet.cssRules.length);
-        }
-        const animation = node.style.animation || '';
-        node.style.animation = `${animation ? `${animation}, ` : ''}${name} ${duration}ms linear ${delay}ms 1 both`;
-        active += 1;
-        return name;
-    }
-    function delete_rule(node, name) {
-        const previous = (node.style.animation || '').split(', ');
-        const next = previous.filter(name
-            ? anim => anim.indexOf(name) < 0 // remove specific animation
-            : anim => anim.indexOf('__svelte') === -1 // remove all Svelte animations
-        );
-        const deleted = previous.length - next.length;
-        if (deleted) {
-            node.style.animation = next.join(', ');
-            active -= deleted;
-            if (!active)
-                clear_rules();
-        }
-    }
-    function clear_rules() {
-        raf(() => {
-            if (active)
-                return;
-            managed_styles.forEach(info => {
-                const { ownerNode } = info.stylesheet;
-                // there is no ownerNode if it runs on jsdom.
-                if (ownerNode)
-                    detach(ownerNode);
-            });
-            managed_styles.clear();
-        });
     }
 
     let current_component;
@@ -324,20 +183,6 @@ var summaryengine = (function () {
             $$.after_update.forEach(add_render_callback);
         }
     }
-
-    let promise;
-    function wait() {
-        if (!promise) {
-            promise = Promise.resolve();
-            promise.then(() => {
-                promise = null;
-            });
-        }
-        return promise;
-    }
-    function dispatch(node, direction, kind) {
-        node.dispatchEvent(custom_event(`${direction ? 'intro' : 'outro'}${kind}`));
-    }
     const outroing = new Set();
     let outros;
     function group_outros() {
@@ -377,112 +222,6 @@ var summaryengine = (function () {
         else if (callback) {
             callback();
         }
-    }
-    const null_transition = { duration: 0 };
-    function create_bidirectional_transition(node, fn, params, intro) {
-        let config = fn(node, params);
-        let t = intro ? 0 : 1;
-        let running_program = null;
-        let pending_program = null;
-        let animation_name = null;
-        function clear_animation() {
-            if (animation_name)
-                delete_rule(node, animation_name);
-        }
-        function init(program, duration) {
-            const d = (program.b - t);
-            duration *= Math.abs(d);
-            return {
-                a: t,
-                b: program.b,
-                d,
-                duration,
-                start: program.start,
-                end: program.start + duration,
-                group: program.group
-            };
-        }
-        function go(b) {
-            const { delay = 0, duration = 300, easing = identity, tick = noop, css } = config || null_transition;
-            const program = {
-                start: now() + delay,
-                b
-            };
-            if (!b) {
-                // @ts-ignore todo: improve typings
-                program.group = outros;
-                outros.r += 1;
-            }
-            if (running_program || pending_program) {
-                pending_program = program;
-            }
-            else {
-                // if this is an intro, and there's a delay, we need to do
-                // an initial tick and/or apply CSS animation immediately
-                if (css) {
-                    clear_animation();
-                    animation_name = create_rule(node, t, b, duration, delay, easing, css);
-                }
-                if (b)
-                    tick(0, 1);
-                running_program = init(program, duration);
-                add_render_callback(() => dispatch(node, b, 'start'));
-                loop(now => {
-                    if (pending_program && now > pending_program.start) {
-                        running_program = init(pending_program, duration);
-                        pending_program = null;
-                        dispatch(node, running_program.b, 'start');
-                        if (css) {
-                            clear_animation();
-                            animation_name = create_rule(node, t, running_program.b, running_program.duration, 0, easing, config.css);
-                        }
-                    }
-                    if (running_program) {
-                        if (now >= running_program.end) {
-                            tick(t = running_program.b, 1 - t);
-                            dispatch(node, running_program.b, 'end');
-                            if (!pending_program) {
-                                // we're done
-                                if (running_program.b) {
-                                    // intro — we can tidy up immediately
-                                    clear_animation();
-                                }
-                                else {
-                                    // outro — needs to be coordinated
-                                    if (!--running_program.group.r)
-                                        run_all(running_program.group.c);
-                                }
-                            }
-                            running_program = null;
-                        }
-                        else if (now >= running_program.start) {
-                            const p = now - running_program.start;
-                            t = running_program.a + running_program.d * easing(p / running_program.duration);
-                            tick(t, 1 - t);
-                        }
-                    }
-                    return !!(running_program || pending_program);
-                });
-            }
-        }
-        return {
-            run(b) {
-                if (is_function(config)) {
-                    wait().then(() => {
-                        // @ts-ignore
-                        config = config();
-                        go(b);
-                    });
-                }
-                else {
-                    go(b);
-                }
-            },
-            end() {
-                clear_animation();
-                running_program = pending_program = null;
-            }
-        };
     }
     function create_component(block) {
         block && block.c();
@@ -674,7 +413,7 @@ var summaryengine = (function () {
     const submissions_left = writable(0);
     const custom_settings = writable(summaryengine_settings);
 
-    function apiPost(path, data){
+    function apiPost(path, data) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
@@ -693,7 +432,7 @@ var summaryengine = (function () {
         });
     }
 
-    function apiGet(path){
+    function apiGet(path) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
@@ -713,7 +452,7 @@ var summaryengine = (function () {
 
     /* src/components/SubmissionsLeft.svelte generated by Svelte v3.52.0 */
 
-    function create_fragment$5(ctx) {
+    function create_fragment$4(ctx) {
     	let div;
     	let span0;
     	let t0;
@@ -757,7 +496,7 @@ var summaryengine = (function () {
     	};
     }
 
-    function instance$5($$self, $$props, $$invalidate) {
+    function instance$4($$self, $$props, $$invalidate) {
     	let $summaries;
     	let $submissions_left;
     	component_subscribe($$self, summaries, $$value => $$invalidate(1, $summaries = $$value));
@@ -784,13 +523,13 @@ var summaryengine = (function () {
     class SubmissionsLeft extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$5, create_fragment$5, safe_not_equal, {});
+    		init(this, options, instance$4, create_fragment$4, safe_not_equal, {});
     	}
     }
 
     /* src/components/Navigation.svelte generated by Svelte v3.52.0 */
 
-    function create_fragment$4(ctx) {
+    function create_fragment$3(ctx) {
     	let div;
     	let button0;
     	let t0;
@@ -857,7 +596,7 @@ var summaryengine = (function () {
     	};
     }
 
-    function instance$4($$self, $$props, $$invalidate) {
+    function instance$3($$self, $$props, $$invalidate) {
     	let $summary_index;
     	let $summaries;
     	let $summary_text;
@@ -917,7 +656,7 @@ var summaryengine = (function () {
     class Navigation extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$4, create_fragment$4, safe_not_equal, { set_settings: 4 });
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, { set_settings: 4 });
     	}
 
     	get set_settings() {
@@ -946,7 +685,7 @@ var summaryengine = (function () {
     }
 
     // (30:4) {#if rated}
-    function create_if_block$3(ctx) {
+    function create_if_block$2(ctx) {
     	let div;
 
     	return {
@@ -964,7 +703,7 @@ var summaryengine = (function () {
     	};
     }
 
-    function create_fragment$3(ctx) {
+    function create_fragment$2(ctx) {
     	let div1;
     	let div0;
     	let span0;
@@ -975,7 +714,7 @@ var summaryengine = (function () {
     	let dispose;
 
     	function select_block_type(ctx, dirty) {
-    		if (/*rated*/ ctx[0]) return create_if_block$3;
+    		if (/*rated*/ ctx[0]) return create_if_block$2;
     		return create_else_block$1;
     	}
 
@@ -1052,7 +791,7 @@ var summaryengine = (function () {
     	};
     }
 
-    function instance$3($$self, $$props, $$invalidate) {
+    function instance$2($$self, $$props, $$invalidate) {
     	let $summary_index;
     	let $summaries;
     	let $summary_id;
@@ -1102,7 +841,7 @@ var summaryengine = (function () {
     class Rate extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$3, create_fragment$3, safe_not_equal, {});
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, {});
     	}
     }
 
@@ -1134,7 +873,7 @@ var summaryengine = (function () {
     }
 
     // (58:0) {#if !loading}
-    function create_if_block$2(ctx) {
+    function create_if_block$1(ctx) {
     	let button;
     	let t;
     	let button_disabled_value;
@@ -1172,11 +911,11 @@ var summaryengine = (function () {
     	};
     }
 
-    function create_fragment$2(ctx) {
+    function create_fragment$1(ctx) {
     	let if_block_anchor;
 
     	function select_block_type(ctx, dirty) {
-    		if (!/*loading*/ ctx[0]) return create_if_block$2;
+    		if (!/*loading*/ ctx[0]) return create_if_block$1;
     		return create_else_block;
     	}
 
@@ -1214,7 +953,7 @@ var summaryengine = (function () {
     	};
     }
 
-    function instance$2($$self, $$props, $$invalidate) {
+    function instance$1($$self, $$props, $$invalidate) {
     	let $summary_text;
     	let $summaries;
     	let $summary_index;
@@ -1292,526 +1031,6 @@ var summaryengine = (function () {
     class GenerateSummary extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, {});
-    	}
-    }
-
-    function cubicOut(t) {
-        const f = t - 1.0;
-        return f * f * f + 1.0;
-    }
-
-    function slide(node, { delay = 0, duration = 400, easing = cubicOut } = {}) {
-        const style = getComputedStyle(node);
-        const opacity = +style.opacity;
-        const height = parseFloat(style.height);
-        const padding_top = parseFloat(style.paddingTop);
-        const padding_bottom = parseFloat(style.paddingBottom);
-        const margin_top = parseFloat(style.marginTop);
-        const margin_bottom = parseFloat(style.marginBottom);
-        const border_top_width = parseFloat(style.borderTopWidth);
-        const border_bottom_width = parseFloat(style.borderBottomWidth);
-        return {
-            delay,
-            duration,
-            easing,
-            css: t => 'overflow: hidden;' +
-                `opacity: ${Math.min(t * 20, 1) * opacity};` +
-                `height: ${t * height}px;` +
-                `padding-top: ${t * padding_top}px;` +
-                `padding-bottom: ${t * padding_bottom}px;` +
-                `margin-top: ${t * margin_top}px;` +
-                `margin-bottom: ${t * margin_bottom}px;` +
-                `border-top-width: ${t * border_top_width}px;` +
-                `border-bottom-width: ${t * border_bottom_width}px;`
-        };
-    }
-
-    /* src/components/Settings.svelte generated by Svelte v3.52.0 */
-
-    function create_if_block_1$1(ctx) {
-    	let div1;
-    	let div1_transition;
-    	let current;
-
-    	return {
-    		c() {
-    			div1 = element("div");
-    			div1.innerHTML = `<div class="summaryEngineSettings__header"><h2>Summary Engine Settings</h2></div>`;
-    			attr(div1, "id", "summaryEngineSettings");
-    			attr(div1, "class", "svelte-156vzdz");
-    		},
-    		m(target, anchor) {
-    			insert(target, div1, anchor);
-    			current = true;
-    		},
-    		i(local) {
-    			if (current) return;
-
-    			add_render_callback(() => {
-    				if (!div1_transition) div1_transition = create_bidirectional_transition(div1, slide, {}, true);
-    				div1_transition.run(1);
-    			});
-
-    			current = true;
-    		},
-    		o(local) {
-    			if (!div1_transition) div1_transition = create_bidirectional_transition(div1, slide, {}, false);
-    			div1_transition.run(0);
-    			current = false;
-    		},
-    		d(detaching) {
-    			if (detaching) detach(div1);
-    			if (detaching && div1_transition) div1_transition.end();
-    		}
-    	};
-    }
-
-    // (18:0) {#if (show_settings)}
-    function create_if_block$1(ctx) {
-    	let div7;
-    	let div0;
-    	let label0;
-    	let t1;
-    	let input0;
-    	let t2;
-    	let div1;
-    	let label1;
-    	let t4;
-    	let select;
-    	let option0;
-    	let option1;
-    	let option2;
-    	let option3;
-    	let t9;
-    	let div2;
-    	let label2;
-    	let t11;
-    	let input1;
-    	let t12;
-    	let div3;
-    	let label3;
-    	let t14;
-    	let input2;
-    	let t15;
-    	let div4;
-    	let label4;
-    	let t17;
-    	let input3;
-    	let t18;
-    	let div5;
-    	let label5;
-    	let t20;
-    	let input4;
-    	let t21;
-    	let div6;
-    	let label6;
-    	let t23;
-    	let input5;
-    	let div7_transition;
-    	let current;
-    	let mounted;
-    	let dispose;
-
-    	return {
-    		c() {
-    			div7 = element("div");
-    			div0 = element("div");
-    			label0 = element("label");
-    			label0.textContent = "Custom Prompt";
-    			t1 = space();
-    			input0 = element("input");
-    			t2 = space();
-    			div1 = element("div");
-    			label1 = element("label");
-    			label1.textContent = "OpenAI Model";
-    			t4 = space();
-    			select = element("select");
-    			option0 = element("option");
-    			option0.textContent = "Text-Davinci-002";
-    			option1 = element("option");
-    			option1.textContent = "Text-Curie-001";
-    			option2 = element("option");
-    			option2.textContent = "Text-Babbage-001";
-    			option3 = element("option");
-    			option3.textContent = "Text-Ada-001";
-    			t9 = space();
-    			div2 = element("div");
-    			label2 = element("label");
-    			label2.textContent = "Max Tokens";
-    			t11 = space();
-    			input1 = element("input");
-    			t12 = space();
-    			div3 = element("div");
-    			label3 = element("label");
-    			label3.textContent = "Temperature";
-    			t14 = space();
-    			input2 = element("input");
-    			t15 = space();
-    			div4 = element("div");
-    			label4 = element("label");
-    			label4.textContent = "Top-P";
-    			t17 = space();
-    			input3 = element("input");
-    			t18 = space();
-    			div5 = element("div");
-    			label5 = element("label");
-    			label5.textContent = "Frequency Penalty";
-    			t20 = space();
-    			input4 = element("input");
-    			t21 = space();
-    			div6 = element("div");
-    			label6 = element("label");
-    			label6.textContent = "Presence Penalty";
-    			t23 = space();
-    			input5 = element("input");
-    			attr(label0, "for", "summaryengine_openai_prompt");
-    			attr(input0, "type", "text");
-    			attr(input0, "name", "summaryengine_openai_prompt");
-    			attr(input0, "id", "summaryengine_openai_prompt");
-    			attr(div0, "class", "summaryengine-settings-section svelte-156vzdz");
-    			attr(label1, "for", "summaryengine_openai_model");
-    			option0.__value = "text-davinci-002";
-    			option0.value = option0.__value;
-    			option1.__value = "text-curie-001";
-    			option1.value = option1.__value;
-    			option2.__value = "text-babbage-001";
-    			option2.value = option2.__value;
-    			option3.__value = "text-ada-001";
-    			option3.value = option3.__value;
-    			attr(select, "name", "summaryengine_openai_model");
-    			if (/*$custom_settings*/ ctx[1].openai_model === void 0) add_render_callback(() => /*select_change_handler*/ ctx[5].call(select));
-    			attr(div1, "class", "summaryengine-settings-section svelte-156vzdz");
-    			attr(label2, "for", "summaryengine_openai_max_tokens");
-    			attr(input1, "type", "number");
-    			attr(input1, "max", "1000");
-    			attr(input1, "min", "0");
-    			attr(input1, "name", "summaryengine_openai_max_tokens");
-    			attr(input1, "id", "summaryengine_openai_max_tokens");
-    			attr(div2, "class", "summaryengine-settings-section svelte-156vzdz");
-    			attr(label3, "for", "summaryengine_openai_temperature");
-    			attr(input2, "type", "number");
-    			attr(input2, "max", "1");
-    			attr(input2, "min", "0");
-    			attr(input2, "step", "0.1");
-    			attr(input2, "name", "summaryengine_openai_temperature");
-    			attr(input2, "id", "summaryengine_openai_temperature");
-    			attr(div3, "class", "summaryengine-settings-section svelte-156vzdz");
-    			attr(label4, "for", "summaryengine_openai_top_p");
-    			attr(input3, "type", "number");
-    			attr(input3, "max", "1");
-    			attr(input3, "min", "0");
-    			attr(input3, "step", "0.1");
-    			attr(input3, "name", "summaryengine_openai_top_p");
-    			attr(input3, "id", "summaryengine_openai_top_p");
-    			attr(div4, "class", "summaryengine-settings-section svelte-156vzdz");
-    			attr(label5, "for", "summaryengine_openai_frequency_penalty");
-    			attr(input4, "type", "number");
-    			attr(input4, "max", "1");
-    			attr(input4, "min", "0");
-    			attr(input4, "step", "0.1");
-    			attr(input4, "name", "summaryengine_openai_frequency_penalty");
-    			attr(input4, "id", "summaryengine_openai_frequency_penalty");
-    			attr(div5, "class", "summaryengine-settings-section svelte-156vzdz");
-    			attr(label6, "for", "summaryengine_openai_presence_penalty");
-    			attr(input5, "type", "number");
-    			attr(input5, "max", "1");
-    			attr(input5, "min", "0");
-    			attr(input5, "step", "0.1");
-    			attr(input5, "name", "summaryengine_openai_presence_penalty");
-    			attr(input5, "id", "summaryengine_openai_presence_penalty");
-    			attr(div6, "class", "summaryengine-settings-section svelte-156vzdz");
-    			attr(div7, "id", "summaryEngineSettingsContainer");
-    			attr(div7, "class", "svelte-156vzdz");
-    		},
-    		m(target, anchor) {
-    			insert(target, div7, anchor);
-    			append(div7, div0);
-    			append(div0, label0);
-    			append(div0, t1);
-    			append(div0, input0);
-    			set_input_value(input0, /*$custom_settings*/ ctx[1].openai_prompt);
-    			append(div7, t2);
-    			append(div7, div1);
-    			append(div1, label1);
-    			append(div1, t4);
-    			append(div1, select);
-    			append(select, option0);
-    			append(select, option1);
-    			append(select, option2);
-    			append(select, option3);
-    			select_option(select, /*$custom_settings*/ ctx[1].openai_model);
-    			append(div7, t9);
-    			append(div7, div2);
-    			append(div2, label2);
-    			append(div2, t11);
-    			append(div2, input1);
-    			set_input_value(input1, /*$custom_settings*/ ctx[1].openai_max_tokens);
-    			append(div7, t12);
-    			append(div7, div3);
-    			append(div3, label3);
-    			append(div3, t14);
-    			append(div3, input2);
-    			set_input_value(input2, /*$custom_settings*/ ctx[1].openai_temperature);
-    			append(div7, t15);
-    			append(div7, div4);
-    			append(div4, label4);
-    			append(div4, t17);
-    			append(div4, input3);
-    			set_input_value(input3, /*$custom_settings*/ ctx[1].openai_top_p);
-    			append(div7, t18);
-    			append(div7, div5);
-    			append(div5, label5);
-    			append(div5, t20);
-    			append(div5, input4);
-    			set_input_value(input4, /*$custom_settings*/ ctx[1].openai_frequency_penalty);
-    			append(div7, t21);
-    			append(div7, div6);
-    			append(div6, label6);
-    			append(div6, t23);
-    			append(div6, input5);
-    			set_input_value(input5, /*$custom_settings*/ ctx[1].openai_presence_penalty);
-    			current = true;
-
-    			if (!mounted) {
-    				dispose = [
-    					listen(input0, "input", /*input0_input_handler*/ ctx[4]),
-    					listen(select, "change", /*select_change_handler*/ ctx[5]),
-    					listen(input1, "input", /*input1_input_handler*/ ctx[6]),
-    					listen(input2, "input", /*input2_input_handler*/ ctx[7]),
-    					listen(input3, "input", /*input3_input_handler*/ ctx[8]),
-    					listen(input4, "input", /*input4_input_handler*/ ctx[9]),
-    					listen(input5, "input", /*input5_input_handler*/ ctx[10])
-    				];
-
-    				mounted = true;
-    			}
-    		},
-    		p(ctx, dirty) {
-    			if (dirty & /*$custom_settings*/ 2 && input0.value !== /*$custom_settings*/ ctx[1].openai_prompt) {
-    				set_input_value(input0, /*$custom_settings*/ ctx[1].openai_prompt);
-    			}
-
-    			if (dirty & /*$custom_settings*/ 2) {
-    				select_option(select, /*$custom_settings*/ ctx[1].openai_model);
-    			}
-
-    			if (dirty & /*$custom_settings*/ 2 && to_number(input1.value) !== /*$custom_settings*/ ctx[1].openai_max_tokens) {
-    				set_input_value(input1, /*$custom_settings*/ ctx[1].openai_max_tokens);
-    			}
-
-    			if (dirty & /*$custom_settings*/ 2 && to_number(input2.value) !== /*$custom_settings*/ ctx[1].openai_temperature) {
-    				set_input_value(input2, /*$custom_settings*/ ctx[1].openai_temperature);
-    			}
-
-    			if (dirty & /*$custom_settings*/ 2 && to_number(input3.value) !== /*$custom_settings*/ ctx[1].openai_top_p) {
-    				set_input_value(input3, /*$custom_settings*/ ctx[1].openai_top_p);
-    			}
-
-    			if (dirty & /*$custom_settings*/ 2 && to_number(input4.value) !== /*$custom_settings*/ ctx[1].openai_frequency_penalty) {
-    				set_input_value(input4, /*$custom_settings*/ ctx[1].openai_frequency_penalty);
-    			}
-
-    			if (dirty & /*$custom_settings*/ 2 && to_number(input5.value) !== /*$custom_settings*/ ctx[1].openai_presence_penalty) {
-    				set_input_value(input5, /*$custom_settings*/ ctx[1].openai_presence_penalty);
-    			}
-    		},
-    		i(local) {
-    			if (current) return;
-
-    			add_render_callback(() => {
-    				if (!div7_transition) div7_transition = create_bidirectional_transition(div7, slide, {}, true);
-    				div7_transition.run(1);
-    			});
-
-    			current = true;
-    		},
-    		o(local) {
-    			if (!div7_transition) div7_transition = create_bidirectional_transition(div7, slide, {}, false);
-    			div7_transition.run(0);
-    			current = false;
-    		},
-    		d(detaching) {
-    			if (detaching) detach(div7);
-    			if (detaching && div7_transition) div7_transition.end();
-    			mounted = false;
-    			run_all(dispose);
-    		}
-    	};
-    }
-
-    function create_fragment$1(ctx) {
-    	let div;
-    	let t0;
-    	let span;
-    	let t1;
-    	let if_block1_anchor;
-    	let current;
-    	let mounted;
-    	let dispose;
-    	let if_block0 = /*show_settings*/ ctx[0] && create_if_block_1$1();
-    	let if_block1 = /*show_settings*/ ctx[0] && create_if_block$1(ctx);
-
-    	return {
-    		c() {
-    			div = element("div");
-    			if (if_block0) if_block0.c();
-    			t0 = space();
-    			span = element("span");
-    			t1 = space();
-    			if (if_block1) if_block1.c();
-    			if_block1_anchor = empty();
-    			attr(span, "class", "dashicons dashicons-admin-settings summaryengine-settings-icon svelte-156vzdz");
-    			attr(div, "id", "summaryEngineSettingsHeaderContainer");
-    			attr(div, "class", "svelte-156vzdz");
-    		},
-    		m(target, anchor) {
-    			insert(target, div, anchor);
-    			if (if_block0) if_block0.m(div, null);
-    			append(div, t0);
-    			append(div, span);
-    			insert(target, t1, anchor);
-    			if (if_block1) if_block1.m(target, anchor);
-    			insert(target, if_block1_anchor, anchor);
-    			current = true;
-
-    			if (!mounted) {
-    				dispose = [
-    					listen(span, "click", /*click_handler*/ ctx[2]),
-    					listen(span, "keypress", /*keypress_handler*/ ctx[3])
-    				];
-
-    				mounted = true;
-    			}
-    		},
-    		p(ctx, [dirty]) {
-    			if (/*show_settings*/ ctx[0]) {
-    				if (if_block0) {
-    					if (dirty & /*show_settings*/ 1) {
-    						transition_in(if_block0, 1);
-    					}
-    				} else {
-    					if_block0 = create_if_block_1$1();
-    					if_block0.c();
-    					transition_in(if_block0, 1);
-    					if_block0.m(div, t0);
-    				}
-    			} else if (if_block0) {
-    				group_outros();
-
-    				transition_out(if_block0, 1, 1, () => {
-    					if_block0 = null;
-    				});
-
-    				check_outros();
-    			}
-
-    			if (/*show_settings*/ ctx[0]) {
-    				if (if_block1) {
-    					if_block1.p(ctx, dirty);
-
-    					if (dirty & /*show_settings*/ 1) {
-    						transition_in(if_block1, 1);
-    					}
-    				} else {
-    					if_block1 = create_if_block$1(ctx);
-    					if_block1.c();
-    					transition_in(if_block1, 1);
-    					if_block1.m(if_block1_anchor.parentNode, if_block1_anchor);
-    				}
-    			} else if (if_block1) {
-    				group_outros();
-
-    				transition_out(if_block1, 1, 1, () => {
-    					if_block1 = null;
-    				});
-
-    				check_outros();
-    			}
-    		},
-    		i(local) {
-    			if (current) return;
-    			transition_in(if_block0);
-    			transition_in(if_block1);
-    			current = true;
-    		},
-    		o(local) {
-    			transition_out(if_block0);
-    			transition_out(if_block1);
-    			current = false;
-    		},
-    		d(detaching) {
-    			if (detaching) detach(div);
-    			if (if_block0) if_block0.d();
-    			if (detaching) detach(t1);
-    			if (if_block1) if_block1.d(detaching);
-    			if (detaching) detach(if_block1_anchor);
-    			mounted = false;
-    			run_all(dispose);
-    		}
-    	};
-    }
-
-    function instance$1($$self, $$props, $$invalidate) {
-    	let $custom_settings;
-    	component_subscribe($$self, custom_settings, $$value => $$invalidate(1, $custom_settings = $$value));
-    	let show_settings = false;
-    	const click_handler = () => $$invalidate(0, show_settings = !show_settings);
-    	const keypress_handler = () => $$invalidate(0, show_settings = !show_settings);
-
-    	function input0_input_handler() {
-    		$custom_settings.openai_prompt = this.value;
-    		custom_settings.set($custom_settings);
-    	}
-
-    	function select_change_handler() {
-    		$custom_settings.openai_model = select_value(this);
-    		custom_settings.set($custom_settings);
-    	}
-
-    	function input1_input_handler() {
-    		$custom_settings.openai_max_tokens = to_number(this.value);
-    		custom_settings.set($custom_settings);
-    	}
-
-    	function input2_input_handler() {
-    		$custom_settings.openai_temperature = to_number(this.value);
-    		custom_settings.set($custom_settings);
-    	}
-
-    	function input3_input_handler() {
-    		$custom_settings.openai_top_p = to_number(this.value);
-    		custom_settings.set($custom_settings);
-    	}
-
-    	function input4_input_handler() {
-    		$custom_settings.openai_frequency_penalty = to_number(this.value);
-    		custom_settings.set($custom_settings);
-    	}
-
-    	function input5_input_handler() {
-    		$custom_settings.openai_presence_penalty = to_number(this.value);
-    		custom_settings.set($custom_settings);
-    	}
-
-    	return [
-    		show_settings,
-    		$custom_settings,
-    		click_handler,
-    		keypress_handler,
-    		input0_input_handler,
-    		select_change_handler,
-    		input1_input_handler,
-    		input2_input_handler,
-    		input3_input_handler,
-    		input4_input_handler,
-    		input5_input_handler
-    	];
-    }
-
-    class Settings extends SvelteComponent {
-    	constructor(options) {
-    		super();
     		init(this, options, instance$1, create_fragment$1, safe_not_equal, {});
     	}
     }
@@ -1846,7 +1065,7 @@ var summaryengine = (function () {
     	};
     }
 
-    // (39:8) {#if $summary_id > 0}
+    // (37:8) {#if $summary_id > 0}
     function create_if_block(ctx) {
     	let rate;
     	let current;
@@ -1879,22 +1098,19 @@ var summaryengine = (function () {
     	let div1;
     	let input;
     	let t0;
-    	let settings;
-    	let t1;
     	let label;
-    	let t3;
+    	let t2;
     	let textarea;
-    	let t4;
+    	let t3;
     	let div0;
     	let generatesummary;
-    	let t5;
+    	let t4;
     	let submissionsleft;
+    	let t5;
     	let t6;
-    	let t7;
     	let current;
     	let mounted;
     	let dispose;
-    	settings = new Settings({});
     	generatesummary = new GenerateSummary({});
     	submissionsleft = new SubmissionsLeft({});
     	let if_block0 = /*$summaries*/ ctx[1].length > 1 && create_if_block_1();
@@ -1905,20 +1121,18 @@ var summaryengine = (function () {
     			div1 = element("div");
     			input = element("input");
     			t0 = space();
-    			create_component(settings.$$.fragment);
-    			t1 = space();
     			label = element("label");
     			label.textContent = "Summary";
-    			t3 = space();
+    			t2 = space();
     			textarea = element("textarea");
-    			t4 = space();
+    			t3 = space();
     			div0 = element("div");
     			create_component(generatesummary.$$.fragment);
-    			t5 = space();
+    			t4 = space();
     			create_component(submissionsleft.$$.fragment);
-    			t6 = space();
+    			t5 = space();
     			if (if_block0) if_block0.c();
-    			t7 = space();
+    			t6 = space();
     			if (if_block1) if_block1.c();
     			attr(input, "type", "hidden");
     			attr(input, "name", "summaryengine_summary_id");
@@ -1930,29 +1144,27 @@ var summaryengine = (function () {
     			attr(textarea, "cols", "40");
     			attr(textarea, "name", "summaryengine_summary");
     			attr(textarea, "id", "summaryEngineSummary");
-    			attr(textarea, "class", "summaryengine-textarea svelte-r2uvfc");
+    			attr(textarea, "class", "summaryengine-textarea svelte-gd1r9m");
     			attr(div0, "id", "summaryEngineMetaBlockSummariseButtonContainer");
-    			attr(div0, "class", "svelte-r2uvfc");
+    			attr(div0, "class", "svelte-gd1r9m");
     			attr(div1, "id", "summaryEngineMetaBlock");
     		},
     		m(target, anchor) {
     			insert(target, div1, anchor);
     			append(div1, input);
     			append(div1, t0);
-    			mount_component(settings, div1, null);
-    			append(div1, t1);
     			append(div1, label);
-    			append(div1, t3);
+    			append(div1, t2);
     			append(div1, textarea);
     			set_input_value(textarea, /*$summary_text*/ ctx[2]);
-    			append(div1, t4);
+    			append(div1, t3);
     			append(div1, div0);
     			mount_component(generatesummary, div0, null);
-    			append(div0, t5);
+    			append(div0, t4);
     			mount_component(submissionsleft, div0, null);
-    			append(div0, t6);
+    			append(div0, t5);
     			if (if_block0) if_block0.m(div0, null);
-    			append(div0, t7);
+    			append(div0, t6);
     			if (if_block1) if_block1.m(div0, null);
     			current = true;
 
@@ -1975,7 +1187,7 @@ var summaryengine = (function () {
     					if_block0 = create_if_block_1();
     					if_block0.c();
     					transition_in(if_block0, 1);
-    					if_block0.m(div0, t7);
+    					if_block0.m(div0, t6);
     				}
     			} else if (if_block0) {
     				group_outros();
@@ -2010,7 +1222,6 @@ var summaryengine = (function () {
     		},
     		i(local) {
     			if (current) return;
-    			transition_in(settings.$$.fragment, local);
     			transition_in(generatesummary.$$.fragment, local);
     			transition_in(submissionsleft.$$.fragment, local);
     			transition_in(if_block0);
@@ -2018,7 +1229,6 @@ var summaryengine = (function () {
     			current = true;
     		},
     		o(local) {
-    			transition_out(settings.$$.fragment, local);
     			transition_out(generatesummary.$$.fragment, local);
     			transition_out(submissionsleft.$$.fragment, local);
     			transition_out(if_block0);
@@ -2027,7 +1237,6 @@ var summaryengine = (function () {
     		},
     		d(detaching) {
     			if (detaching) detach(div1);
-    			destroy_component(settings);
     			destroy_component(generatesummary);
     			destroy_component(submissionsleft);
     			if (if_block0) if_block0.d();
@@ -2080,7 +1289,11 @@ var summaryengine = (function () {
         target: document.getElementById('summaryEngineApp'),
     });
 
-    return app;
+    exports.app = app;
 
-})();
+    Object.defineProperty(exports, '__esModule', { value: true });
+
+    return exports;
+
+})({});
 //# sourceMappingURL=summaryengine.js.map
