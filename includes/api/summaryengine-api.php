@@ -16,7 +16,8 @@ class SummaryEngineAPI {
             'permission_callback' => function () {
                 return current_user_can( 'edit_others_posts' );
             }
-        ) );
+        ));
+
         register_rest_route('summaryengine/v1', '/post/(?P<id>\d+)', array(
             'methods' => 'GET',
             'callback' => array( $this, 'get_post_summaries' ),
@@ -47,7 +48,7 @@ class SummaryEngineAPI {
         ));
         register_rest_route('summaryengine/v1', '/summary/(?P<id>\d+)', array(
             'methods' => 'GET',
-            'callback' => array( $this, 'get_summary' ),
+            'callback' => array( $this, 'get_post_summary' ),
             'permission_callback' => function () {
                 return current_user_can( 'edit_others_posts' );
             }
@@ -100,6 +101,29 @@ class SummaryEngineAPI {
             }
         ));
         
+        register_rest_route('summaryengine/v1', '/posts', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_posts' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+
+        register_rest_route('summaryengine/v1', '/posts_count', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_posts_count' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+
+        register_rest_route('summaryengine/v1', '/post_months', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_post_months' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
     }
 
     protected function cut_at_paragraph($content, $wordcount) {
@@ -133,10 +157,11 @@ class SummaryEngineAPI {
         return $summary;
     }
 
-    protected function save_results($post_id, $content, $original_prompt, $params, $summary_result) {
+    protected function save_results($post_id, $type_id, $content, $original_prompt, $params, $summary_result) {
         global $wpdb;
         $data = array(
             'post_id' => $post_id,
+            'type_id' => $type_id,
             'user_id' => get_current_user_id(),
             'submitted_text' => $content,
             'summary' => trim($summary_result['choices'][0]['text']),
@@ -157,6 +182,7 @@ class SummaryEngineAPI {
             $this->table_name,
             $data,
             array(
+                '%d',
                 '%d',
                 '%d',
                 '%s',
@@ -202,9 +228,43 @@ class SummaryEngineAPI {
     public function post_summarise(WP_REST_Request $request) {
         global $wpdb;
         try {
-            $content = strip_tags($request->get_param('content'));
             $post_id = intval($request->get_param('post_id'));
-            $settings = json_decode($request->get_param('settings'), true);
+            if (empty($post_id)) {
+                throw new Exception("Post ID is empty");
+            }
+            if (empty($request->get_param('content'))) {
+                // Get content from post
+                $post = get_post($post_id);
+                $content = strip_tags($post->post_content);
+            } else {
+                $content = strip_tags($request->get_param('content'));
+            }
+            $type_id = $request->get_param('type_id');
+            if (empty($type_id)) {
+                throw new Exception("Type ID is empty");
+            }
+            $type = $this->_get_type($type_id);
+            $type_settings = [
+                'openai_model' => $type->openai_model,
+                'openai_prompt' => $type->openai_prompt,
+                'openai_max_tokens' => $type->openai_max_tokens,
+                'openai_temperature' => $type->openai_temperature,
+                'openai_top_p' => $type->openai_top_p,
+                'openai_frequency_penalty' => $type->openai_frequency_penalty,
+                'openai_presence_penalty' => $type->openai_presence_penalty,
+            ];
+            // print_r($type);
+            $user_settings = json_decode($request->get_param('settings'), true);
+            if (empty($user_settings)) {
+                $user_settings = [];
+            }
+            $settings = array_merge($type_settings, $user_settings);
+            // print_r("type_settings");
+            // print_r($type_settings);
+            // print_r("user_settings");
+            // print_r($user_settings);
+            // print_r("settings");
+            // print_r($settings);
             // Make sure we still have submissions left
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
@@ -228,6 +288,7 @@ class SummaryEngineAPI {
             }
             $openapi = new OpenAPI(get_option('summaryengine_openai_apikey'));
             $original_prompt =  $settings["openai_prompt"] ?? get_option('summaryengine_openai_prompt');
+            // print_r($original_prompt);
             $params = array(
                 'model' => get_option( 'summaryengine_openai_model'),
                 'frequency_penalty' => floatval(get_option( 'summaryengine_openai_frequency_penalty')),
@@ -255,12 +316,13 @@ class SummaryEngineAPI {
             if (isset($settings["openai_top_p"])) {
                 $params['top_p'] = floatval($settings["openai_top_p"]);
             }
+            // print_r($params);
             $summary = $openapi->summarise($content, $params);
             if (empty($summary)) throw new Exception("Response from OpenAI is empty");
-            $result = $this->save_results($post_id, $content, $original_prompt, $params, $summary);
+            $result = $this->save_results($post_id, $type_id, $content, $original_prompt, $params, $summary);
             // Set meta data for post
-            update_post_meta($post_id, 'summaryengine_summary', trim($result['summary']));
-            update_post_meta($post_id, 'summaryengine_summary_id', $result['ID']);
+            update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
+            update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
             return $result;
         } catch (Exception $e) {
             return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content: ' . $e->getMessage(), 'summaryengine' ), array( 'status' => 500 ) );
@@ -305,7 +367,19 @@ class SummaryEngineAPI {
         return array("success" => true);
     }
 
-    public function get_summary(WP_REST_Request $request) {
+    protected function _get_summary($id) {
+        global $wpdb;
+        $summary = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE ID = %d",
+            $id
+        ));
+        if (empty($summary)) {
+            return new WP_Error( 'summaryengine_summary_not_found', __( 'Summary not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
+        return $summary;
+    }
+
+    public function get_post_summary(WP_REST_Request $request) {
         $post_id = $request->get_param('id');
         $summary = get_post_meta($post_id, 'summaryengine_summary', true);
         $summary_id = get_post_meta($post_id, 'summaryengine_summary_id', true);
@@ -355,6 +429,18 @@ class SummaryEngineAPI {
         return $this->summaries_by_period($start, $end);
     }
 
+    protected function _get_type($id) {
+        global $wpdb;
+        $type = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE ID = %d",
+            $id
+        ));
+        if (empty($type)) {
+            return new WP_Error( 'summaryengine_type_not_found', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
+        return $type;
+    }
+
     public function get_types(WP_REST_Request $request) {
         global $wpdb;
         $results = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}summaryengine_types ORDER BY name ASC");
@@ -366,27 +452,27 @@ class SummaryEngineAPI {
         $id = intval($request->get_param('id'));
         $name = $request->get_param('name');
         $slug = $request->get_param('slug');
-        $summaryengine_openai_model = $request->get_param('summaryengine_openai_model');
-        $summaryengine_openai_word_limit = $request->get_param('summaryengine_openai_word_limit');
-        $summaryengine_cut_at_paragraph = $request->get_param('summaryengine_cut_at_paragraph');
-        $summaryengine_openai_frequency_penalty = $request->get_param('summaryengine_openai_frequency_penalty');
-        $summaryengine_openai_max_tokens = $request->get_param('summaryengine_openai_max_tokens');
-        $summaryengine_openai_presence_penalty = $request->get_param('summaryengine_openai_presence_penalty');
-        $summaryengine_openai_temperature = $request->get_param('summaryengine_openai_temperature');
-        $summaryengine_openai_top_p = $request->get_param('summaryengine_openai_top_p');
-        $summaryengine_openai_prompt = $request->get_param('summaryengine_openai_prompt');
+        $openai_model = $request->get_param('openai_model');
+        $openai_word_limit = $request->get_param('openai_word_limit');
+        $cut_at_paragraph = $request->get_param('cut_at_paragraph');
+        $openai_frequency_penalty = $request->get_param('openai_frequency_penalty');
+        $openai_max_tokens = $request->get_param('openai_max_tokens');
+        $openai_presence_penalty = $request->get_param('openai_presence_penalty');
+        $openai_temperature = $request->get_param('openai_temperature');
+        $openai_top_p = $request->get_param('openai_top_p');
+        $openai_prompt = $request->get_param('openai_prompt');
         $data = array(
             'name' => $name,
             'slug' => $slug,
-            'summaryengine_openai_model' => $summaryengine_openai_model,
-            'summaryengine_openai_word_limit' => $summaryengine_openai_word_limit,
-            'summaryengine_cut_at_paragraph' => $summaryengine_cut_at_paragraph,
-            'summaryengine_openai_frequency_penalty' => $summaryengine_openai_frequency_penalty,
-            'summaryengine_openai_max_tokens' => $summaryengine_openai_max_tokens,
-            'summaryengine_openai_presence_penalty' => $summaryengine_openai_presence_penalty,
-            'summaryengine_openai_temperature' => $summaryengine_openai_temperature,
-            'summaryengine_openai_top_p' => $summaryengine_openai_top_p,
-            'summaryengine_openai_prompt' => $summaryengine_openai_prompt,
+            'openai_model' => $openai_model,
+            'openai_word_limit' => $openai_word_limit,
+            'cut_at_paragraph' => $cut_at_paragraph,
+            'openai_frequency_penalty' => $openai_frequency_penalty,
+            'openai_max_tokens' => $openai_max_tokens,
+            'openai_presence_penalty' => $openai_presence_penalty,
+            'openai_temperature' => $openai_temperature,
+            'openai_top_p' => $openai_top_p,
+            'openai_prompt' => $openai_prompt,
         );
         $pattern = array(
             '%s',
@@ -442,7 +528,8 @@ class SummaryEngineAPI {
         return array("success" => true);
     }
 
-    public function get_articles(WP_REST_Request $request) {
+    public function get_posts(WP_REST_Request $request) {
+        // global $wpdb;
         $args = array(
             'post_type' => 'post',
             'post_status' => 'publish',
@@ -450,20 +537,78 @@ class SummaryEngineAPI {
             'orderby' => 'date',
             'order' => 'DESC',
         );
-        $query = new WP_Query($args);
-        $posts = $query->get_posts();
-        $results = array();
-        foreach($posts as $post) {
-            $summary = get_post_meta($post->ID, 'summaryengine_summary', true);
-            $summary_id = get_post_meta($post->ID, 'summaryengine_summary_id', true);
-            $results[] = array(
-                "id" => $post->ID,
-                "title" => $post->post_title,
-                "permalink" => get_permalink($post->ID),
-                "summary" => $summary,
-                "summary_id" => $summary_id,
+        $date = $request->get_param('date');
+        $month = intval(substr($date, 4, 2));
+        $year = intval(substr($date, 0, 4));
+        if (!empty($month) && !empty($year)) {
+            $args['date_query'] = array(
+                array(
+                    'year' => $year,
+                    'month' => $month,
+                ),
             );
         }
+        $page = intval($request->get_param('page'));
+        if (!empty($page)) {
+            $args['paged'] = $page;
+        }
+        $search = $request->get_param('search');
+        if (!empty($search)) {
+            $args['s'] = $search;
+        }
+        $query = new WP_Query($args);
+        $posts = $query->get_posts();
+        $types = $this->get_types($request);
+        $results = array();
+        foreach($posts as $post) {
+            $summaries = [];
+            foreach($types as $type) {
+                $summary = get_post_meta($post->ID, 'summaryengine_' . $type->slug, true);
+                $summary_id = get_post_meta($post->ID, 'summaryengine_' . $type->slug . '_id', true);
+                $summary_details = $this->_get_summary($summary_id);
+                $summaries[$type->slug] = array(
+                    'summary' => $summary,
+                    'summary_id' => $summary_id,
+                    'summary_details' => $summary_details,
+                );
+            }
+            $results[] = array(
+                "id" => $post->ID,
+                "post_title" => $post->post_title,
+                "permalink" => get_permalink($post->ID),
+                "post_author" => get_the_author_meta('display_name', $post->post_author),
+                "post_date" => $post->post_date,
+                "published" => $post->post_status == 'publish',
+                "summaries" => $summaries,
+            );
+        }
+        return [ "posts" => $results, "count" => $query->found_posts ];
+    }
+
+    public function get_posts_count(WP_REST_Request $request) {
+        $args = array(
+            'post_type' => 'post',
+            'post_status' => 'publish',
+        );
+        $date = $request->get_param('date');
+        $month = intval(substr($date, 4, 2));
+        $year = intval(substr($date, 0, 4));
+        if (!empty($month) && !empty($year)) {
+            $args['date_query'] = array(
+                array(
+                    'year' => $year,
+                    'month' => $month,
+                ),
+            );
+        }
+        $query = new WP_Query($args);
+        $count = $query->found_posts;
+        return $count;
+    }
+
+    public function get_post_months(WP_REST_Request $request) {
+        global $wpdb;
+        $results = $wpdb->get_results("SELECT DISTINCT YEAR(post_date) AS year, MONTH(post_date) AS month FROM {$wpdb->prefix}posts WHERE post_status = 'publish' ORDER BY post_date DESC");
         return $results;
     }
 

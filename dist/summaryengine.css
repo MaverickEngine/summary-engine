@@ -29,59 +29,6 @@
 #summaryEngineCounter.svelte-1r1igx2 #summaryEngineSubmissionsLeft.zero.svelte-1r1igx2 {
   background-color: #842727; }
 
-#summaryEngineSettingsHeaderContainer.svelte-156vzdz.svelte-156vzdz {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  align-items: left; }
-
-#summaryEngineSettingsHeaderContainer.svelte-156vzdz #summaryEngineSettings.svelte-156vzdz {
-  flex-grow: 4;
-  display: flex;
-  flex-direction: column;
-  justify-content: left; }
-
-#summaryEngineSettingsHeaderContainer.svelte-156vzdz .summaryengine-settings-icon.svelte-156vzdz {
-  cursor: pointer; }
-
-#summaryEngineSettingsContainer.svelte-156vzdz.svelte-156vzdz {
-  display: flex;
-  justify-content: flex-start;
-  align-items: left;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 10px;
-  flex-direction: row;
-  margin-bottom: 10px;
-  flex-wrap: wrap; }
-
-.summaryengine-settings-section.svelte-156vzdz.svelte-156vzdz {
-  display: flex;
-  flex-direction: column;
-  width: 33%;
-  margin-bottom: 5px; }
-
-#summaryEngineRate.svelte-1977rci.svelte-1977rci {
-  margin-left: 1em;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center; }
-
-#summaryEngineRate.svelte-1977rci #summaryEngineRateIcons.svelte-1977rci {
-  font-size: 1.5em; }
-
-#summaryEngineRate.svelte-1977rci #summaryEngineRateIcons .summaryengine-rate-icon.svelte-1977rci {
-  cursor: pointer;
-  margin: 0 0.2em;
-  border: 1px solid #ccc;
-  border-radius: 2px;
-  padding: 0.2em;
-  opacity: 0.5; }
-
-#summaryEngineRate.svelte-1977rci #summaryEngineRateIcons .summaryengine-rate-icon-selected.svelte-1977rci {
-  opacity: 1; }
-
 .summaryengine-spinner.svelte-vk24ki.svelte-vk24ki {
   height: 32px;
   width: 32px; }
@@ -112,3 +59,24 @@
     transform: rotate(0deg); }
   100% {
     transform: rotate(360deg); } }
+
+#summaryEngineRate.svelte-1977rci.svelte-1977rci {
+  margin-left: 1em;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center; }
+
+#summaryEngineRate.svelte-1977rci #summaryEngineRateIcons.svelte-1977rci {
+  font-size: 1.5em; }
+
+#summaryEngineRate.svelte-1977rci #summaryEngineRateIcons .summaryengine-rate-icon.svelte-1977rci {
+  cursor: pointer;
+  margin: 0 0.2em;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  padding: 0.2em;
+  opacity: 0.5; }
+
+#summaryEngineRate.svelte-1977rci #summaryEngineRateIcons .summaryengine-rate-icon-selected.svelte-1977rci {
+  opacity: 1; }

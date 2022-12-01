@@ -580,7 +580,7 @@ var summaryengine_types = (function (exports) {
     	let td5;
     	let input4;
     	let t26;
-    	let t27_value = /*type*/ ctx[22].summaryengine_cut_at_paragraph + "";
+    	let t27_value = /*type*/ ctx[22].cut_at_paragraph + "";
     	let t27;
     	let t28;
     	let tr6;
@@ -819,7 +819,7 @@ var summaryengine_types = (function (exports) {
     			input1.readOnly = true;
     			attr(th2, "scope", "row");
     			attr(input2, "type", "text");
-    			attr(input2, "name", "summaryengine_openai_prompt");
+    			attr(input2, "name", "openai_prompt");
     			attr(input2, "class", "regular-text");
     			input2.required = true;
     			attr(th3, "scope", "row");
@@ -831,46 +831,46 @@ var summaryengine_types = (function (exports) {
     			option2.value = option2.__value;
     			option3.__value = "text-ada-001";
     			option3.value = option3.__value;
-    			attr(select, "name", "summaryengine_openai_model");
-    			if (/*type*/ ctx[22].summaryengine_openai_model === void 0) add_render_callback(select_change_handler);
+    			attr(select, "name", "openai_model");
+    			if (/*type*/ ctx[22].openai_model === void 0) add_render_callback(select_change_handler);
     			attr(th4, "scope", "row");
     			attr(input3, "type", "number");
-    			attr(input3, "name", "summaryengine_openai_word_limit");
+    			attr(input3, "name", "openai_word_limit");
     			attr(input3, "class", "regular-text");
     			attr(th5, "scope", "row");
     			attr(input4, "type", "checkbox");
-    			attr(input4, "name", "summaryengine_cut_at_paragraph");
+    			attr(input4, "name", "cut_at_paragraph");
     			attr(th6, "scope", "row");
     			attr(input5, "type", "number");
-    			attr(input5, "name", "summaryengine_openai_max_tokens");
+    			attr(input5, "name", "openai_max_tokens");
     			attr(input5, "class", "regular-text");
     			attr(input5, "min", "0");
     			attr(input5, "max", "2048");
     			attr(input5, "step", "1");
     			attr(th7, "scope", "row");
     			attr(input6, "type", "number");
-    			attr(input6, "name", "summaryengine_openai_temperature");
+    			attr(input6, "name", "openai_temperature");
     			attr(input6, "class", "regular-text");
     			attr(input6, "min", "0");
     			attr(input6, "max", "1");
     			attr(input6, "step", "0.1");
     			attr(th8, "scope", "row");
     			attr(input7, "type", "number");
-    			attr(input7, "name", "summaryengine_openai_top_p");
+    			attr(input7, "name", "openai_top_p");
     			attr(input7, "class", "regular-text");
     			attr(input7, "min", "0");
     			attr(input7, "max", "1");
     			attr(input7, "step", "0.1");
     			attr(th9, "scope", "row");
     			attr(input8, "type", "number");
-    			attr(input8, "name", "summaryengine_openai_presence_penalty");
+    			attr(input8, "name", "openai_presence_penalty");
     			attr(input8, "class", "regular-text");
     			attr(input8, "min", "-2");
     			attr(input8, "max", "2");
     			attr(input8, "step", "0.1");
     			attr(th10, "scope", "row");
     			attr(input9, "type", "number");
-    			attr(input9, "name", "summaryengine_openai_frequency_penalty");
+    			attr(input9, "name", "openai_frequency_penalty");
     			attr(input9, "class", "regular-text");
     			attr(input9, "min", "-2");
     			attr(input9, "max", "2");
@@ -905,7 +905,7 @@ var summaryengine_types = (function (exports) {
     			append(tr2, t10);
     			append(tr2, td2);
     			append(td2, input2);
-    			set_input_value(input2, /*type*/ ctx[22].summaryengine_openai_prompt);
+    			set_input_value(input2, /*type*/ ctx[22].openai_prompt);
     			append(td2, t11);
     			append(td2, p0);
     			append(tbody, t13);
@@ -918,21 +918,21 @@ var summaryengine_types = (function (exports) {
     			append(select, option1);
     			append(select, option2);
     			append(select, option3);
-    			select_option(select, /*type*/ ctx[22].summaryengine_openai_model);
+    			select_option(select, /*type*/ ctx[22].openai_model);
     			append(tbody, t20);
     			append(tbody, tr4);
     			append(tr4, th4);
     			append(tr4, t22);
     			append(tr4, td4);
     			append(td4, input3);
-    			set_input_value(input3, /*type*/ ctx[22].summaryengine_openai_word_limit);
+    			set_input_value(input3, /*type*/ ctx[22].openai_word_limit);
     			append(tbody, t23);
     			append(tbody, tr5);
     			append(tr5, th5);
     			append(tr5, t25);
     			append(tr5, td5);
     			append(td5, input4);
-    			input4.checked = /*type*/ ctx[22].summaryengine_cut_at_paragraph;
+    			input4.checked = /*type*/ ctx[22].cut_at_paragraph;
     			append(td5, t26);
     			append(td5, t27);
     			append(tbody, t28);
@@ -941,7 +941,7 @@ var summaryengine_types = (function (exports) {
     			append(tr6, t30);
     			append(tr6, td6);
     			append(td6, input5);
-    			set_input_value(input5, /*type*/ ctx[22].summaryengine_openai_max_tokens);
+    			set_input_value(input5, /*type*/ ctx[22].openai_max_tokens);
     			append(td6, t31);
     			append(td6, p1);
     			append(tbody, t33);
@@ -950,7 +950,7 @@ var summaryengine_types = (function (exports) {
     			append(tr7, t35);
     			append(tr7, td7);
     			append(td7, input6);
-    			set_input_value(input6, /*type*/ ctx[22].summaryengine_openai_temperature);
+    			set_input_value(input6, /*type*/ ctx[22].openai_temperature);
     			append(td7, t36);
     			append(td7, p2);
     			append(tbody, t38);
@@ -959,7 +959,7 @@ var summaryengine_types = (function (exports) {
     			append(tr8, t40);
     			append(tr8, td8);
     			append(td8, input7);
-    			set_input_value(input7, /*type*/ ctx[22].summaryengine_openai_top_p);
+    			set_input_value(input7, /*type*/ ctx[22].openai_top_p);
     			append(td8, t41);
     			append(td8, p3);
     			append(tbody, t43);
@@ -968,7 +968,7 @@ var summaryengine_types = (function (exports) {
     			append(tr9, t45);
     			append(tr9, td9);
     			append(td9, input8);
-    			set_input_value(input8, /*type*/ ctx[22].summaryengine_openai_presence_penalty);
+    			set_input_value(input8, /*type*/ ctx[22].openai_presence_penalty);
     			append(td9, t46);
     			append(td9, p4);
     			append(tbody, t48);
@@ -977,7 +977,7 @@ var summaryengine_types = (function (exports) {
     			append(tr10, t50);
     			append(tr10, td10);
     			append(td10, input9);
-    			set_input_value(input9, /*type*/ ctx[22].summaryengine_openai_frequency_penalty);
+    			set_input_value(input9, /*type*/ ctx[22].openai_frequency_penalty);
     			append(td10, t51);
     			append(td10, p5);
     			insert(target, t53, anchor);
@@ -1020,42 +1020,42 @@ var summaryengine_types = (function (exports) {
     				set_input_value(input1, /*type*/ ctx[22].slug);
     			}
 
-    			if (dirty & /*$types*/ 1 && input2.value !== /*type*/ ctx[22].summaryengine_openai_prompt) {
-    				set_input_value(input2, /*type*/ ctx[22].summaryengine_openai_prompt);
+    			if (dirty & /*$types*/ 1 && input2.value !== /*type*/ ctx[22].openai_prompt) {
+    				set_input_value(input2, /*type*/ ctx[22].openai_prompt);
     			}
 
     			if (dirty & /*$types*/ 1) {
-    				select_option(select, /*type*/ ctx[22].summaryengine_openai_model);
+    				select_option(select, /*type*/ ctx[22].openai_model);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input3.value) !== /*type*/ ctx[22].summaryengine_openai_word_limit) {
-    				set_input_value(input3, /*type*/ ctx[22].summaryengine_openai_word_limit);
+    			if (dirty & /*$types*/ 1 && to_number(input3.value) !== /*type*/ ctx[22].openai_word_limit) {
+    				set_input_value(input3, /*type*/ ctx[22].openai_word_limit);
     			}
 
     			if (dirty & /*$types*/ 1) {
-    				input4.checked = /*type*/ ctx[22].summaryengine_cut_at_paragraph;
+    				input4.checked = /*type*/ ctx[22].cut_at_paragraph;
     			}
 
-    			if (dirty & /*$types*/ 1 && t27_value !== (t27_value = /*type*/ ctx[22].summaryengine_cut_at_paragraph + "")) set_data(t27, t27_value);
+    			if (dirty & /*$types*/ 1 && t27_value !== (t27_value = /*type*/ ctx[22].cut_at_paragraph + "")) set_data(t27, t27_value);
 
-    			if (dirty & /*$types*/ 1 && to_number(input5.value) !== /*type*/ ctx[22].summaryengine_openai_max_tokens) {
-    				set_input_value(input5, /*type*/ ctx[22].summaryengine_openai_max_tokens);
+    			if (dirty & /*$types*/ 1 && to_number(input5.value) !== /*type*/ ctx[22].openai_max_tokens) {
+    				set_input_value(input5, /*type*/ ctx[22].openai_max_tokens);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input6.value) !== /*type*/ ctx[22].summaryengine_openai_temperature) {
-    				set_input_value(input6, /*type*/ ctx[22].summaryengine_openai_temperature);
+    			if (dirty & /*$types*/ 1 && to_number(input6.value) !== /*type*/ ctx[22].openai_temperature) {
+    				set_input_value(input6, /*type*/ ctx[22].openai_temperature);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input7.value) !== /*type*/ ctx[22].summaryengine_openai_top_p) {
-    				set_input_value(input7, /*type*/ ctx[22].summaryengine_openai_top_p);
+    			if (dirty & /*$types*/ 1 && to_number(input7.value) !== /*type*/ ctx[22].openai_top_p) {
+    				set_input_value(input7, /*type*/ ctx[22].openai_top_p);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input8.value) !== /*type*/ ctx[22].summaryengine_openai_presence_penalty) {
-    				set_input_value(input8, /*type*/ ctx[22].summaryengine_openai_presence_penalty);
+    			if (dirty & /*$types*/ 1 && to_number(input8.value) !== /*type*/ ctx[22].openai_presence_penalty) {
+    				set_input_value(input8, /*type*/ ctx[22].openai_presence_penalty);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input9.value) !== /*type*/ ctx[22].summaryengine_openai_frequency_penalty) {
-    				set_input_value(input9, /*type*/ ctx[22].summaryengine_openai_frequency_penalty);
+    			if (dirty & /*$types*/ 1 && to_number(input9.value) !== /*type*/ ctx[22].openai_frequency_penalty) {
+    				set_input_value(input9, /*type*/ ctx[22].openai_frequency_penalty);
     			}
 
     			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block0) {
@@ -1460,13 +1460,13 @@ var summaryengine_types = (function (exports) {
     		$types.push({
     			ID: "",
     			name: 'New Type',
-    			summaryengine_cut_at_paragraph: 1,
-    			summaryengine_openai_frequency_penalty: 0.5,
-    			summaryengine_openai_max_tokens: 300,
-    			summaryengine_openai_presence_penalty: 0,
-    			summaryengine_openai_temperature: 0.6,
-    			summaryengine_openai_top_p: 1,
-    			summaryengine_openai_word_limit: 750
+    			cut_at_paragraph: 1,
+    			openai_frequency_penalty: 0.5,
+    			openai_max_tokens: 300,
+    			openai_presence_penalty: 0,
+    			openai_temperature: 0.6,
+    			openai_top_p: 1,
+    			openai_word_limit: 750
     		});
     	};
 
@@ -1476,13 +1476,13 @@ var summaryengine_types = (function (exports) {
     				types,
     				$types = (await apiGet(`summaryengine/v1/types`)).map(type => {
     					type.ID = Number(type.ID);
-    					type.summaryengine_cut_at_paragraph = Number(type.summaryengine_cut_at_paragraph);
-    					type.summaryengine_openai_frequency_penalty = Number(type.summaryengine_openai_frequency_penalty);
-    					type.summaryengine_openai_max_tokens = Number(type.summaryengine_openai_max_tokens);
-    					type.summaryengine_openai_presence_penalty = Number(type.summaryengine_openai_presence_penalty);
-    					type.summaryengine_openai_temperature = Number(type.summaryengine_openai_temperature);
-    					type.summaryengine_openai_top_p = Number(type.summaryengine_openai_top_p);
-    					type.summaryengine_openai_word_limit = Number(type.summaryengine_openai_word_limit);
+    					type.cut_at_paragraph = Number(type.cut_at_paragraph);
+    					type.openai_frequency_penalty = Number(type.openai_frequency_penalty);
+    					type.openai_max_tokens = Number(type.openai_max_tokens);
+    					type.openai_presence_penalty = Number(type.openai_presence_penalty);
+    					type.openai_temperature = Number(type.openai_temperature);
+    					type.openai_top_p = Number(type.openai_top_p);
+    					type.openai_word_limit = Number(type.openai_word_limit);
     					return type;
     				}),
     				$types
@@ -1498,7 +1498,7 @@ var summaryengine_types = (function (exports) {
     		try {
     			$$invalidate(2, saving = true);
     			if (!type.name) throw "Type name is required";
-    			if (!type.summaryengine_openai_prompt) throw "Prompt is required";
+    			if (!type.openai_prompt) throw "Prompt is required";
     			if (type.name === "New Type") throw "Please rename the type before saving";
     			const result = await apiPost(`summaryengine/v1/type/${type.ID}`, type);
 
@@ -1552,47 +1552,47 @@ var summaryengine_types = (function (exports) {
     	}
 
     	function input2_input_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_prompt = this.value;
+    		each_value[i].openai_prompt = this.value;
     		types.set($types);
     	}
 
     	function select_change_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_model = select_value(this);
+    		each_value[i].openai_model = select_value(this);
     		types.set($types);
     	}
 
     	function input3_input_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_word_limit = to_number(this.value);
+    		each_value[i].openai_word_limit = to_number(this.value);
     		types.set($types);
     	}
 
     	function input4_change_handler(each_value, i) {
-    		each_value[i].summaryengine_cut_at_paragraph = this.checked;
+    		each_value[i].cut_at_paragraph = this.checked;
     		types.set($types);
     	}
 
     	function input5_input_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_max_tokens = to_number(this.value);
+    		each_value[i].openai_max_tokens = to_number(this.value);
     		types.set($types);
     	}
 
     	function input6_input_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_temperature = to_number(this.value);
+    		each_value[i].openai_temperature = to_number(this.value);
     		types.set($types);
     	}
 
     	function input7_input_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_top_p = to_number(this.value);
+    		each_value[i].openai_top_p = to_number(this.value);
     		types.set($types);
     	}
 
     	function input8_input_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_presence_penalty = to_number(this.value);
+    		each_value[i].openai_presence_penalty = to_number(this.value);
     		types.set($types);
     	}
 
     	function input9_input_handler(each_value, i) {
-    		each_value[i].summaryengine_openai_frequency_penalty = to_number(this.value);
+    		each_value[i].openai_frequency_penalty = to_number(this.value);
     		types.set($types);
     	}
 

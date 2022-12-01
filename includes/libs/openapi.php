@@ -16,6 +16,7 @@ class OpenAPI {
         );
         $response = wp_remote_post($url, $args);
         $body = json_decode(wp_remote_retrieve_body($response), true);
+        // print_r($body);
         return $body;
     }
 }
