@@ -7,7 +7,6 @@
     $: page_count = Math.ceil($post_count / per_page);
 
     function nextPage() {
-        console.log("Next page");
         if ($page < page_count) {
             page.update(n => n+1);
         }

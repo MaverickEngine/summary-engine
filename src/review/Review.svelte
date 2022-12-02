@@ -8,6 +8,7 @@
     import { apiGet, apiPost } from '../libs/ajax.js';
 
     let per_page = 10;
+    let summarising_all = false;
 
     async function getPosts () {
         try {
@@ -28,10 +29,10 @@
     }
 
     function checkSummariesSet(post) {
-        let found = false;
+        let found = true;
         for (let slug in post.summaries) {
-            if (post.summaries[slug]?.summary) {
-                found = true;
+            if (!post.summaries[slug]?.summary) {
+                found = false;
                 break;
             }
         }
@@ -40,25 +41,31 @@
 
     async function generateAllSummaries(post) {
         // console.log(post);
+        summarising_all = true;
         for (let type of $types) {
+            const summary = post.summaries[type.slug];
             try {
-                if (!post.summaries[type.slug]?.summary) {
-                    const result = await apiPost(`/summaryengine/v1/summarise`, { type_id: type.ID, post_id: post.id });
-                    if (!result?.summary) throw "No summary returned";
-                    post.summaries[type.slug].summary = result.summary;
-                    post.summaries[type.slug].summary_id = result.ID;
-                    post.summaries[type.slug].summary_details = result;
-                    post.summaries[type.slug].summary_details.rating = 0;
-                    // console.log(post);
-                    $posts = $posts;
-                }
+                if (!summary) continue;
+                if (summary.summary) continue;
+                summary.summarising = true;
+                $posts = $posts;
+                const result = await apiPost(`/summaryengine/v1/summarise`, { type_id: type.ID, post_id: post.id });
+                if (!result?.summary) throw "No summary returned";
+                post.summaries[type.slug].summary = result.summary;
+                post.summaries[type.slug].summary_id = result.ID;
+                post.summaries[type.slug].summary_details = result;
+                post.summaries[type.slug].summary_details.rating = 0;
+                // console.log(post);
+                $posts = $posts;
+                summary.summarising = false;
             } catch (err) {
                 console.error(err);
                 alert("An error occured: " + err);
+                summary.summarising = false;
             }
         }
+        summarising_all = false;
         $posts = $posts;
-        // await apiGet(`/summaryengine/v1/generateAllSummaries`);
     }
 
     onMount(async () => {
@@ -94,9 +101,9 @@
     <table class="wp-list-table widefat fixed striped table-view-list" class:loading={$loading}>
         <thead>
             <tr>
-                <th class="summaryengine-small-col">Title</th>
-                <th class="summaryengine-small-col">Date</th>
-                <th class="summaryengine-small-col">Author</th>
+                <th class="summaryengine-col-10px">Title</th>
+                <th class="summaryengine-col-10px">Date</th>
+                <th class="summaryengine-col-10px">Author</th>
                 {#each $types as type}
                     <th>{type.name}</th>
                 {/each}
@@ -116,7 +123,11 @@
                     {/each}
                     <td>
                         {#if !checkSummariesSet(post)}
-                            <button on:click={() => generateAllSummaries(post)}>Summarise</button>
+                            {#if (summarising_all)}
+                                <button class="button summaryengine-summarise-all" disabled="disabled">Summarising...</button>
+                            {:else}
+                                <button class="button summaryengine-summarise-all" on:click={() => generateAllSummaries(post)}>Summarise All</button>
+                            {/if}
                         {/if}
                     </td>
                 </tr>
@@ -126,7 +137,7 @@
 </div>
 
 <style lang="less">
-    .summaryengine-small-col {
+    .summaryengine-col-10px {
         width: 10%;
     }
 
@@ -156,5 +167,9 @@
 
     table.loading {
         opacity: 0.5;
+    }
+
+    .summaryengine-summarise-all {
+        margin-top: 10px;
     }
 </style>

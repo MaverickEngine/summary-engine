@@ -1,7 +1,6 @@
 <script>
     import { apiPost } from '../../libs/ajax.js';
     import { onMount } from 'svelte';
-    import { fade, blur, fly, slide, scale } from "svelte/transition";
     export let summary;
     export let type_id;
     export let post_id;
@@ -11,8 +10,9 @@
     let disapproving = false;
     let approving = false;
     let approved;
-    let unapproved;
-    let disapproved;
+    let just_summarised = false;
+    // let unapproved;
+    // let disapproved;
     
     String.prototype.nl2br = function() {
         return this.replace(/([^>])\n/g, '$1<br/>');
@@ -20,12 +20,13 @@
 
     onMount(async () => {
         try {
+            summary.summarising = false;
             if (Number(summary.summary_details.rating) === 1) {
                 approved = true;
-            } else if (Number(summary.summary_details.rating) === 0) {
-                unapproved = true;
-            } else if (Number(summary.summary_details.rating) === -1) {
-                disapproved = true;
+            // } else if (Number(summary.summary_details.rating) === 0) {
+            //     unapproved = true;
+            // } else if (Number(summary.summary_details.rating) === -1) {
+            //     disapproved = true;
             }
             // console.log(summary);
         } catch (e) {
@@ -35,21 +36,23 @@
 
     async function summarise() {
         try {
-            summarising = true;
+            summary.summarising = true;
             const result = await apiPost(`/summaryengine/v1/summarise`, { type_id, post_id });
             // console.log(result);
             if (!result?.summary) throw "No summary returned";
             summary.summary = result.summary;
             summary.summary_id = result.ID;
             summary.summary_details = result;
-            summarising = false;
+            summary.summary_details.rating = 0;
+            summary.summarising = false;
             approved = false;
-            disapproved = false;
-            unapproved = true;
+            just_summarised = true;
+            // disapproved = false;
+            // unapproved = true;
         } catch (err) {
             console.error(err);
             alert("An error occured: " + err);
-            summarising = false;
+            summary.summarising = false;
         }
     }
 
@@ -60,6 +63,7 @@
             summary.summary_details.rating = 1;
             approving = false;
             approved = true;
+            just_summarised = false;
         } catch(err) {
             console.error(err);
             alert("An error occured: " + err);
@@ -74,6 +78,8 @@
             await summarise();
             disapproving = false;
             summary.summary_details.rating = 0;
+            just_summarised = false;
+            approved = false;
         } catch(err) {
             console.error(err);
             disapproving = false;
@@ -81,33 +87,33 @@
     }
 </script>
 
-<div class="summaryengine-summarise" on:mouseenter={() => hovering = true} on:mouseleave={() => hovering = false} class:is_hovering={hovering} class:approved={(Number(summary.summary_details.rating) === 1)} class:unapproved={(Number(summary.summary_details.rating) === 0)} class:disapproved={(Number(summary.summary_details.rating) === -1)}>
+<div class="summaryengine-summarise" on:mouseenter={() => hovering = true} on:mouseleave={() => hovering = false} class:is_hovering={hovering} class:just_summarised={just_summarised} class:approved={(Number(summary.summary_details.rating) === 1)} class:unapproved={(Number(summary.summary_details.rating) === 0)} class:disapproved={(Number(summary.summary_details.rating) === -1)}>
     {#if summary.summary}
         <div class="summaryengine-summarise__summary">
             {@html summary.summary?.nl2br()}
         </div>
     {:else}
-        {#if summarising}
-            <input class="summaryengine-button" type="button" name="summarise" value="Summarising..." disabled="disabled" />
+        {#if summary.summarising}
+            <input class="summaryengine-button button" type="button" name="summarise" value="Summarising..." disabled="disabled" />
         {:else}
-            <input class="summaryengine-button" type="button" name="summarise" value="Summarise" on:click={summarise} />
+            <input class="summaryengine-button button" type="button" name="summarise" value="Summarise" on:click={summarise} />
         {/if}
     {/if}
-    {#if hovering}
+    {#if hovering || just_summarised}
         <div class="summaryengine-actions">
             
             {#if summary?.summary}
                 {#if (!approved && !disapproving)}
                     {#if approving}
-                        <input class="summaryengine-button" type="button" name="approve" value="Approving..." disabled="disabled" />
+                        <input class="summaryengine-button button" type="button" name="approve" value="Approving..." disabled="disabled" />
                     {:else}
-                        <input class="summaryengine-button" type="button" name="approve" value="Approve" on:click={approve} />
+                        <input class="summaryengine-button button" type="button" name="approve" value="Approve" on:click={approve} />
                     {/if}
                 {/if}
                 {#if disapproving}
-                    <input class="summaryengine-button" type="button" name="disapprove" value="Disapproving..." disabled="disabled" />
-                {:else}
-                    <input class="summaryengine-button" type="button" name="disapprove" value="Disapprove" on:click={disapprove} />
+                    <input class="summaryengine-button button" type="button" name="disapprove" value="Disapproving..." disabled="disabled" />
+                {:else if !approving}
+                    <input class="summaryengine-button button" type="button" name="disapprove" value="Disapprove" on:click={disapprove} />
                 {/if}
             {/if}
         </div>
@@ -127,8 +133,7 @@
         max-width: 100%;
     }
 
-    
-    .is_hovering {
+    .is_hovering, .just_summarised {
         .summaryengine-summarise__summary {
             overflow: visible;
             white-space: normal;

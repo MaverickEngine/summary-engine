@@ -1,49 +1,52 @@
-.summaryengine-small-col.svelte-1n6yefi {
+.summaryengine-col-10px.svelte-90dff3 {
   width: 10%; }
 
-#summaryEngineMetaBlockSummariseButtonContainer.svelte-1n6yefi {
+#summaryEngineMetaBlockSummariseButtonContainer.svelte-90dff3 {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   margin-bottom: 1rem; }
 
-#summaryEngineMetaBlockSummariseButtonContainerLeft.svelte-1n6yefi {
+#summaryEngineMetaBlockSummariseButtonContainerLeft.svelte-90dff3 {
   display: flex;
   flex-direction: row;
   justify-content: left;
   align-items: flex-end; }
 
-#summaryEngineMetaBlockSummariseButtonContainerRight.svelte-1n6yefi {
+#summaryEngineMetaBlockSummariseButtonContainerRight.svelte-90dff3 {
   display: flex;
   flex-direction: column;
   justify-content: right; }
 
-.summary-engine-margin-bottom-5.svelte-1n6yefi {
+.summary-engine-margin-bottom-5.svelte-90dff3 {
   margin-bottom: 5px; }
 
-table.loading.svelte-1n6yefi {
+table.loading.svelte-90dff3 {
   opacity: 0.5; }
 
-.summaryengine-summarise.svelte-1k28cfn.svelte-1k28cfn {
+.summaryengine-summarise-all.svelte-90dff3 {
+  margin-top: 10px; }
+
+.summaryengine-summarise.svelte-26qe61.svelte-26qe61 {
   display: flex;
   flex-direction: column; }
 
-.summaryengine-summarise__summary.svelte-1k28cfn.svelte-1k28cfn {
+.summaryengine-summarise__summary.svelte-26qe61.svelte-26qe61 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%; }
 
-.is_hovering.svelte-1k28cfn .summaryengine-summarise__summary.svelte-1k28cfn {
+.is_hovering.svelte-26qe61 .summaryengine-summarise__summary.svelte-26qe61, .just_summarised.svelte-26qe61 .summaryengine-summarise__summary.svelte-26qe61 {
   overflow: visible;
   white-space: normal;
   max-height: none; }
 
-.summaryengine-button.svelte-1k28cfn.svelte-1k28cfn {
+.summaryengine-button.svelte-26qe61.svelte-26qe61 {
   margin-top: 10px; }
 
-.unapproved.svelte-1k28cfn .summaryengine-summarise__summary.svelte-1k28cfn {
+.unapproved.svelte-26qe61 .summaryengine-summarise__summary.svelte-26qe61 {
   background-color: #f2f8d7; }
 
-.disapproved.svelte-1k28cfn .summaryengine-summarise__summary.svelte-1k28cfn {
+.disapproved.svelte-26qe61 .summaryengine-summarise__summary.svelte-26qe61 {
   background-color: #f8d7da; }
