@@ -671,6 +671,11 @@ var summaryengine = (function (exports) {
     function create_fragment$7(ctx) {
     	let div;
     	let span0;
+
+    	let t0_value = (/*submissions_left*/ ctx[0] === undefined
+    	? "..."
+    	: /*submissions_left*/ ctx[0]) + "";
+
     	let t0;
     	let t1;
     	let span1;
@@ -679,7 +684,7 @@ var summaryengine = (function (exports) {
     		c() {
     			div = element("div");
     			span0 = element("span");
-    			t0 = text(/*submissions_left*/ ctx[0]);
+    			t0 = text(t0_value);
     			t1 = space();
     			span1 = element("span");
     			span1.textContent = "submissions left";
@@ -698,7 +703,9 @@ var summaryengine = (function (exports) {
     			append(div, span1);
     		},
     		p(ctx, [dirty]) {
-    			if (dirty & /*submissions_left*/ 1) set_data(t0, /*submissions_left*/ ctx[0]);
+    			if (dirty & /*submissions_left*/ 1 && t0_value !== (t0_value = (/*submissions_left*/ ctx[0] === undefined
+    			? "..."
+    			: /*submissions_left*/ ctx[0]) + "")) set_data(t0, t0_value);
 
     			if (dirty & /*submissions_left*/ 1) {
     				toggle_class(span0, "zero", /*submissions_left*/ ctx[0] === 0);
@@ -714,22 +721,11 @@ var summaryengine = (function (exports) {
 
     function instance$6($$self, $$props, $$invalidate) {
     	let { summaries = [] } = $$props;
-    	let { submissions_left = 0 } = $$props;
-    	const max_summaries = Number(summaryengine_max_number_of_submissions_per_post);
+    	let { submissions_left } = $$props;
 
     	$$self.$$set = $$props => {
     		if ('summaries' in $$props) $$invalidate(1, summaries = $$props.summaries);
     		if ('submissions_left' in $$props) $$invalidate(0, submissions_left = $$props.submissions_left);
-    	};
-
-    	$$self.$$.update = () => {
-    		if ($$self.$$.dirty & /*summaries*/ 2) {
-    			{
-    				$$invalidate(0, submissions_left = max_summaries - summaries.length > 0
-    				? max_summaries - summaries.length
-    				: 0);
-    			} // console.log($submissions_left);
-    		}
     	};
 
     	return [submissions_left, summaries];
@@ -1229,7 +1225,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (65:0) {#if !loading}
+    // (66:0) {#if !loading}
     function create_if_block$2(ctx) {
     	let button;
     	let t;
@@ -1342,7 +1338,7 @@ var summaryengine = (function (exports) {
     function instance$3($$self, $$props, $$invalidate) {
     	let { type } = $$props;
     	let { loading = false } = $$props;
-    	let { submissions_left = 0 } = $$props;
+    	let { submissions_left } = $$props;
     	let { summaries = [] } = $$props;
     	let { summary_text = "" } = $$props;
     	let { summary_id = 0 } = $$props;
@@ -1400,6 +1396,7 @@ var summaryengine = (function (exports) {
     			$$invalidate(3, summaries);
     			$$invalidate(4, summary_text = response.summary.trim());
     			$$invalidate(0, loading = false);
+    			$$invalidate(1, submissions_left--, submissions_left);
     			return;
     		} catch(err) {
     			alert(err);
@@ -2024,7 +2021,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (80:8) {#if summary_id > 0}
+    // (86:8) {#if summary_id > 0}
     function create_if_block(ctx) {
     	let rate;
     	let updating_summaries;
@@ -2414,7 +2411,7 @@ var summaryengine = (function (exports) {
     	let summary_text = "";
     	let summary_id = 0;
     	let summary_index = 0;
-    	let submissions_left = 0;
+    	let submissions_left;
 
     	let settings = {
     		openai_model: "",
@@ -2449,6 +2446,14 @@ var summaryengine = (function (exports) {
     		$$invalidate(6, settings.openai_top_p = type.openai_top_p, settings);
     	}
 
+    	function calcSubmissionsLeft() {
+    		const max_summaries = Number(summaryengine_max_number_of_submissions_per_post);
+
+    		$$invalidate(5, submissions_left = max_summaries - summaries.length > 0
+    		? max_summaries - summaries.length
+    		: 0);
+    	}
+
     	onMount(async () => {
     		try {
     			// console.log(summaryengine_settings);
@@ -2465,6 +2470,8 @@ var summaryengine = (function (exports) {
     			} else {
     				setDefaultSettings(type);
     			}
+
+    			calcSubmissionsLeft();
     		} catch(e) {
     			console.error(e);
     		}
@@ -2536,6 +2543,8 @@ var summaryengine = (function (exports) {
     		if ('type' in $$props) $$invalidate(0, type = $$props.type);
     	};
 
+    	calcSubmissionsLeft();
+
     	return [
     		type,
     		summaries,
@@ -2578,16 +2587,20 @@ var summaryengine = (function (exports) {
 
     // (18:0) {#each types as type}
     function create_each_block(ctx) {
+    	let div;
     	let postreview;
     	let current;
     	postreview = new PostReview({ props: { type: /*type*/ ctx[1] } });
 
     	return {
     		c() {
+    			div = element("div");
     			create_component(postreview.$$.fragment);
+    			attr(div, "class", "summaryengine-postreview svelte-4fqltt");
     		},
     		m(target, anchor) {
-    			mount_component(postreview, target, anchor);
+    			insert(target, div, anchor);
+    			mount_component(postreview, div, null);
     			current = true;
     		},
     		p(ctx, dirty) {
@@ -2605,13 +2618,15 @@ var summaryengine = (function (exports) {
     			current = false;
     		},
     		d(detaching) {
-    			destroy_component(postreview, detaching);
+    			if (detaching) detach(div);
+    			destroy_component(postreview);
     		}
     	};
     }
 
     function create_fragment(ctx) {
-    	let each_1_anchor;
+    	let t0;
+    	let div;
     	let current;
     	let each_value = /*types*/ ctx[0];
     	let each_blocks = [];
@@ -2630,14 +2645,18 @@ var summaryengine = (function (exports) {
     				each_blocks[i].c();
     			}
 
-    			each_1_anchor = empty();
+    			t0 = space();
+    			div = element("div");
+    			div.innerHTML = `<a href="/wp-admin/admin.php?page=summaryengine">Quickly generate and review summaries for multiple articles here</a>`;
+    			attr(div, "class", "summaryengine-link svelte-4fqltt");
     		},
     		m(target, anchor) {
     			for (let i = 0; i < each_blocks.length; i += 1) {
     				each_blocks[i].m(target, anchor);
     			}
 
-    			insert(target, each_1_anchor, anchor);
+    			insert(target, t0, anchor);
+    			insert(target, div, anchor);
     			current = true;
     		},
     		p(ctx, [dirty]) {
@@ -2655,7 +2674,7 @@ var summaryengine = (function (exports) {
     						each_blocks[i] = create_each_block(child_ctx);
     						each_blocks[i].c();
     						transition_in(each_blocks[i], 1);
-    						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+    						each_blocks[i].m(t0.parentNode, t0);
     					}
     				}
 
@@ -2688,7 +2707,8 @@ var summaryengine = (function (exports) {
     		},
     		d(detaching) {
     			destroy_each(each_blocks, detaching);
-    			if (detaching) detach(each_1_anchor);
+    			if (detaching) detach(t0);
+    			if (detaching) detach(div);
     		}
     	};
     }

@@ -19,7 +19,7 @@
     let summary_text = "";
     let summary_id = 0;
     let summary_index = 0;
-    let submissions_left = 0;
+    let submissions_left;
     let settings : ISettings = {
         openai_model: "",
         openai_prompt: "",
@@ -52,6 +52,11 @@
         settings.openai_top_p = type.openai_top_p;
     }
 
+    function calcSubmissionsLeft() {
+        const max_summaries = Number(summaryengine_max_number_of_submissions_per_post);
+        submissions_left = (max_summaries - summaries.length) > 0 ? max_summaries -  summaries.length : 0;
+    }
+
     onMount(async () => {
         try {
             // console.log(summaryengine_settings);
@@ -66,10 +71,13 @@
             } else {
                 setDefaultSettings(type);
             }
+            calcSubmissionsLeft();
         } catch (e) {
             console.error(e);
         }
     });
+
+    $: calcSubmissionsLeft();
 </script>
 <div id="summaryEngineMetaBlock">
     <div class="summaryengine-header">

@@ -16,5 +16,21 @@
 </script>
 
 {#each types as type}
-    <PostReview type={type} />
+    <div class="summaryengine-postreview">
+        <PostReview type={type} />
+    </div>
 {/each}
+<div class="summaryengine-link">
+    <a href="/wp-admin/admin.php?page=summaryengine">Quickly generate and review summaries for multiple articles here</a>
+</div>
+
+<style>
+    .summaryengine-link {
+        margin: 20px 0;        
+    }
+
+    .summaryengine-postreview {
+        padding-bottom: 20px;
+        border-bottom: 1px solid #ccc;
+    }
+</style>

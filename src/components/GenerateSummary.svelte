@@ -4,7 +4,7 @@
 
     export let type;
     export let loading = false;
-    export let submissions_left = 0;
+    export let submissions_left;
     export let summaries = [];
     export let summary_text = "";
     export let summary_id = 0;
@@ -55,6 +55,7 @@
             summaries = summaries;
             summary_text = response.summary.trim();
             loading = false;
+            submissions_left--;
             return;
         } catch (err) {
             alert(err);
