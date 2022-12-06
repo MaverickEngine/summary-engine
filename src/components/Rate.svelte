@@ -5,7 +5,7 @@
     export let summary_id = 0;
     export let summary_index = 0;
     export let summaries = [];
-    export let type = 0;
+    export let type = {};
     let rated = false;
     let rating = 0;
 

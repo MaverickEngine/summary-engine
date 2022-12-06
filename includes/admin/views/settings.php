@@ -38,6 +38,7 @@
                     <th scope="row"><?php _e("OpenAPI Model", "summaryengine") ?></th>
                     <td>
                         <select name="summaryengine_openai_model">
+                            <option value="text-davinci-003" <?php echo (get_option('summaryengine_openai_model') == 'text-davinci-003') ? 'selected' : ''; ?>>Text-Davinci-003</option>
                             <option value="text-davinci-002" <?php echo (get_option('summaryengine_openai_model') == 'text-davinci-002') ? 'selected' : ''; ?>>Text-Davinci-002</option>
                             <option value="text-curie-001" <?php echo (get_option('summaryengine_openai_model') == 'text-curie-001') ? 'selected' : ''; ?>>Text-Curie-001</option>
                             <option value="text-babbage-001" <?php echo (get_option('summaryengine_openai_model') == 'text-babbage-001') ? 'selected' : ''; ?>>Text-Babbage-001</option>

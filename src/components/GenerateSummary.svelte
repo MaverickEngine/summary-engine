@@ -1,5 +1,4 @@
 <script>
-    // import {submissions_left, summaries, summary_text, summary_id, summary_index, custom_settings } from '../stores.js';
     import { apiPost } from '../libs/ajax.js';
     import Spinner from './Spinner.svelte';
 
@@ -10,7 +9,7 @@
     export let summary_text = "";
     export let summary_id = 0;
     export let summary_index = 0;
-    export let custom_settings = 0;
+    export let settings = {};
 
     const get_content = () => {
         if (jQuery("#titlewrap").length) { // Classic editor
@@ -46,7 +45,7 @@
                 {
                     content: content,
                     post_id: jQuery("#post_ID").val(),
-                    settings: JSON.stringify(custom_settings),
+                    settings: JSON.stringify(settings),
                     type_id: type.ID,
                 }
             );

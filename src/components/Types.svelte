@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
     import { apiGet, apiPost, apiDelete } from '../libs/ajax.js';
-    import { types } from './stores.js';
+    import { types } from '../stores/types.js';
     import "../libs/slugify.js";
 
     let tab = 0;
@@ -117,6 +117,7 @@
                         <th scope="row">OpenAPI Model</th>
                         <td>
                             <select name="openai_model" bind:value="{type.openai_model}">
+                                <option value="text-davinci-003">Text-Davinci-003</option>
                                 <option value="text-davinci-002">Text-Davinci-002</option>
                                 <option value="text-curie-001">Text-Curie-001</option>
                                 <option value="text-babbage-001">Text-Babbage-001</option>

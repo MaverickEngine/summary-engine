@@ -332,7 +332,7 @@ class SummaryEngineAPI {
             }
             // print_r($params);
             $summary = $openapi->summarise($content, $params);
-            if (empty($summary)) throw new Exception("Response from OpenAI is empty");
+            if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
             $result = $this->save_results($post_id, $type_id, $content, $original_prompt, $params, $summary);
             // Set meta data for post
             update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));

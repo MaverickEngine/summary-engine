@@ -5,7 +5,7 @@
     export let summaries = [];
     export let summary_index = 0;
     export let summary_text = "";
-    export let custom_settings = {};
+    export let settings = {};
     export let type = {};
 
     let current_summary_index = 0;
@@ -27,14 +27,15 @@
     }
 
     export const set_settings = () => {
-        custom_settings.openai_model = summaries[summary_index].openai_model;
-        custom_settings.openai_max_tokens = summaries[summary_index].max_tokens;
-        custom_settings.openai_temperature = summaries[summary_index].temperature;
-        custom_settings.openai_frequency_penalty = summaries[summary_index].frequency_penalty;
-        custom_settings.openai_presentation_penalty = summaries[summary_index].presence_penalty;
-        custom_settings.openai_prompt = summaries[summary_index].prompt;
-        custom_settings.openai_top_p = summaries[summary_index].top_p;
-
+        settings.openai_model = summaries[summary_index].openai_model;
+        settings.openai_max_tokens = Number(summaries[summary_index].max_tokens);
+        settings.openai_temperature =  Number(summaries[summary_index].temperature);
+        settings.openai_frequency_penalty =  Number(summaries[summary_index].frequency_penalty);
+        settings.openai_presence_penalty =  Number(summaries[summary_index].presence_penalty);
+        settings.openai_prompt = summaries[summary_index].prompt;
+        settings.openai_top_p =  Number(summaries[summary_index].top_p);
+        settings = settings;
+        console.log(settings);
     }
 
     const saveCurrentSummary = async () => {
@@ -52,7 +53,7 @@
         }
     }
 
-    $: set_settings();
+    // $: set_settings();
 </script>
 
 <div id="summaryEngineNavigator">

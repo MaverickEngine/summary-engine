@@ -9,7 +9,6 @@
     onMount(async () => {
         try {
             types = await apiGet(`/summaryengine/v1/types`);
-            console.log({ types });
         } catch (e) {
             console.error(e);
         }

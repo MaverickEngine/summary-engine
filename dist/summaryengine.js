@@ -2,6 +2,7 @@ var summaryengine = (function (exports) {
     'use strict';
 
     function noop() { }
+    const identity = x => x;
     function run(fn) {
         return fn();
     }
@@ -20,8 +21,61 @@ var summaryengine = (function (exports) {
     function is_empty(obj) {
         return Object.keys(obj).length === 0;
     }
+
+    const is_client = typeof window !== 'undefined';
+    let now = is_client
+        ? () => window.performance.now()
+        : () => Date.now();
+    let raf = is_client ? cb => requestAnimationFrame(cb) : noop;
+
+    const tasks = new Set();
+    function run_tasks(now) {
+        tasks.forEach(task => {
+            if (!task.c(now)) {
+                tasks.delete(task);
+                task.f();
+            }
+        });
+        if (tasks.size !== 0)
+            raf(run_tasks);
+    }
+    /**
+     * Creates a new task that runs on each raf frame
+     * until it returns a falsy value or is aborted
+     */
+    function loop(callback) {
+        let task;
+        if (tasks.size === 0)
+            raf(run_tasks);
+        return {
+            promise: new Promise(fulfill => {
+                tasks.add(task = { c: callback, f: fulfill });
+            }),
+            abort() {
+                tasks.delete(task);
+            }
+        };
+    }
     function append(target, node) {
         target.appendChild(node);
+    }
+    function get_root_for_style(node) {
+        if (!node)
+            return document;
+        const root = node.getRootNode ? node.getRootNode() : node.ownerDocument;
+        if (root && root.host) {
+            return root;
+        }
+        return node.ownerDocument;
+    }
+    function append_empty_stylesheet(node) {
+        const style_element = element('style');
+        append_stylesheet(get_root_for_style(node), style_element);
+        return style_element.sheet;
+    }
+    function append_stylesheet(node, style) {
+        append(node.head || node, style);
+        return style.sheet;
     }
     function insert(target, node, anchor) {
         target.insertBefore(node, anchor || null);
@@ -51,11 +105,21 @@ var summaryengine = (function (exports) {
         node.addEventListener(event, handler, options);
         return () => node.removeEventListener(event, handler, options);
     }
+    function prevent_default(fn) {
+        return function (event) {
+            event.preventDefault();
+            // @ts-ignore
+            return fn.call(this, event);
+        };
+    }
     function attr(node, attribute, value) {
         if (value == null)
             node.removeAttribute(attribute);
         else if (node.getAttribute(attribute) !== value)
             node.setAttribute(attribute, value);
+    }
+    function to_number(value) {
+        return value === '' ? null : +value;
     }
     function children(element) {
         return Array.from(element.childNodes);
@@ -68,8 +132,92 @@ var summaryengine = (function (exports) {
     function set_input_value(input, value) {
         input.value = value == null ? '' : value;
     }
+    function select_option(select, value) {
+        for (let i = 0; i < select.options.length; i += 1) {
+            const option = select.options[i];
+            if (option.__value === value) {
+                option.selected = true;
+                return;
+            }
+        }
+        select.selectedIndex = -1; // no option should be selected
+    }
+    function select_value(select) {
+        const selected_option = select.querySelector(':checked') || select.options[0];
+        return selected_option && selected_option.__value;
+    }
     function toggle_class(element, name, toggle) {
         element.classList[toggle ? 'add' : 'remove'](name);
+    }
+    function custom_event(type, detail, { bubbles = false, cancelable = false } = {}) {
+        const e = document.createEvent('CustomEvent');
+        e.initCustomEvent(type, bubbles, cancelable, detail);
+        return e;
+    }
+
+    // we need to store the information for multiple documents because a Svelte application could also contain iframes
+    // https://github.com/sveltejs/svelte/issues/3624
+    const managed_styles = new Map();
+    let active = 0;
+    // https://github.com/darkskyapp/string-hash/blob/master/index.js
+    function hash(str) {
+        let hash = 5381;
+        let i = str.length;
+        while (i--)
+            hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
+        return hash >>> 0;
+    }
+    function create_style_information(doc, node) {
+        const info = { stylesheet: append_empty_stylesheet(node), rules: {} };
+        managed_styles.set(doc, info);
+        return info;
+    }
+    function create_rule(node, a, b, duration, delay, ease, fn, uid = 0) {
+        const step = 16.666 / duration;
+        let keyframes = '{\n';
+        for (let p = 0; p <= 1; p += step) {
+            const t = a + (b - a) * ease(p);
+            keyframes += p * 100 + `%{${fn(t, 1 - t)}}\n`;
+        }
+        const rule = keyframes + `100% {${fn(b, 1 - b)}}\n}`;
+        const name = `__svelte_${hash(rule)}_${uid}`;
+        const doc = get_root_for_style(node);
+        const { stylesheet, rules } = managed_styles.get(doc) || create_style_information(doc, node);
+        if (!rules[name]) {
+            rules[name] = true;
+            stylesheet.insertRule(`@keyframes ${name} ${rule}`, stylesheet.cssRules.length);
+        }
+        const animation = node.style.animation || '';
+        node.style.animation = `${animation ? `${animation}, ` : ''}${name} ${duration}ms linear ${delay}ms 1 both`;
+        active += 1;
+        return name;
+    }
+    function delete_rule(node, name) {
+        const previous = (node.style.animation || '').split(', ');
+        const next = previous.filter(name
+            ? anim => anim.indexOf(name) < 0 // remove specific animation
+            : anim => anim.indexOf('__svelte') === -1 // remove all Svelte animations
+        );
+        const deleted = previous.length - next.length;
+        if (deleted) {
+            node.style.animation = next.join(', ');
+            active -= deleted;
+            if (!active)
+                clear_rules();
+        }
+    }
+    function clear_rules() {
+        raf(() => {
+            if (active)
+                return;
+            managed_styles.forEach(info => {
+                const { ownerNode } = info.stylesheet;
+                // there is no ownerNode if it runs on jsdom.
+                if (ownerNode)
+                    detach(ownerNode);
+            });
+            managed_styles.clear();
+        });
     }
 
     let current_component;
@@ -178,6 +326,20 @@ var summaryengine = (function (exports) {
             $$.after_update.forEach(add_render_callback);
         }
     }
+
+    let promise;
+    function wait() {
+        if (!promise) {
+            promise = Promise.resolve();
+            promise.then(() => {
+                promise = null;
+            });
+        }
+        return promise;
+    }
+    function dispatch(node, direction, kind) {
+        node.dispatchEvent(custom_event(`${direction ? 'intro' : 'outro'}${kind}`));
+    }
     const outroing = new Set();
     let outros;
     function group_outros() {
@@ -217,6 +379,112 @@ var summaryengine = (function (exports) {
         else if (callback) {
             callback();
         }
+    }
+    const null_transition = { duration: 0 };
+    function create_bidirectional_transition(node, fn, params, intro) {
+        let config = fn(node, params);
+        let t = intro ? 0 : 1;
+        let running_program = null;
+        let pending_program = null;
+        let animation_name = null;
+        function clear_animation() {
+            if (animation_name)
+                delete_rule(node, animation_name);
+        }
+        function init(program, duration) {
+            const d = (program.b - t);
+            duration *= Math.abs(d);
+            return {
+                a: t,
+                b: program.b,
+                d,
+                duration,
+                start: program.start,
+                end: program.start + duration,
+                group: program.group
+            };
+        }
+        function go(b) {
+            const { delay = 0, duration = 300, easing = identity, tick = noop, css } = config || null_transition;
+            const program = {
+                start: now() + delay,
+                b
+            };
+            if (!b) {
+                // @ts-ignore todo: improve typings
+                program.group = outros;
+                outros.r += 1;
+            }
+            if (running_program || pending_program) {
+                pending_program = program;
+            }
+            else {
+                // if this is an intro, and there's a delay, we need to do
+                // an initial tick and/or apply CSS animation immediately
+                if (css) {
+                    clear_animation();
+                    animation_name = create_rule(node, t, b, duration, delay, easing, css);
+                }
+                if (b)
+                    tick(0, 1);
+                running_program = init(program, duration);
+                add_render_callback(() => dispatch(node, b, 'start'));
+                loop(now => {
+                    if (pending_program && now > pending_program.start) {
+                        running_program = init(pending_program, duration);
+                        pending_program = null;
+                        dispatch(node, running_program.b, 'start');
+                        if (css) {
+                            clear_animation();
+                            animation_name = create_rule(node, t, running_program.b, running_program.duration, 0, easing, config.css);
+                        }
+                    }
+                    if (running_program) {
+                        if (now >= running_program.end) {
+                            tick(t = running_program.b, 1 - t);
+                            dispatch(node, running_program.b, 'end');
+                            if (!pending_program) {
+                                // we're done
+                                if (running_program.b) {
+                                    // intro — we can tidy up immediately
+                                    clear_animation();
+                                }
+                                else {
+                                    // outro — needs to be coordinated
+                                    if (!--running_program.group.r)
+                                        run_all(running_program.group.c);
+                                }
+                            }
+                            running_program = null;
+                        }
+                        else if (now >= running_program.start) {
+                            const p = now - running_program.start;
+                            t = running_program.a + running_program.d * easing(p / running_program.duration);
+                            tick(t, 1 - t);
+                        }
+                    }
+                    return !!(running_program || pending_program);
+                });
+            }
+        }
+        return {
+            run(b) {
+                if (is_function(config)) {
+                    wait().then(() => {
+                        // @ts-ignore
+                        config = config();
+                        go(b);
+                    });
+                }
+                else {
+                    go(b);
+                }
+            },
+            end() {
+                clear_animation();
+                running_program = pending_program = null;
+            }
+        };
     }
 
     function bind(component, name, callback) {
@@ -398,57 +666,9 @@ var summaryengine = (function (exports) {
         });
     }
 
-    const subscriber_queue = [];
-    /**
-     * Create a `Writable` store that allows both updating and reading by subscription.
-     * @param {*=}value initial value
-     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
-     */
-    function writable(value, start = noop) {
-        let stop;
-        const subscribers = new Set();
-        function set(new_value) {
-            if (safe_not_equal(value, new_value)) {
-                value = new_value;
-                if (stop) { // store is ready
-                    const run_queue = !subscriber_queue.length;
-                    for (const subscriber of subscribers) {
-                        subscriber[1]();
-                        subscriber_queue.push(subscriber, value);
-                    }
-                    if (run_queue) {
-                        for (let i = 0; i < subscriber_queue.length; i += 2) {
-                            subscriber_queue[i][0](subscriber_queue[i + 1]);
-                        }
-                        subscriber_queue.length = 0;
-                    }
-                }
-            }
-        }
-        function update(fn) {
-            set(fn(value));
-        }
-        function subscribe(run, invalidate = noop) {
-            const subscriber = [run, invalidate];
-            subscribers.add(subscriber);
-            if (subscribers.size === 1) {
-                stop = start(set) || noop;
-            }
-            run(value);
-            return () => {
-                subscribers.delete(subscriber);
-                if (subscribers.size === 0) {
-                    stop();
-                    stop = null;
-                }
-            };
-        }
-        return { set, update, subscribe };
-    }
-
     /* src/components/SubmissionsLeft.svelte generated by Svelte v3.52.0 */
 
-    function create_fragment$6(ctx) {
+    function create_fragment$7(ctx) {
     	let div;
     	let span0;
     	let t0;
@@ -492,7 +712,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    function instance$5($$self, $$props, $$invalidate) {
+    function instance$6($$self, $$props, $$invalidate) {
     	let { summaries = [] } = $$props;
     	let { submissions_left = 0 } = $$props;
     	const max_summaries = Number(summaryengine_max_number_of_submissions_per_post);
@@ -518,13 +738,13 @@ var summaryengine = (function (exports) {
     class SubmissionsLeft extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$5, create_fragment$6, safe_not_equal, { summaries: 1, submissions_left: 0 });
+    		init(this, options, instance$6, create_fragment$7, safe_not_equal, { summaries: 1, submissions_left: 0 });
     	}
     }
 
     /* src/components/Navigation.svelte generated by Svelte v3.52.0 */
 
-    function create_if_block$3(ctx) {
+    function create_if_block$4(ctx) {
     	let button;
     	let mounted;
     	let dispose;
@@ -554,7 +774,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    function create_fragment$5(ctx) {
+    function create_fragment$6(ctx) {
     	let div;
     	let button0;
     	let t0;
@@ -566,7 +786,7 @@ var summaryengine = (function (exports) {
     	let t3;
     	let mounted;
     	let dispose;
-    	let if_block = /*summary_index*/ ctx[0] != /*current_summary_index*/ ctx[2] && create_if_block$3(ctx);
+    	let if_block = /*summary_index*/ ctx[0] != /*current_summary_index*/ ctx[2] && create_if_block$4(ctx);
 
     	return {
     		c() {
@@ -621,7 +841,7 @@ var summaryengine = (function (exports) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
-    					if_block = create_if_block$3(ctx);
+    					if_block = create_if_block$4(ctx);
     					if_block.c();
     					if_block.m(div, null);
     				}
@@ -641,11 +861,11 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    function instance$4($$self, $$props, $$invalidate) {
+    function instance$5($$self, $$props, $$invalidate) {
     	let { summaries = [] } = $$props;
     	let { summary_index = 0 } = $$props;
     	let { summary_text = "" } = $$props;
-    	let { custom_settings = {} } = $$props;
+    	let { settings = {} } = $$props;
     	let { type = {} } = $$props;
     	let current_summary_index = 0;
 
@@ -668,13 +888,15 @@ var summaryengine = (function (exports) {
     	};
 
     	const set_settings = () => {
-    		$$invalidate(7, custom_settings.openai_model = summaries[summary_index].openai_model, custom_settings);
-    		$$invalidate(7, custom_settings.openai_max_tokens = summaries[summary_index].max_tokens, custom_settings);
-    		$$invalidate(7, custom_settings.openai_temperature = summaries[summary_index].temperature, custom_settings);
-    		$$invalidate(7, custom_settings.openai_frequency_penalty = summaries[summary_index].frequency_penalty, custom_settings);
-    		$$invalidate(7, custom_settings.openai_presentation_penalty = summaries[summary_index].presence_penalty, custom_settings);
-    		$$invalidate(7, custom_settings.openai_prompt = summaries[summary_index].prompt, custom_settings);
-    		$$invalidate(7, custom_settings.openai_top_p = summaries[summary_index].top_p, custom_settings);
+    		$$invalidate(7, settings.openai_model = summaries[summary_index].openai_model, settings);
+    		$$invalidate(7, settings.openai_max_tokens = Number(summaries[summary_index].max_tokens), settings);
+    		$$invalidate(7, settings.openai_temperature = Number(summaries[summary_index].temperature), settings);
+    		$$invalidate(7, settings.openai_frequency_penalty = Number(summaries[summary_index].frequency_penalty), settings);
+    		$$invalidate(7, settings.openai_presence_penalty = Number(summaries[summary_index].presence_penalty), settings);
+    		$$invalidate(7, settings.openai_prompt = summaries[summary_index].prompt, settings);
+    		$$invalidate(7, settings.openai_top_p = Number(summaries[summary_index].top_p), settings);
+    		$$invalidate(7, settings);
+    		console.log(settings);
     	};
 
     	const saveCurrentSummary = async () => {
@@ -697,11 +919,9 @@ var summaryengine = (function (exports) {
     		if ('summaries' in $$props) $$invalidate(1, summaries = $$props.summaries);
     		if ('summary_index' in $$props) $$invalidate(0, summary_index = $$props.summary_index);
     		if ('summary_text' in $$props) $$invalidate(6, summary_text = $$props.summary_text);
-    		if ('custom_settings' in $$props) $$invalidate(7, custom_settings = $$props.custom_settings);
+    		if ('settings' in $$props) $$invalidate(7, settings = $$props.settings);
     		if ('type' in $$props) $$invalidate(8, type = $$props.type);
     	};
-
-    	set_settings();
 
     	return [
     		summary_index,
@@ -711,7 +931,7 @@ var summaryengine = (function (exports) {
     		next,
     		saveCurrentSummary,
     		summary_text,
-    		custom_settings,
+    		settings,
     		type,
     		set_settings
     	];
@@ -721,11 +941,11 @@ var summaryengine = (function (exports) {
     	constructor(options) {
     		super();
 
-    		init(this, options, instance$4, create_fragment$5, safe_not_equal, {
+    		init(this, options, instance$5, create_fragment$6, safe_not_equal, {
     			summaries: 1,
     			summary_index: 0,
     			summary_text: 6,
-    			custom_settings: 7,
+    			settings: 7,
     			type: 8,
     			set_settings: 9
     		});
@@ -757,7 +977,7 @@ var summaryengine = (function (exports) {
     }
 
     // (34:4) {#if rated}
-    function create_if_block$2(ctx) {
+    function create_if_block$3(ctx) {
     	let div;
 
     	return {
@@ -775,7 +995,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    function create_fragment$4(ctx) {
+    function create_fragment$5(ctx) {
     	let div1;
     	let div0;
     	let span0;
@@ -786,7 +1006,7 @@ var summaryengine = (function (exports) {
     	let dispose;
 
     	function select_block_type(ctx, dirty) {
-    		if (/*rated*/ ctx[0]) return create_if_block$2;
+    		if (/*rated*/ ctx[0]) return create_if_block$3;
     		return create_else_block$1;
     	}
 
@@ -863,11 +1083,11 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    function instance$3($$self, $$props, $$invalidate) {
+    function instance$4($$self, $$props, $$invalidate) {
     	let { summary_id = 0 } = $$props;
     	let { summary_index = 0 } = $$props;
     	let { summaries = [] } = $$props;
-    	let { type = 0 } = $$props;
+    	let { type = {} } = $$props;
     	let rated = false;
     	let rating = 0;
 
@@ -921,7 +1141,7 @@ var summaryengine = (function (exports) {
     	constructor(options) {
     		super();
 
-    		init(this, options, instance$3, create_fragment$4, safe_not_equal, {
+    		init(this, options, instance$4, create_fragment$5, safe_not_equal, {
     			summary_id: 4,
     			summary_index: 5,
     			summaries: 3,
@@ -932,7 +1152,7 @@ var summaryengine = (function (exports) {
 
     /* src/components/Spinner.svelte generated by Svelte v3.52.0 */
 
-    function create_fragment$3(ctx) {
+    function create_fragment$4(ctx) {
     	let div4;
 
     	return {
@@ -961,7 +1181,7 @@ var summaryengine = (function (exports) {
     class Spinner extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, null, create_fragment$3, safe_not_equal, {});
+    		init(this, options, null, create_fragment$4, safe_not_equal, {});
     	}
     }
 
@@ -1009,8 +1229,8 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (66:0) {#if !loading}
-    function create_if_block$1(ctx) {
+    // (65:0) {#if !loading}
+    function create_if_block$2(ctx) {
     	let button;
     	let t;
     	let button_disabled_value;
@@ -1050,12 +1270,12 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    function create_fragment$2(ctx) {
+    function create_fragment$3(ctx) {
     	let current_block_type_index;
     	let if_block;
     	let if_block_anchor;
     	let current;
-    	const if_block_creators = [create_if_block$1, create_else_block];
+    	const if_block_creators = [create_if_block$2, create_else_block];
     	const if_blocks = [];
 
     	function select_block_type(ctx, dirty) {
@@ -1119,7 +1339,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    function instance$2($$self, $$props, $$invalidate) {
+    function instance$3($$self, $$props, $$invalidate) {
     	let { type } = $$props;
     	let { loading = false } = $$props;
     	let { submissions_left = 0 } = $$props;
@@ -1127,7 +1347,7 @@ var summaryengine = (function (exports) {
     	let { summary_text = "" } = $$props;
     	let { summary_id = 0 } = $$props;
     	let { summary_index = 0 } = $$props;
-    	let { custom_settings = 0 } = $$props;
+    	let { settings = {} } = $$props;
 
     	const get_content = () => {
     		if (jQuery("#titlewrap").length) {
@@ -1170,7 +1390,7 @@ var summaryengine = (function (exports) {
     			const response = await apiPost("summaryengine/v1/summarise", {
     				content,
     				post_id: jQuery("#post_ID").val(),
-    				settings: JSON.stringify(custom_settings),
+    				settings: JSON.stringify(settings),
     				type_id: type.ID
     			});
 
@@ -1195,7 +1415,7 @@ var summaryengine = (function (exports) {
     		if ('summary_text' in $$props) $$invalidate(4, summary_text = $$props.summary_text);
     		if ('summary_id' in $$props) $$invalidate(5, summary_id = $$props.summary_id);
     		if ('summary_index' in $$props) $$invalidate(6, summary_index = $$props.summary_index);
-    		if ('custom_settings' in $$props) $$invalidate(8, custom_settings = $$props.custom_settings);
+    		if ('settings' in $$props) $$invalidate(8, settings = $$props.settings);
     	};
 
     	return [
@@ -1207,7 +1427,7 @@ var summaryengine = (function (exports) {
     		summary_id,
     		summary_index,
     		type,
-    		custom_settings
+    		settings
     	];
     }
 
@@ -1215,7 +1435,7 @@ var summaryengine = (function (exports) {
     	constructor(options) {
     		super();
 
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, {
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, {
     			type: 7,
     			loading: 0,
     			submissions_left: 1,
@@ -1223,8 +1443,493 @@ var summaryengine = (function (exports) {
     			summary_text: 4,
     			summary_id: 5,
     			summary_index: 6,
-    			custom_settings: 8
+    			settings: 8
     		});
+    	}
+    }
+
+    function cubicOut(t) {
+        const f = t - 1.0;
+        return f * f * f + 1.0;
+    }
+
+    function slide(node, { delay = 0, duration = 400, easing = cubicOut } = {}) {
+        const style = getComputedStyle(node);
+        const opacity = +style.opacity;
+        const height = parseFloat(style.height);
+        const padding_top = parseFloat(style.paddingTop);
+        const padding_bottom = parseFloat(style.paddingBottom);
+        const margin_top = parseFloat(style.marginTop);
+        const margin_bottom = parseFloat(style.marginBottom);
+        const border_top_width = parseFloat(style.borderTopWidth);
+        const border_bottom_width = parseFloat(style.borderBottomWidth);
+        return {
+            delay,
+            duration,
+            easing,
+            css: t => 'overflow: hidden;' +
+                `opacity: ${Math.min(t * 20, 1) * opacity};` +
+                `height: ${t * height}px;` +
+                `padding-top: ${t * padding_top}px;` +
+                `padding-bottom: ${t * padding_bottom}px;` +
+                `margin-top: ${t * margin_top}px;` +
+                `margin-bottom: ${t * margin_bottom}px;` +
+                `border-top-width: ${t * border_top_width}px;` +
+                `border-bottom-width: ${t * border_bottom_width}px;`
+        };
+    }
+
+    /* src/components/Settings.svelte generated by Svelte v3.52.0 */
+
+    function create_if_block$1(ctx) {
+    	let div;
+    	let table;
+    	let tr0;
+    	let th0;
+    	let t1;
+    	let td0;
+    	let input0;
+    	let t2;
+    	let p0;
+    	let t4;
+    	let tr1;
+    	let th1;
+    	let t6;
+    	let td1;
+    	let select;
+    	let option0;
+    	let option1;
+    	let option2;
+    	let option3;
+    	let option4;
+    	let t12;
+    	let tr2;
+    	let th2;
+    	let t14;
+    	let td2;
+    	let input1;
+    	let t15;
+    	let p1;
+    	let t17;
+    	let tr3;
+    	let th3;
+    	let t19;
+    	let td3;
+    	let input2;
+    	let t20;
+    	let p2;
+    	let t22;
+    	let tr4;
+    	let th4;
+    	let t24;
+    	let td4;
+    	let input3;
+    	let t25;
+    	let p3;
+    	let t27;
+    	let tr5;
+    	let th5;
+    	let t29;
+    	let td5;
+    	let input4;
+    	let t30;
+    	let p4;
+    	let t32;
+    	let tr6;
+    	let th6;
+    	let t34;
+    	let td6;
+    	let input5;
+    	let t35;
+    	let p5;
+    	let div_transition;
+    	let current;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			div = element("div");
+    			table = element("table");
+    			tr0 = element("tr");
+    			th0 = element("th");
+    			th0.textContent = "Prompt";
+    			t1 = space();
+    			td0 = element("td");
+    			input0 = element("input");
+    			t2 = space();
+    			p0 = element("p");
+    			p0.textContent = "The instruction to the model on what you'd like to generate.";
+    			t4 = space();
+    			tr1 = element("tr");
+    			th1 = element("th");
+    			th1.textContent = "OpenAPI Model";
+    			t6 = space();
+    			td1 = element("td");
+    			select = element("select");
+    			option0 = element("option");
+    			option0.textContent = "Text-Davinci-003";
+    			option1 = element("option");
+    			option1.textContent = "Text-Davinci-002";
+    			option2 = element("option");
+    			option2.textContent = "Text-Curie-001";
+    			option3 = element("option");
+    			option3.textContent = "Text-Babbage-001";
+    			option4 = element("option");
+    			option4.textContent = "Text-Ada-001";
+    			t12 = space();
+    			tr2 = element("tr");
+    			th2 = element("th");
+    			th2.textContent = "Max tokens";
+    			t14 = space();
+    			td2 = element("td");
+    			input1 = element("input");
+    			t15 = space();
+    			p1 = element("p");
+    			p1.textContent = "The maximum number of tokens to generate in the completion.";
+    			t17 = space();
+    			tr3 = element("tr");
+    			th3 = element("th");
+    			th3.textContent = "Temperature";
+    			t19 = space();
+    			td3 = element("td");
+    			input2 = element("input");
+    			t20 = space();
+    			p2 = element("p");
+    			p2.textContent = "What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. We generally recommend altering this or top_p but not both.";
+    			t22 = space();
+    			tr4 = element("tr");
+    			th4 = element("th");
+    			th4.textContent = "Top-P";
+    			t24 = space();
+    			td4 = element("td");
+    			input3 = element("input");
+    			t25 = space();
+    			p3 = element("p");
+    			p3.textContent = "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both.";
+    			t27 = space();
+    			tr5 = element("tr");
+    			th5 = element("th");
+    			th5.textContent = "Presence penalty";
+    			t29 = space();
+    			td5 = element("td");
+    			input4 = element("input");
+    			t30 = space();
+    			p4 = element("p");
+    			p4.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.";
+    			t32 = space();
+    			tr6 = element("tr");
+    			th6 = element("th");
+    			th6.textContent = "Frequency penalty";
+    			t34 = space();
+    			td6 = element("td");
+    			input5 = element("input");
+    			t35 = space();
+    			p5 = element("p");
+    			p5.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.";
+    			attr(th0, "scope", "row");
+    			attr(input0, "type", "text");
+    			attr(input0, "class", "regular-text");
+    			input0.required = true;
+    			attr(th1, "scope", "row");
+    			option0.__value = "text-davinci-003";
+    			option0.value = option0.__value;
+    			option1.__value = "text-davinci-002";
+    			option1.value = option1.__value;
+    			option2.__value = "text-curie-001";
+    			option2.value = option2.__value;
+    			option3.__value = "text-babbage-001";
+    			option3.value = option3.__value;
+    			option4.__value = "text-ada-001";
+    			option4.value = option4.__value;
+    			if (/*settings*/ ctx[0].openai_model === void 0) add_render_callback(() => /*select_change_handler*/ ctx[3].call(select));
+    			attr(th2, "scope", "row");
+    			attr(input1, "type", "number");
+    			attr(input1, "class", "regular-text");
+    			attr(input1, "min", "0");
+    			attr(input1, "max", "2048");
+    			attr(input1, "step", "1");
+    			attr(th3, "scope", "row");
+    			attr(input2, "type", "number");
+    			attr(input2, "class", "regular-text");
+    			attr(input2, "min", "0");
+    			attr(input2, "max", "1");
+    			attr(input2, "step", "0.1");
+    			attr(th4, "scope", "row");
+    			attr(input3, "type", "number");
+    			attr(input3, "class", "regular-text");
+    			attr(input3, "min", "0");
+    			attr(input3, "max", "1");
+    			attr(input3, "step", "0.1");
+    			attr(th5, "scope", "row");
+    			attr(input4, "type", "number");
+    			attr(input4, "class", "regular-text");
+    			attr(input4, "min", "-2");
+    			attr(input4, "max", "2");
+    			attr(input4, "step", "0.1");
+    			attr(th6, "scope", "row");
+    			attr(input5, "type", "number");
+    			attr(input5, "class", "regular-text");
+    			attr(input5, "min", "-2");
+    			attr(input5, "max", "2");
+    			attr(input5, "step", "0.1");
+    			attr(table, "class", "form-table");
+    			attr(div, "class", "summaryengine-settings");
+    		},
+    		m(target, anchor) {
+    			insert(target, div, anchor);
+    			append(div, table);
+    			append(table, tr0);
+    			append(tr0, th0);
+    			append(tr0, t1);
+    			append(tr0, td0);
+    			append(td0, input0);
+    			set_input_value(input0, /*settings*/ ctx[0].openai_prompt);
+    			append(td0, t2);
+    			append(td0, p0);
+    			append(table, t4);
+    			append(table, tr1);
+    			append(tr1, th1);
+    			append(tr1, t6);
+    			append(tr1, td1);
+    			append(td1, select);
+    			append(select, option0);
+    			append(select, option1);
+    			append(select, option2);
+    			append(select, option3);
+    			append(select, option4);
+    			select_option(select, /*settings*/ ctx[0].openai_model);
+    			append(table, t12);
+    			append(table, tr2);
+    			append(tr2, th2);
+    			append(tr2, t14);
+    			append(tr2, td2);
+    			append(td2, input1);
+    			set_input_value(input1, /*settings*/ ctx[0].openai_max_tokens);
+    			append(td2, t15);
+    			append(td2, p1);
+    			append(table, t17);
+    			append(table, tr3);
+    			append(tr3, th3);
+    			append(tr3, t19);
+    			append(tr3, td3);
+    			append(td3, input2);
+    			set_input_value(input2, /*settings*/ ctx[0].openai_temperature);
+    			append(td3, t20);
+    			append(td3, p2);
+    			append(table, t22);
+    			append(table, tr4);
+    			append(tr4, th4);
+    			append(tr4, t24);
+    			append(tr4, td4);
+    			append(td4, input3);
+    			set_input_value(input3, /*settings*/ ctx[0].openai_top_p);
+    			append(td4, t25);
+    			append(td4, p3);
+    			append(table, t27);
+    			append(table, tr5);
+    			append(tr5, th5);
+    			append(tr5, t29);
+    			append(tr5, td5);
+    			append(td5, input4);
+    			set_input_value(input4, /*settings*/ ctx[0].openai_presence_penalty);
+    			append(td5, t30);
+    			append(td5, p4);
+    			append(table, t32);
+    			append(table, tr6);
+    			append(tr6, th6);
+    			append(tr6, t34);
+    			append(tr6, td6);
+    			append(td6, input5);
+    			set_input_value(input5, /*settings*/ ctx[0].openai_frequency_penalty);
+    			append(td6, t35);
+    			append(td6, p5);
+    			current = true;
+
+    			if (!mounted) {
+    				dispose = [
+    					listen(input0, "input", /*input0_input_handler*/ ctx[2]),
+    					listen(select, "change", /*select_change_handler*/ ctx[3]),
+    					listen(input1, "input", /*input1_input_handler*/ ctx[4]),
+    					listen(input2, "input", /*input2_input_handler*/ ctx[5]),
+    					listen(input3, "input", /*input3_input_handler*/ ctx[6]),
+    					listen(input4, "input", /*input4_input_handler*/ ctx[7]),
+    					listen(input5, "input", /*input5_input_handler*/ ctx[8])
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty & /*settings*/ 1 && input0.value !== /*settings*/ ctx[0].openai_prompt) {
+    				set_input_value(input0, /*settings*/ ctx[0].openai_prompt);
+    			}
+
+    			if (dirty & /*settings*/ 1) {
+    				select_option(select, /*settings*/ ctx[0].openai_model);
+    			}
+
+    			if (dirty & /*settings*/ 1 && to_number(input1.value) !== /*settings*/ ctx[0].openai_max_tokens) {
+    				set_input_value(input1, /*settings*/ ctx[0].openai_max_tokens);
+    			}
+
+    			if (dirty & /*settings*/ 1 && to_number(input2.value) !== /*settings*/ ctx[0].openai_temperature) {
+    				set_input_value(input2, /*settings*/ ctx[0].openai_temperature);
+    			}
+
+    			if (dirty & /*settings*/ 1 && to_number(input3.value) !== /*settings*/ ctx[0].openai_top_p) {
+    				set_input_value(input3, /*settings*/ ctx[0].openai_top_p);
+    			}
+
+    			if (dirty & /*settings*/ 1 && to_number(input4.value) !== /*settings*/ ctx[0].openai_presence_penalty) {
+    				set_input_value(input4, /*settings*/ ctx[0].openai_presence_penalty);
+    			}
+
+    			if (dirty & /*settings*/ 1 && to_number(input5.value) !== /*settings*/ ctx[0].openai_frequency_penalty) {
+    				set_input_value(input5, /*settings*/ ctx[0].openai_frequency_penalty);
+    			}
+    		},
+    		i(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!div_transition) div_transition = create_bidirectional_transition(div, slide, { duration: 1000 }, true);
+    				div_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o(local) {
+    			if (!div_transition) div_transition = create_bidirectional_transition(div, slide, { duration: 1000 }, false);
+    			div_transition.run(0);
+    			current = false;
+    		},
+    		d(detaching) {
+    			if (detaching) detach(div);
+    			if (detaching && div_transition) div_transition.end();
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+    }
+
+    function create_fragment$2(ctx) {
+    	let div;
+    	let current;
+    	let if_block = /*visible*/ ctx[1] && create_if_block$1(ctx);
+
+    	return {
+    		c() {
+    			div = element("div");
+    			if (if_block) if_block.c();
+    			attr(div, "class", "summaryengine-settings-container");
+    		},
+    		m(target, anchor) {
+    			insert(target, div, anchor);
+    			if (if_block) if_block.m(div, null);
+    			current = true;
+    		},
+    		p(ctx, [dirty]) {
+    			if (/*visible*/ ctx[1]) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+
+    					if (dirty & /*visible*/ 2) {
+    						transition_in(if_block, 1);
+    					}
+    				} else {
+    					if_block = create_if_block$1(ctx);
+    					if_block.c();
+    					transition_in(if_block, 1);
+    					if_block.m(div, null);
+    				}
+    			} else if (if_block) {
+    				group_outros();
+
+    				transition_out(if_block, 1, 1, () => {
+    					if_block = null;
+    				});
+
+    				check_outros();
+    			}
+    		},
+    		i(local) {
+    			if (current) return;
+    			transition_in(if_block);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(if_block);
+    			current = false;
+    		},
+    		d(detaching) {
+    			if (detaching) detach(div);
+    			if (if_block) if_block.d();
+    		}
+    	};
+    }
+
+    function instance$2($$self, $$props, $$invalidate) {
+    	let { settings } = $$props;
+    	let { visible = false } = $$props;
+
+    	function input0_input_handler() {
+    		settings.openai_prompt = this.value;
+    		$$invalidate(0, settings);
+    	}
+
+    	function select_change_handler() {
+    		settings.openai_model = select_value(this);
+    		$$invalidate(0, settings);
+    	}
+
+    	function input1_input_handler() {
+    		settings.openai_max_tokens = to_number(this.value);
+    		$$invalidate(0, settings);
+    	}
+
+    	function input2_input_handler() {
+    		settings.openai_temperature = to_number(this.value);
+    		$$invalidate(0, settings);
+    	}
+
+    	function input3_input_handler() {
+    		settings.openai_top_p = to_number(this.value);
+    		$$invalidate(0, settings);
+    	}
+
+    	function input4_input_handler() {
+    		settings.openai_presence_penalty = to_number(this.value);
+    		$$invalidate(0, settings);
+    	}
+
+    	function input5_input_handler() {
+    		settings.openai_frequency_penalty = to_number(this.value);
+    		$$invalidate(0, settings);
+    	}
+
+    	$$self.$$set = $$props => {
+    		if ('settings' in $$props) $$invalidate(0, settings = $$props.settings);
+    		if ('visible' in $$props) $$invalidate(1, visible = $$props.visible);
+    	};
+
+    	return [
+    		settings,
+    		visible,
+    		input0_input_handler,
+    		select_change_handler,
+    		input1_input_handler,
+    		input2_input_handler,
+    		input3_input_handler,
+    		input4_input_handler,
+    		input5_input_handler
+    	];
+    }
+
+    class Settings extends SvelteComponent {
+    	constructor(options) {
+    		super();
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { settings: 0, visible: 1 });
     	}
     }
 
@@ -1233,20 +1938,20 @@ var summaryengine = (function (exports) {
     function create_if_block_1(ctx) {
     	let navigation;
     	let updating_summary_text;
-    	let updating_summary_id;
     	let updating_summary_index;
+    	let updating_settings;
     	let current;
 
     	function navigation_summary_text_binding(value) {
-    		/*navigation_summary_text_binding*/ ctx[13](value);
-    	}
-
-    	function navigation_summary_id_binding(value) {
-    		/*navigation_summary_id_binding*/ ctx[14](value);
+    		/*navigation_summary_text_binding*/ ctx[17](value);
     	}
 
     	function navigation_summary_index_binding(value) {
-    		/*navigation_summary_index_binding*/ ctx[15](value);
+    		/*navigation_summary_index_binding*/ ctx[18](value);
+    	}
+
+    	function navigation_settings_binding(value) {
+    		/*navigation_settings_binding*/ ctx[19](value);
     	}
 
     	let navigation_props = {
@@ -1258,18 +1963,18 @@ var summaryengine = (function (exports) {
     		navigation_props.summary_text = /*summary_text*/ ctx[2];
     	}
 
-    	if (/*summary_id*/ ctx[3] !== void 0) {
-    		navigation_props.summary_id = /*summary_id*/ ctx[3];
-    	}
-
     	if (/*summary_index*/ ctx[4] !== void 0) {
     		navigation_props.summary_index = /*summary_index*/ ctx[4];
     	}
 
+    	if (/*settings*/ ctx[6] !== void 0) {
+    		navigation_props.settings = /*settings*/ ctx[6];
+    	}
+
     	navigation = new Navigation({ props: navigation_props });
     	binding_callbacks.push(() => bind(navigation, 'summary_text', navigation_summary_text_binding));
-    	binding_callbacks.push(() => bind(navigation, 'summary_id', navigation_summary_id_binding));
     	binding_callbacks.push(() => bind(navigation, 'summary_index', navigation_summary_index_binding));
+    	binding_callbacks.push(() => bind(navigation, 'settings', navigation_settings_binding));
 
     	return {
     		c() {
@@ -1290,16 +1995,16 @@ var summaryengine = (function (exports) {
     				add_flush_callback(() => updating_summary_text = false);
     			}
 
-    			if (!updating_summary_id && dirty & /*summary_id*/ 8) {
-    				updating_summary_id = true;
-    				navigation_changes.summary_id = /*summary_id*/ ctx[3];
-    				add_flush_callback(() => updating_summary_id = false);
-    			}
-
     			if (!updating_summary_index && dirty & /*summary_index*/ 16) {
     				updating_summary_index = true;
     				navigation_changes.summary_index = /*summary_index*/ ctx[4];
     				add_flush_callback(() => updating_summary_index = false);
+    			}
+
+    			if (!updating_settings && dirty & /*settings*/ 64) {
+    				updating_settings = true;
+    				navigation_changes.settings = /*settings*/ ctx[6];
+    				add_flush_callback(() => updating_settings = false);
     			}
 
     			navigation.$set(navigation_changes);
@@ -1319,19 +2024,18 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (46:8) {#if summary_id > 0}
+    // (80:8) {#if summary_id > 0}
     function create_if_block(ctx) {
     	let rate;
     	let updating_summaries;
     	let current;
 
     	function rate_summaries_binding(value) {
-    		/*rate_summaries_binding*/ ctx[16](value);
+    		/*rate_summaries_binding*/ ctx[20](value);
     	}
 
     	let rate_props = {
     		type: /*type*/ ctx[0],
-    		summary_text: /*summary_text*/ ctx[2],
     		summary_id: /*summary_id*/ ctx[3],
     		summary_index: /*summary_index*/ ctx[4]
     	};
@@ -1354,7 +2058,6 @@ var summaryengine = (function (exports) {
     		p(ctx, dirty) {
     			const rate_changes = {};
     			if (dirty & /*type*/ 1) rate_changes.type = /*type*/ ctx[0];
-    			if (dirty & /*summary_text*/ 4) rate_changes.summary_text = /*summary_text*/ ctx[2];
     			if (dirty & /*summary_id*/ 8) rate_changes.summary_id = /*summary_id*/ ctx[3];
     			if (dirty & /*summary_index*/ 16) rate_changes.summary_index = /*summary_index*/ ctx[4];
 
@@ -1382,52 +2085,74 @@ var summaryengine = (function (exports) {
     }
 
     function create_fragment$1(ctx) {
-    	let div1;
+    	let div2;
+    	let div0;
     	let h3;
     	let t0_value = /*type*/ ctx[0].name + "";
     	let t0;
     	let t1;
-    	let label;
+    	let button;
     	let t3;
-    	let textarea;
+    	let settings_1;
+    	let updating_settings;
     	let t4;
-    	let div0;
+    	let label;
+    	let t6;
+    	let textarea;
+    	let t7;
+    	let div1;
     	let generatesummary;
     	let updating_summary_text;
     	let updating_summary_id;
     	let updating_summary_index;
     	let updating_submissions_left;
     	let updating_summaries;
-    	let t5;
+    	let t8;
     	let submissionsleft;
     	let updating_submissions_left_1;
-    	let t6;
-    	let t7;
+    	let t9;
+    	let t10;
     	let current;
     	let mounted;
     	let dispose;
 
+    	function settings_1_settings_binding(value) {
+    		/*settings_1_settings_binding*/ ctx[9](value);
+    	}
+
+    	let settings_1_props = { visible: /*settings_visible*/ ctx[7] };
+
+    	if (/*settings*/ ctx[6] !== void 0) {
+    		settings_1_props.settings = /*settings*/ ctx[6];
+    	}
+
+    	settings_1 = new Settings({ props: settings_1_props });
+    	binding_callbacks.push(() => bind(settings_1, 'settings', settings_1_settings_binding));
+
     	function generatesummary_summary_text_binding(value) {
-    		/*generatesummary_summary_text_binding*/ ctx[7](value);
+    		/*generatesummary_summary_text_binding*/ ctx[11](value);
     	}
 
     	function generatesummary_summary_id_binding(value) {
-    		/*generatesummary_summary_id_binding*/ ctx[8](value);
+    		/*generatesummary_summary_id_binding*/ ctx[12](value);
     	}
 
     	function generatesummary_summary_index_binding(value) {
-    		/*generatesummary_summary_index_binding*/ ctx[9](value);
+    		/*generatesummary_summary_index_binding*/ ctx[13](value);
     	}
 
     	function generatesummary_submissions_left_binding(value) {
-    		/*generatesummary_submissions_left_binding*/ ctx[10](value);
+    		/*generatesummary_submissions_left_binding*/ ctx[14](value);
     	}
 
     	function generatesummary_summaries_binding(value) {
-    		/*generatesummary_summaries_binding*/ ctx[11](value);
+    		/*generatesummary_summaries_binding*/ ctx[15](value);
     	}
 
-    	let generatesummary_props = { type: /*type*/ ctx[0] };
+    	let generatesummary_props = {
+    		type: /*type*/ ctx[0],
+    		settings: /*settings*/ ctx[6]
+    	};
 
     	if (/*summary_text*/ ctx[2] !== void 0) {
     		generatesummary_props.summary_text = /*summary_text*/ ctx[2];
@@ -1457,13 +2182,10 @@ var summaryengine = (function (exports) {
     	binding_callbacks.push(() => bind(generatesummary, 'summaries', generatesummary_summaries_binding));
 
     	function submissionsleft_submissions_left_binding(value) {
-    		/*submissionsleft_submissions_left_binding*/ ctx[12](value);
+    		/*submissionsleft_submissions_left_binding*/ ctx[16](value);
     	}
 
-    	let submissionsleft_props = {
-    		type: /*type*/ ctx[0],
-    		summaries: /*summaries*/ ctx[1]
-    	};
+    	let submissionsleft_props = { summaries: /*summaries*/ ctx[1] };
 
     	if (/*submissions_left*/ ctx[5] !== void 0) {
     		submissionsleft_props.submissions_left = /*submissions_left*/ ctx[5];
@@ -1476,61 +2198,88 @@ var summaryengine = (function (exports) {
 
     	return {
     		c() {
-    			div1 = element("div");
+    			div2 = element("div");
+    			div0 = element("div");
     			h3 = element("h3");
     			t0 = text(t0_value);
     			t1 = space();
+    			button = element("button");
+    			button.textContent = "Settings";
+    			t3 = space();
+    			create_component(settings_1.$$.fragment);
+    			t4 = space();
     			label = element("label");
     			label.textContent = "Summary";
-    			t3 = space();
-    			textarea = element("textarea");
-    			t4 = space();
-    			div0 = element("div");
-    			create_component(generatesummary.$$.fragment);
-    			t5 = space();
-    			create_component(submissionsleft.$$.fragment);
     			t6 = space();
-    			if (if_block0) if_block0.c();
+    			textarea = element("textarea");
     			t7 = space();
+    			div1 = element("div");
+    			create_component(generatesummary.$$.fragment);
+    			t8 = space();
+    			create_component(submissionsleft.$$.fragment);
+    			t9 = space();
+    			if (if_block0) if_block0.c();
+    			t10 = space();
     			if (if_block1) if_block1.c();
+    			attr(button, "class", "button summaryengine-settings-button svelte-iwln0r");
+    			attr(div0, "class", "summaryengine-header svelte-iwln0r");
     			attr(label, "class", "screen-reader-text");
     			attr(label, "for", "summary");
     			attr(textarea, "rows", "1");
     			attr(textarea, "cols", "40");
     			attr(textarea, "name", "summaryengine_summary");
     			attr(textarea, "id", "summaryEngineSummary");
-    			attr(textarea, "class", "summaryengine-textarea svelte-gd1r9m");
-    			attr(div0, "id", "summaryEngineMetaBlockSummariseButtonContainer");
-    			attr(div0, "class", "svelte-gd1r9m");
-    			attr(div1, "id", "summaryEngineMetaBlock");
+    			attr(textarea, "class", "summaryengine-textarea svelte-iwln0r");
+    			attr(div1, "id", "summaryEngineMetaBlockSummariseButtonContainer");
+    			attr(div1, "class", "svelte-iwln0r");
+    			attr(div2, "id", "summaryEngineMetaBlock");
     		},
     		m(target, anchor) {
-    			insert(target, div1, anchor);
-    			append(div1, h3);
+    			insert(target, div2, anchor);
+    			append(div2, div0);
+    			append(div0, h3);
     			append(h3, t0);
-    			append(div1, t1);
-    			append(div1, label);
-    			append(div1, t3);
-    			append(div1, textarea);
+    			append(div0, t1);
+    			append(div0, button);
+    			append(div2, t3);
+    			mount_component(settings_1, div2, null);
+    			append(div2, t4);
+    			append(div2, label);
+    			append(div2, t6);
+    			append(div2, textarea);
     			set_input_value(textarea, /*summary_text*/ ctx[2]);
-    			append(div1, t4);
-    			append(div1, div0);
-    			mount_component(generatesummary, div0, null);
-    			append(div0, t5);
-    			mount_component(submissionsleft, div0, null);
-    			append(div0, t6);
-    			if (if_block0) if_block0.m(div0, null);
-    			append(div0, t7);
-    			if (if_block1) if_block1.m(div0, null);
+    			append(div2, t7);
+    			append(div2, div1);
+    			mount_component(generatesummary, div1, null);
+    			append(div1, t8);
+    			mount_component(submissionsleft, div1, null);
+    			append(div1, t9);
+    			if (if_block0) if_block0.m(div1, null);
+    			append(div1, t10);
+    			if (if_block1) if_block1.m(div1, null);
     			current = true;
 
     			if (!mounted) {
-    				dispose = listen(textarea, "input", /*textarea_input_handler*/ ctx[6]);
+    				dispose = [
+    					listen(button, "click", prevent_default(/*click_handler*/ ctx[8])),
+    					listen(textarea, "input", /*textarea_input_handler*/ ctx[10])
+    				];
+
     				mounted = true;
     			}
     		},
     		p(ctx, [dirty]) {
     			if ((!current || dirty & /*type*/ 1) && t0_value !== (t0_value = /*type*/ ctx[0].name + "")) set_data(t0, t0_value);
+    			const settings_1_changes = {};
+    			if (dirty & /*settings_visible*/ 128) settings_1_changes.visible = /*settings_visible*/ ctx[7];
+
+    			if (!updating_settings && dirty & /*settings*/ 64) {
+    				updating_settings = true;
+    				settings_1_changes.settings = /*settings*/ ctx[6];
+    				add_flush_callback(() => updating_settings = false);
+    			}
+
+    			settings_1.$set(settings_1_changes);
 
     			if (dirty & /*summary_text*/ 4) {
     				set_input_value(textarea, /*summary_text*/ ctx[2]);
@@ -1538,6 +2287,7 @@ var summaryengine = (function (exports) {
 
     			const generatesummary_changes = {};
     			if (dirty & /*type*/ 1) generatesummary_changes.type = /*type*/ ctx[0];
+    			if (dirty & /*settings*/ 64) generatesummary_changes.settings = /*settings*/ ctx[6];
 
     			if (!updating_summary_text && dirty & /*summary_text*/ 4) {
     				updating_summary_text = true;
@@ -1571,7 +2321,6 @@ var summaryengine = (function (exports) {
 
     			generatesummary.$set(generatesummary_changes);
     			const submissionsleft_changes = {};
-    			if (dirty & /*type*/ 1) submissionsleft_changes.type = /*type*/ ctx[0];
     			if (dirty & /*summaries*/ 2) submissionsleft_changes.summaries = /*summaries*/ ctx[1];
 
     			if (!updating_submissions_left_1 && dirty & /*submissions_left*/ 32) {
@@ -1593,7 +2342,7 @@ var summaryengine = (function (exports) {
     					if_block0 = create_if_block_1(ctx);
     					if_block0.c();
     					transition_in(if_block0, 1);
-    					if_block0.m(div0, t7);
+    					if_block0.m(div1, t10);
     				}
     			} else if (if_block0) {
     				group_outros();
@@ -1616,7 +2365,7 @@ var summaryengine = (function (exports) {
     					if_block1 = create_if_block(ctx);
     					if_block1.c();
     					transition_in(if_block1, 1);
-    					if_block1.m(div0, null);
+    					if_block1.m(div1, null);
     				}
     			} else if (if_block1) {
     				group_outros();
@@ -1630,6 +2379,7 @@ var summaryengine = (function (exports) {
     		},
     		i(local) {
     			if (current) return;
+    			transition_in(settings_1.$$.fragment, local);
     			transition_in(generatesummary.$$.fragment, local);
     			transition_in(submissionsleft.$$.fragment, local);
     			transition_in(if_block0);
@@ -1637,6 +2387,7 @@ var summaryengine = (function (exports) {
     			current = true;
     		},
     		o(local) {
+    			transition_out(settings_1.$$.fragment, local);
     			transition_out(generatesummary.$$.fragment, local);
     			transition_out(submissionsleft.$$.fragment, local);
     			transition_out(if_block0);
@@ -1644,13 +2395,14 @@ var summaryengine = (function (exports) {
     			current = false;
     		},
     		d(detaching) {
-    			if (detaching) detach(div1);
+    			if (detaching) detach(div2);
+    			destroy_component(settings_1);
     			destroy_component(generatesummary);
     			destroy_component(submissionsleft);
     			if (if_block0) if_block0.d();
     			if (if_block1) if_block1.d();
     			mounted = false;
-    			dispose();
+    			run_all(dispose);
     		}
     	};
     }
@@ -1662,27 +2414,68 @@ var summaryengine = (function (exports) {
     	let summary_text = "";
     	let summary_id = 0;
     	let summary_index = 0;
-    	let submissions_left = writable(0);
+    	let submissions_left = 0;
+
+    	let settings = {
+    		openai_model: "",
+    		openai_prompt: "",
+    		openai_frequency_penalty: 0.5,
+    		openai_max_tokens: 300,
+    		openai_presence_penalty: 0,
+    		openai_temperature: 0.6,
+    		openai_top_p: 1
+    	};
+
+    	let settings_visible = false;
+
+    	function setSummarySettings(summary) {
+    		console.log(summary);
+    		$$invalidate(6, settings.openai_model = summary.openai_model, settings);
+    		$$invalidate(6, settings.openai_prompt = summary.prompt, settings);
+    		$$invalidate(6, settings.openai_frequency_penalty = summary.frequency_penalty, settings);
+    		$$invalidate(6, settings.openai_max_tokens = summary.max_tokens, settings);
+    		$$invalidate(6, settings.openai_presence_penalty = summary.presence_penalty, settings);
+    		$$invalidate(6, settings.openai_temperature = summary.temperature, settings);
+    		$$invalidate(6, settings.openai_top_p = summary.top_p, settings);
+    	}
+
+    	function setDefaultSettings(type) {
+    		$$invalidate(6, settings.openai_model = type.openai_model, settings);
+    		$$invalidate(6, settings.openai_prompt = type.openai_prompt, settings);
+    		$$invalidate(6, settings.openai_frequency_penalty = type.openai_frequency_penalty, settings);
+    		$$invalidate(6, settings.openai_max_tokens = type.openai_max_tokens, settings);
+    		$$invalidate(6, settings.openai_presence_penalty = type.openai_presence_penalty, settings);
+    		$$invalidate(6, settings.openai_temperature = type.openai_temperature, settings);
+    		$$invalidate(6, settings.openai_top_p = type.openai_top_p, settings);
+    	}
 
     	onMount(async () => {
     		try {
-    			console.log(summaryengine_settings);
+    			// console.log(summaryengine_settings);
+    			// settings = summaryengine_settings;
     			$$invalidate(1, summaries = await apiGet(`summaryengine/v1/post/${post_id}?type_id=${type.ID}`));
+
     			const current_summary = await apiGet(`summaryengine/v1/summary/${post_id}?type_id=${type.ID}`);
     			$$invalidate(2, summary_text = current_summary.summary);
     			$$invalidate(3, summary_id = Number(current_summary.summary_id));
     			$$invalidate(4, summary_index = summaries.findIndex(summary => Number(summary.ID) === summary_id));
 
-    			console.log({
-    				summaries,
-    				summary_text,
-    				summary_id,
-    				summary_index
-    			});
+    			if (summary_index > -1) {
+    				setSummarySettings(summaries[summary_index]);
+    			} else {
+    				setDefaultSettings(type);
+    			}
     		} catch(e) {
     			console.error(e);
     		}
     	});
+
+    	const click_handler = () => $$invalidate(7, settings_visible = !settings_visible);
+
+    	function settings_1_settings_binding(value) {
+    		settings = value;
+    		$$invalidate(6, settings);
+    	}
 
     	function textarea_input_handler() {
     		summary_text = this.value;
@@ -1724,14 +2517,14 @@ var summaryengine = (function (exports) {
     		$$invalidate(2, summary_text);
     	}
 
-    	function navigation_summary_id_binding(value) {
-    		summary_id = value;
-    		$$invalidate(3, summary_id);
-    	}
-
     	function navigation_summary_index_binding(value) {
     		summary_index = value;
     		$$invalidate(4, summary_index);
+    	}
+
+    	function navigation_settings_binding(value) {
+    		settings = value;
+    		$$invalidate(6, settings);
     	}
 
     	function rate_summaries_binding(value) {
@@ -1750,6 +2543,10 @@ var summaryengine = (function (exports) {
     		summary_id,
     		summary_index,
     		submissions_left,
+    		settings,
+    		settings_visible,
+    		click_handler,
+    		settings_1_settings_binding,
     		textarea_input_handler,
     		generatesummary_summary_text_binding,
     		generatesummary_summary_id_binding,
@@ -1758,8 +2555,8 @@ var summaryengine = (function (exports) {
     		generatesummary_summaries_binding,
     		submissionsleft_submissions_left_binding,
     		navigation_summary_text_binding,
-    		navigation_summary_id_binding,
     		navigation_summary_index_binding,
+    		navigation_settings_binding,
     		rate_summaries_binding
     	];
     }
@@ -1779,7 +2576,7 @@ var summaryengine = (function (exports) {
     	return child_ctx;
     }
 
-    // (19:0) {#each types as type}
+    // (18:0) {#each types as type}
     function create_each_block(ctx) {
     	let postreview;
     	let current;
@@ -1902,7 +2699,6 @@ var summaryengine = (function (exports) {
     	onMount(async () => {
     		try {
     			$$invalidate(0, types = await apiGet(`/summaryengine/v1/types`));
-    			console.log({ types });
     		} catch(e) {
     			console.error(e);
     		}

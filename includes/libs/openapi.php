@@ -12,11 +12,16 @@ class OpenAPI {
                 'Authorization' => 'Bearer ' . $this->apikey,
                 'Content-Type' => 'application/json',
             ),
+            'timeout' => 30,
             'body' => json_encode($params),
         );
         $response = wp_remote_post($url, $args);
-        $body = json_decode(wp_remote_retrieve_body($response), true);
-        // print_r($body);
-        return $body;
+        if (! is_wp_error( $response ) ) {
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            return $body;
+        } else {
+            $error_message = $response->get_error_message();
+            throw new Exception("OpenAI API error: " . $error_message);
+        }
     }
 }
