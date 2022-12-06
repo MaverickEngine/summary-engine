@@ -113,7 +113,7 @@
         <tbody>
             {#each $posts as post}
                 <tr>
-                    <td><a href="{post.permalink}">{post.post_title}</a></td>
+                    <td><a href="/wp-admin/post.php?post={post.id}&action=edit">{post.post_title || "Untitled"}</a></td>
                     <td>{post.post_date}</td>
                     <td>{post.post_author}</td>
                     {#each $types as type}

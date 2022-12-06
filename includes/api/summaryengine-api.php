@@ -207,11 +207,25 @@ class SummaryEngineAPI {
 
     public function get_post_summaries(WP_REST_Request $request) {
         global $wpdb;
-        $id = $request->get_param('id');
+        $post_id = $request->get_param('id');
+        $type_id = $request->get_param('type_id');
+        if (empty($type_id)) {
+            $type_id = 1;
+        }
+        $type = $this->_get_type($type_id);
         $result = $wpdb->get_results( $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d ORDER BY created_at DESC",
-            $id
+            "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d AND type_id=%d ORDER BY created_at DESC",
+            $post_id, $type_id
         ));
+        // Find active summary
+        $summary_id = get_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', true);
+        foreach($result as $summary) {
+            if ($summary->ID == $summary_id) {
+                $summary->active = true;
+            } else {
+                $summary->active = false;
+            }
+        }
         return $result;
     }
 
@@ -356,14 +370,19 @@ class SummaryEngineAPI {
         $post_id = $request->get_param('id');
         $summary = $request->get_param('summary');
         $summary_id = $request->get_param('summary_id');
+        $type_id = $request->get_param('type_id');
+        $type = $this->_get_type($type_id);
+        if (empty($type)) {
+            return new WP_Error( 'summaryengine_api_error', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
         if (empty($summary_id)) {
             return new WP_Error('rest_custom_error', 'summary_id is required', array('status' => 400));
         }
         if (empty($summary)) {
             return new WP_Error('rest_custom_error', 'summary is required', array('status' => 400));
         }
-        update_post_meta($post_id, 'summaryengine_summary', sanitize_text_field(trim($summary)));
-        update_post_meta($post_id, 'summaryengine_summary_id', intval($summary_id));
+        update_post_meta($post_id, 'summaryengine_' . $type->slug, sanitize_text_field(trim($summary)));
+        update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', intval($summary_id));
         return array("success" => true);
     }
 
@@ -381,8 +400,16 @@ class SummaryEngineAPI {
 
     public function get_post_summary(WP_REST_Request $request) {
         $post_id = $request->get_param('id');
-        $summary = get_post_meta($post_id, 'summaryengine_summary', true);
-        $summary_id = get_post_meta($post_id, 'summaryengine_summary_id', true);
+        $type_id = $request->get_param('type_id');
+        if (empty($type_id)) {
+            $type_id = 1;
+        }
+        $type = $this->_get_type($type_id);
+        if (empty($type)) {
+            return new WP_Error( 'summaryengine_api_error', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
+        $summary = get_post_meta($post_id, 'summaryengine_' . $type->slug, true);
+        $summary_id = get_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', true);
         return array(
             "summary" => $summary,
             "summary_id" => $summary_id,
@@ -531,7 +558,7 @@ class SummaryEngineAPI {
     public function get_posts(WP_REST_Request $request) {
         // global $wpdb;
         $args = array(
-            'post_type' => 'post',
+            'post_type' => get_option("summaryengine_post_types", array("post")),
             'post_status' => 'publish',
             'posts_per_page' => 10,
             'orderby' => 'date',
@@ -587,7 +614,7 @@ class SummaryEngineAPI {
 
     public function get_posts_count(WP_REST_Request $request) {
         $args = array(
-            'post_type' => 'post',
+            'post_type' => get_option("summaryengine_post_types", array("post")),
             'post_status' => 'publish',
         );
         $date = $request->get_param('date');

@@ -1,8 +1,16 @@
 <script>
-    import { submissions_left, summaries, summary_text, summary_id, summary_index, custom_settings } from '../stores.js';
+    // import {submissions_left, summaries, summary_text, summary_id, summary_index, custom_settings } from '../stores.js';
     import { apiPost } from '../libs/ajax.js';
+    import Spinner from './Spinner.svelte';
 
-    let loading = false;
+    export let type;
+    export let loading = false;
+    export let submissions_left = 0;
+    export let summaries = [];
+    export let summary_text = "";
+    export let summary_id = 0;
+    export let summary_index = 0;
+    export let custom_settings = 0;
 
     const get_content = () => {
         if (jQuery("#titlewrap").length) { // Classic editor
@@ -38,14 +46,15 @@
                 {
                     content: content,
                     post_id: jQuery("#post_ID").val(),
-                    settings: JSON.stringify($custom_settings)
+                    settings: JSON.stringify(custom_settings),
+                    type_id: type.ID,
                 }
             );
-            $summary_id = response.ID;
-            $summaries.unshift(response);
-            $summary_index = 0;
-            $summaries = $summaries;
-            $summary_text = response.summary.trim();
+            summary_id = response.ID;
+            summaries.unshift(response);
+            summary_index = 0;
+            summaries = summaries;
+            summary_text = response.summary.trim();
             loading = false;
             return;
         } catch (err) {
@@ -54,60 +63,13 @@
         }
     }
 </script>
-
 {#if !loading}
-<button id="summaryEngineMetaBlockSummariseButton" type="button" class="button button-primary" on:click={generate_summary} disabled={ ($submissions_left === 0) }>
-    Generate Summary
-</button>
+    <button id="summaryEngineMetaBlockSummariseButton" type="button" class="button button-primary" on:click={generate_summary} disabled={ (submissions_left === 0) }>
+        Generate Summary
+    </button>
 {:else}
-<div id="summaryEngineMetaBlockLoading">
-    <div class="screen-reader-text">Loading...</div>
-    <div class="summaryengine-spinner">
-        <div></div>
-        <div></div>
-        <div></div>
-        <div></div>
+    <div id="summaryEngineMetaBlockLoading">
+        <div class="screen-reader-text">Loading...</div>
+        <Spinner />
     </div>
-</div>
 {/if}
-
-<style lang="scss">
-    .summaryengine-spinner {
-        height: 32px;
-        width: 32px;
-    }
-
-    .summaryengine-spinner div {
-        box-sizing: border-box;
-        display: block;
-        position: absolute;
-        width: 32px;
-        height: 32px;
-        margin: 4px;
-        border: 4px solid #444;
-        border-radius: 50%;
-        animation: summaryengine-spinner 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-        border-color: #444 transparent transparent transparent;
-      }
-      
-      .summaryengine-spinner div:nth-child(1) {
-        animation-delay: -0.45s;
-      }
-      
-      .summaryengine-spinner div:nth-child(2) {
-        animation-delay: -0.3s;
-      }
-      
-      .summaryengine-spinner div:nth-child(3) {
-        animation-delay: -0.15s;
-      }
-      
-      @keyframes summaryengine-spinner {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-</style>

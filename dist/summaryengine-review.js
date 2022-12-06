@@ -1878,7 +1878,7 @@ var summaryengine_review = (function () {
     	let tr;
     	let td0;
     	let a;
-    	let t0_value = /*post*/ ctx[12].post_title + "";
+    	let t0_value = (/*post*/ ctx[12].post_title || "Untitled") + "";
     	let t0;
     	let a_href_value;
     	let t1;
@@ -1930,7 +1930,7 @@ var summaryengine_review = (function () {
     			td3 = element("td");
     			if (if_block) if_block.c();
     			t7 = space();
-    			attr(a, "href", a_href_value = /*post*/ ctx[12].permalink);
+    			attr(a, "href", a_href_value = "/wp-admin/post.php?post=" + /*post*/ ctx[12].id + "&action=edit");
     		},
     		m(target, anchor) {
     			insert(target, tr, anchor);
@@ -1956,9 +1956,9 @@ var summaryengine_review = (function () {
     			current = true;
     		},
     		p(ctx, dirty) {
-    			if ((!current || dirty & /*$posts*/ 2) && t0_value !== (t0_value = /*post*/ ctx[12].post_title + "")) set_data(t0, t0_value);
+    			if ((!current || dirty & /*$posts*/ 2) && t0_value !== (t0_value = (/*post*/ ctx[12].post_title || "Untitled") + "")) set_data(t0, t0_value);
 
-    			if (!current || dirty & /*$posts*/ 2 && a_href_value !== (a_href_value = /*post*/ ctx[12].permalink)) {
+    			if (!current || dirty & /*$posts*/ 2 && a_href_value !== (a_href_value = "/wp-admin/post.php?post=" + /*post*/ ctx[12].id + "&action=edit")) {
     				attr(a, "href", a_href_value);
     			}
 

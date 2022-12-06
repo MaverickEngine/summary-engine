@@ -1,23 +1,27 @@
 <script>
-    import { summaries, summary_id, summary_index } from '../stores.js';
+    // import { summaries, summary_id, summary_index } from '../stores.js';
     import { apiPost } from '../libs/ajax.js';
 
+    export let summary_id = 0;
+    export let summary_index = 0;
+    export let summaries = [];
+    export let type = 0;
     let rated = false;
     let rating = 0;
 
     const rate = async (rating) => {
         // console.log("rate", rating);
         try {
-            $summaries[$summary_index].rating = rating;
-            await apiPost("summaryengine/v1/rate/" + $summary_id, { rating });
+            summaries[summary_index].rating = rating;
+            await apiPost("summaryengine/v1/rate/" + summary_id, { rating, type_id: type.ID });
         } catch (err) {
             console.error(err);
             alert(err);
         }
     }
 
-    $: rated = $summaries[$summary_index]?.rating && [-1, 1].includes(Number($summaries[$summary_index].rating));
-    $: rating = $summaries[$summary_index]?.rating ? Number($summaries[$summary_index].rating) : 0;
+    $: rated = summaries[summary_index]?.rating && [-1, 1].includes(Number(summaries[summary_index].rating));
+    $: rating = summaries[summary_index]?.rating ? Number(summaries[summary_index].rating) : 0;
 </script>
 
 <div id="summaryEngineRate">
@@ -34,7 +38,7 @@
     {/if}
 </div>
 
-<style lang="scss">
+<style lang="less">
     #summaryEngineRate {
         margin-left: 1em;
         display: flex;

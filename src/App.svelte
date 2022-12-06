@@ -1,54 +1,21 @@
 <script>
     import { onMount } from 'svelte';
-    import { summaries, summary_text, summary_id, summary_index } from './stores.js';
     import { apiGet } from './libs/ajax.js';
 
-    // Components
-    import SubmissionsLeft from './components/SubmissionsLeft.svelte';
-    import Navigation from './components/Navigation.svelte';
-    import Rate from './components/Rate.svelte';
-    import GenerateSummary from './components/GenerateSummary.svelte';
+    import PostReview from './post_edit/PostReview.svelte';
 
-    const post_id = jQuery("#post_ID").val();
+    let types = [];
 
     onMount(async () => {
         try {
-            $summaries = await apiGet(`summaryengine/v1/post/${post_id}`);
-            const current_summary = await apiGet(`summaryengine/v1/summary/${post_id}`);
-            $summary_text = current_summary.summary;
-            $summary_id = Number(current_summary.summary_id);
-            $summary_index = $summaries.findIndex(summary => Number(summary.ID) === $summary_id);
+            types = await apiGet(`/summaryengine/v1/types`);
+            console.log({ types });
         } catch (e) {
             console.error(e);
         }
     });
 </script>
 
-<div id="summaryEngineMetaBlock">
-    <input type="hidden" name="summaryengine_summary_id" id="summaryEngineSummaryId" value="<?php echo esc_attr(get_post_meta($post->ID, 'summaryengine_summary_id', -1)); ?>" />
-    <label class="screen-reader-text" for="summary">Summary</label>
-    <textarea rows="1" cols="40" name="summaryengine_summary" id="summaryEngineSummary" class="summaryengine-textarea" bind:value={$summary_text}></textarea>
-    <div id="summaryEngineMetaBlockSummariseButtonContainer">
-        <GenerateSummary />
-        <SubmissionsLeft />
-        {#if $summaries.length > 1}
-            <Navigation />
-        {/if}
-        {#if $summary_id > 0}
-            <Rate />
-        {/if}
-    </div>
-</div>
-
-<style>
-    .summaryengine-textarea {
-        height: 8em !important;
-        width: 100%;
-    }
-
-    #summaryEngineMetaBlockSummariseButtonContainer {
-        display: flex;
-        flex-direction: row;
-        margin-top: 10px;
-    }  
-</style>
+{#each types as type}
+    <PostReview type={type} />
+{/each}
