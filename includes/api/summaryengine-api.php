@@ -267,18 +267,11 @@ class SummaryEngineAPI {
                 'openai_frequency_penalty' => $type->openai_frequency_penalty,
                 'openai_presence_penalty' => $type->openai_presence_penalty,
             ];
-            // print_r($type);
             $user_settings = json_decode($request->get_param('settings'), true);
             if (empty($user_settings)) {
                 $user_settings = [];
             }
             $settings = array_merge($type_settings, $user_settings);
-            // print_r("type_settings");
-            // print_r($type_settings);
-            // print_r("user_settings");
-            // print_r($user_settings);
-            // print_r("settings");
-            // print_r($settings);
             // Make sure we still have submissions left
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
@@ -302,7 +295,6 @@ class SummaryEngineAPI {
             }
             $openapi = new OpenAPI(get_option('summaryengine_openai_apikey'));
             $original_prompt =  $settings["openai_prompt"] ?? get_option('summaryengine_openai_prompt');
-            // print_r($original_prompt);
             $params = array(
                 'model' => get_option( 'summaryengine_openai_model'),
                 'frequency_penalty' => floatval(get_option( 'summaryengine_openai_frequency_penalty')),
@@ -330,13 +322,13 @@ class SummaryEngineAPI {
             if (isset($settings["openai_top_p"])) {
                 $params['top_p'] = floatval($settings["openai_top_p"]);
             }
-            // print_r($params);
             $summary = $openapi->summarise($content, $params);
             if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
             $result = $this->save_results($post_id, $type_id, $content, $original_prompt, $params, $summary);
             // Set meta data for post
             update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
             update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
+            update_post_meta($post_id, 'summaryengine_' . $type->slug . '_rating', 0);
             return $result;
         } catch (Exception $e) {
             return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content: ' . $e->getMessage(), 'summaryengine' ), array( 'status' => 500 ) );
@@ -347,6 +339,11 @@ class SummaryEngineAPI {
         global $wpdb;
         $id = $request->get_param('id');
         $rating = $request->get_param('rating');
+        $summary = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE ID = %d",
+            $id
+        ));
+        $type = $this->_get_type($summary->type_id);
         $wpdb->update(
             $this->table_name,
             array(
@@ -363,6 +360,7 @@ class SummaryEngineAPI {
         if ($wpdb->last_error !== '') {
             return new WP_Error( 'summaryengine_api_error', __( 'Error rating summary', 'summaryengine' ), array( 'status' => 500 ) );
         }
+        update_post_meta($summary->post_id, 'summaryengine_' . $type->slug . '_rating', $rating);
         return array("success" => true);
     }
 

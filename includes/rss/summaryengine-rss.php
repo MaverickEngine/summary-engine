@@ -31,57 +31,110 @@ class SummaryEngineRSS {
         return $post_categories;
     }
     
+    protected function _post_map($post) {
+        $id = $post->ID;
+        $slug = 'summary';
+        if (isset($_GET["type"])) {
+            $slug = sanitize_text_field($_GET["type"]);
+        }
+        $result = new stdClass();
+        $result->title = get_the_title( $id );
+        $result->author = get_the_author_meta('display_name', $result->post_author);
+        $result->summary = get_post_meta( $id, 'summaryengine_' . $slug, true );
+        $result->categories = $this->get_post_categories( $id, 'section', true );
+        $result->url = get_permalink( $id );
+        $result->date = get_the_date( '', $id );
+        $result->published_date = get_the_date( DATE_ISO8601, $id );
+        $result->published_date_pretty = get_the_date( 'M d, h:i A', $id );
+        $result->published_date_rss = get_the_date( 'r', $id );
+        $result->modified_date = get_the_modified_date( DATE_ISO8601, $id );
+        $result->modified_date_pretty   = get_the_modified_date( 'M d, h:i A', $id );
+        $result->modified_date_rss = get_the_modified_date( 'r', $id );
+        $result->photo_caption = '';
+        $result->photo_description = '';
+        $thumbnail_id = get_post_thumbnail_id( $id );
+        if ($thumbnail_id) {
+            $feature_img = wp_get_attachment_image_src( $thumbnail_id, 'full' );
+            $result->feature_img_url = $feature_img[0];
+            $feature_img_post  = get_post( $thumbnail_id );
+            $result->photo_caption     = $feature_img_post->post_excerpt;
+            $result->photo_description = $feature_img_post->post_content;
+        }
+        return $result;
+    }
 
-    public function summary_rss_view() {
-        header( 'Content-Type: application/rss+xml' );
-        $posts = get_posts(array(
+    protected function _query() {
+        $slug = 'summary';
+        if (isset($_GET["type"])) {
+            $slug = sanitize_text_field($_GET["type"]);
+        }
+        $limit = get_option('summaryengine_rss_limit', 10);
+        if (isset($_GET["limit"])) {
+            $limit = intval($_GET["limit"]);
+        }
+        $page = 1;
+        if (isset($_GET["page"])) {
+            $page = intval($_GET["page"]);
+        }
+        $rating = null;
+        if (isset($_GET["rating"])) {
+            $rating = intval($_GET["rating"]);
+        }
+        $query = array(
             'post_type' => get_option('summaryengine_post_types'),
             'post_status' => 'publish',
-            'posts_per_page' => get_option('summaryengine_rss_limit', 10),
+            'posts_per_page' => $limit,
+            'paged' => $page,
             'orderby' => 'date',
             'order' => 'DESC',
             'meta_query' => array(
                 array(
-                   'key' => 'summaryengine_summary',
+                   'key' => 'summaryengine_' . $slug,
                    'compare' => 'EXISTS'
                 ),
                 array(
-                     'key' => 'summaryengine_summary',
+                     'key' => 'summaryengine_' . $slug,
                      'value' => '',
                      'compare' => '!='
                 )
             ),
-        ));
-        foreach($posts as $post) {
-            $id = $post->ID;
-            $post->title = get_the_title( $id );
-            $post->author = get_the_author_meta('display_name', $post->post_author);
-            $post->summary = get_post_meta( $id, 'summaryengine_summary', true );
-            $post->categories = $this->get_post_categories( $id, 'section', true );
-            $post->url = get_permalink( $id );
-            $post->date = get_the_date( '', $id );
-            $post->published_date = get_the_date( DATE_ISO8601, $id );
-		    $post->published_date_pretty = get_the_date( 'M d, h:i A', $id );
-            $post->published_date_rss = get_the_date( 'r', $id );
-		    $post->modified_date = get_the_modified_date( DATE_ISO8601, $id );
-		    $post->modified_date_pretty   = get_the_modified_date( 'M d, h:i A', $id );
-            $post->modified_date_rss = get_the_modified_date( 'r', $id );
-            $post->photo_caption = '';
-			$post->photo_description = '';
-			$thumbnail_id = get_post_thumbnail_id( $id );
-            if ($thumbnail_id) {
-				$feature_img = wp_get_attachment_image_src( $thumbnail_id, 'full' );
-				$post->feature_img_url = $feature_img[0];
-				$feature_img_post  = get_post( $thumbnail_id );
-				$post->photo_caption     = $feature_img_post->post_excerpt;
-				$post->photo_description = $feature_img_post->post_content;
-            }
+        );
+        if (isset($rating)) {
+            $query['meta_query'][] = array(
+                'key' => 'summaryengine_' . $slug . '_rating',
+                'value' => $rating,
+                'compare' => '='
+            );
         }
+        return $query;
+    }
+
+    private function _get_type() {
+        $slug = 'summary';
+        if (isset($_GET["type"])) {
+            $slug = sanitize_text_field($_GET["type"]);
+        }
+        global $wpdb;
+        $type = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE slug = %s",
+            $slug
+        ));
+        if (empty($type)) {
+            return new WP_Error( 'summaryengine_type_not_found', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
+        return $type;
+    }
+
+    public function summary_rss_view() {
+        header( 'Content-Type: application/rss+xml' );
+        $original_posts = get_posts($this->_query());
+        $posts = array_map(array($this, '_post_map'), $original_posts);
         $sorted_modified_dates = array_map(function($post) {
             return $post->modified_date;
         }, $posts);
         rsort($sorted_modified_dates); // Stupid fucking PHP
         $latest_modified_date_rss = gmdate( 'r', strtotime($sorted_modified_dates[0]) );
+        $type = $this->_get_type();
         require_once plugin_dir_path( dirname( __FILE__ ) ).'rss/views/rss-summary.php';
     }
 }
