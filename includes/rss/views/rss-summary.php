@@ -31,10 +31,10 @@ xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
             <category><?php esc_html_e(implode( ',', $p->categories )); ?></category>
             <description><![CDATA[<?php esc_html_e($p->summary) ?>]]></description>
             <content:encoded><![CDATA[<?php esc_html_e($p->summary) ?>]]></content:encoded>
-<?php if ($p->feature_img_url) { ?>
+<?php   if ($p->feature_img_url) { ?>
             <enclosure url="<?php echo esc_url($p->feature_img_url); ?>" type="image/jpeg" />
             <media:content medium="image" url="<?php echo esc_url($p->feature_img_url) ?>" />
-<?php } ?>
+<?php   } ?>
         </item>
 <?php } ?>
     </channel>
