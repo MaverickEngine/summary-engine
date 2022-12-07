@@ -4,7 +4,6 @@ class SummaryEnginePost {
     public function __construct() {
         add_action('add_meta_boxes', [ $this, 'summary_meta_block' ]);
         add_action('admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
-        add_action( 'save_post', [ $this, 'save_meta_block_postdata' ] );
     }
 
     public function summary_meta_block() {
@@ -16,16 +15,6 @@ class SummaryEnginePost {
     public function summary_meta_block_view() {
         global $post;
         require_once plugin_dir_path( dirname( __FILE__ ) ).'admin/views/summary-meta-block.php';
-    }
-
-    public function save_meta_block_postdata( $post_id ) {
-        if ( array_key_exists( 'summaryengine_summary', $_POST ) ) {
-            update_post_meta(
-                $post_id,
-                'summaryengine_summary',
-                $_POST['summaryengine_summary']
-            );
-        }
     }
 
     public function enqueue_scripts() {

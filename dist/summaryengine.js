@@ -1940,15 +1940,15 @@ var summaryengine = (function (exports) {
     	let current;
 
     	function navigation_summary_text_binding(value) {
-    		/*navigation_summary_text_binding*/ ctx[17](value);
+    		/*navigation_summary_text_binding*/ ctx[16](value);
     	}
 
     	function navigation_summary_index_binding(value) {
-    		/*navigation_summary_index_binding*/ ctx[18](value);
+    		/*navigation_summary_index_binding*/ ctx[17](value);
     	}
 
     	function navigation_settings_binding(value) {
-    		/*navigation_settings_binding*/ ctx[19](value);
+    		/*navigation_settings_binding*/ ctx[18](value);
     	}
 
     	let navigation_props = {
@@ -2028,7 +2028,7 @@ var summaryengine = (function (exports) {
     	let current;
 
     	function rate_summaries_binding(value) {
-    		/*rate_summaries_binding*/ ctx[20](value);
+    		/*rate_summaries_binding*/ ctx[19](value);
     	}
 
     	let rate_props = {
@@ -2127,23 +2127,23 @@ var summaryengine = (function (exports) {
     	binding_callbacks.push(() => bind(settings_1, 'settings', settings_1_settings_binding));
 
     	function generatesummary_summary_text_binding(value) {
-    		/*generatesummary_summary_text_binding*/ ctx[11](value);
+    		/*generatesummary_summary_text_binding*/ ctx[10](value);
     	}
 
     	function generatesummary_summary_id_binding(value) {
-    		/*generatesummary_summary_id_binding*/ ctx[12](value);
+    		/*generatesummary_summary_id_binding*/ ctx[11](value);
     	}
 
     	function generatesummary_summary_index_binding(value) {
-    		/*generatesummary_summary_index_binding*/ ctx[13](value);
+    		/*generatesummary_summary_index_binding*/ ctx[12](value);
     	}
 
     	function generatesummary_submissions_left_binding(value) {
-    		/*generatesummary_submissions_left_binding*/ ctx[14](value);
+    		/*generatesummary_submissions_left_binding*/ ctx[13](value);
     	}
 
     	function generatesummary_summaries_binding(value) {
-    		/*generatesummary_summaries_binding*/ ctx[15](value);
+    		/*generatesummary_summaries_binding*/ ctx[14](value);
     	}
 
     	let generatesummary_props = {
@@ -2179,7 +2179,7 @@ var summaryengine = (function (exports) {
     	binding_callbacks.push(() => bind(generatesummary, 'summaries', generatesummary_summaries_binding));
 
     	function submissionsleft_submissions_left_binding(value) {
-    		/*submissionsleft_submissions_left_binding*/ ctx[16](value);
+    		/*submissionsleft_submissions_left_binding*/ ctx[15](value);
     	}
 
     	let submissionsleft_props = { summaries: /*summaries*/ ctx[1] };
@@ -2224,9 +2224,10 @@ var summaryengine = (function (exports) {
     			attr(label, "for", "summary");
     			attr(textarea, "rows", "1");
     			attr(textarea, "cols", "40");
-    			attr(textarea, "name", "summaryengine_summary");
     			attr(textarea, "id", "summaryEngineSummary");
     			attr(textarea, "class", "summaryengine-textarea svelte-iwln0r");
+    			textarea.value = /*summary_text*/ ctx[2];
+    			textarea.readOnly = true;
     			attr(div1, "id", "summaryEngineMetaBlockSummariseButtonContainer");
     			attr(div1, "class", "svelte-iwln0r");
     			attr(div2, "id", "summaryEngineMetaBlock");
@@ -2244,7 +2245,6 @@ var summaryengine = (function (exports) {
     			append(div2, label);
     			append(div2, t6);
     			append(div2, textarea);
-    			set_input_value(textarea, /*summary_text*/ ctx[2]);
     			append(div2, t7);
     			append(div2, div1);
     			mount_component(generatesummary, div1, null);
@@ -2257,11 +2257,7 @@ var summaryengine = (function (exports) {
     			current = true;
 
     			if (!mounted) {
-    				dispose = [
-    					listen(button, "click", prevent_default(/*click_handler*/ ctx[8])),
-    					listen(textarea, "input", /*textarea_input_handler*/ ctx[10])
-    				];
-
+    				dispose = listen(button, "click", prevent_default(/*click_handler*/ ctx[8]));
     				mounted = true;
     			}
     		},
@@ -2278,8 +2274,8 @@ var summaryengine = (function (exports) {
 
     			settings_1.$set(settings_1_changes);
 
-    			if (dirty & /*summary_text*/ 4) {
-    				set_input_value(textarea, /*summary_text*/ ctx[2]);
+    			if (!current || dirty & /*summary_text*/ 4) {
+    				textarea.value = /*summary_text*/ ctx[2];
     			}
 
     			const generatesummary_changes = {};
@@ -2399,7 +2395,7 @@ var summaryengine = (function (exports) {
     			if (if_block0) if_block0.d();
     			if (if_block1) if_block1.d();
     			mounted = false;
-    			run_all(dispose);
+    			dispose();
     		}
     	};
     }
@@ -2447,7 +2443,7 @@ var summaryengine = (function (exports) {
     	}
 
     	function calcSubmissionsLeft() {
-    		const max_summaries = Number(summaryengine_max_number_of_submissions_per_post);
+    		const max_summaries = Number(summaryengine_max_number_of_submissions_per_post || 5);
 
     		$$invalidate(5, submissions_left = max_summaries - summaries.length > 0
     		? max_summaries - summaries.length
@@ -2482,11 +2478,6 @@ var summaryengine = (function (exports) {
     	function settings_1_settings_binding(value) {
     		settings = value;
     		$$invalidate(6, settings);
-    	}
-
-    	function textarea_input_handler() {
-    		summary_text = this.value;
-    		$$invalidate(2, summary_text);
     	}
 
     	function generatesummary_summary_text_binding(value) {
@@ -2556,7 +2547,6 @@ var summaryengine = (function (exports) {
     		settings_visible,
     		click_handler,
     		settings_1_settings_binding,
-    		textarea_input_handler,
     		generatesummary_summary_text_binding,
     		generatesummary_summary_id_binding,
     		generatesummary_summary_index_binding,

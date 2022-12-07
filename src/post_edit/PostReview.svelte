@@ -53,7 +53,7 @@
     }
 
     function calcSubmissionsLeft() {
-        const max_summaries = Number(summaryengine_max_number_of_submissions_per_post);
+        const max_summaries = Number(summaryengine_max_number_of_submissions_per_post || 5);
         submissions_left = (max_summaries - summaries.length) > 0 ? max_summaries -  summaries.length : 0;
     }
 
@@ -86,7 +86,7 @@
     </div>
     <Settings bind:settings={settings} visible={settings_visible} />
     <label class="screen-reader-text" for="summary">Summary</label>
-    <textarea rows="1" cols="40" name="summaryengine_summary" id="summaryEngineSummary" class="summaryengine-textarea" bind:value={summary_text}></textarea>
+    <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" value={summary_text} readonly></textarea>
     <div id="summaryEngineMetaBlockSummariseButtonContainer">
         <GenerateSummary type={type} bind:summary_text={summary_text} bind:summary_id={summary_id} bind:summary_index={summary_index} bind:submissions_left={submissions_left} bind:summaries={summaries} settings={settings} />
         <SubmissionsLeft summaries={summaries} bind:submissions_left={submissions_left} />
