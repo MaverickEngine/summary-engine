@@ -3,7 +3,19 @@
 Use machine learning to help editors generate summaries to articles. A MavEngine Wordpress plugin.
 
 ## Features
-- A "Summary" box will appear in articles. (Below the body in Classic view, in the sidebar in Gutenburg view)
-- A button labeled "Generate summary" will send the article to GPT-3, and return a summarised version
-- The editor can then edit the summary manually before saving
-- A dedicated RSS feed will serve the summarised versions, which can be ingested into custom newsletters, etc.
+- Generate summaries for posts using GPT-3
+- Create summaries for different purposes (e.g. newsletter, social media, etc.)
+- An approval system allows you to just show the summaries that you're happy with
+- Summaries are stored as post meta, so you can use them in your theme
+- An RSS feed is available to get summaries
+
+## RSS Feed
+
+The summary feed is available at /feed/summaryengine. 
+
+You can add the following parameters to customise it:
+
+- `type` - The slug of the summary type you want to get
+- `limit` - The number of summaries per page
+- `page` - The page number
+- `rating` - Only show summaries with this rating. (-1 = disapproved, 0 = unapproved, 1 = approved)

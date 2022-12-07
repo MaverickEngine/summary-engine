@@ -18,19 +18,26 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Features ==
 
-- A "Summary" box will appear in posts.
-- A button labeled "Generate summary" will send the article to GPT-3, and return a summarised version
-- The editor can then edit the summary manually before saving
-- A dedicated RSS feed will serve the summarised versions, which can be ingested into custom newsletters, etc.
-- For cost control, you can limit the number of words submitted, and limit the number of times an article can be submitted for summarisation.
-- A special RSS feed will serve summarised posts at `/feed/summaryengine`.
+- Generate summaries for posts using GPT-3
+- Create summaries for different purposes (e.g. newsletter, social media, etc.)
+- An approval system allows you to just show the summaries that you're happy with
+- Summaries are stored as post meta, so you can use them in your theme
+- An RSS feed is available to get summaries
 
 == Screenshots ==
 
 1. SummaryEngine in the post edit view.
 2. Fine-tune your GPT-3 settings.
+3. Quickly generate and review summaries with Review screen.
 
 == Changelog ==
+
+= 0.6.0 =
+* Quickly generate and review summaries with Review screen
+* Summaries all custom types in post edit window
+* Support for custom types in RSS feed
+* Better error reporting for GPT-3
+* Longer timeout (30s) for GPT-3
 
 = 0.5.0 =
 * Customisable types
