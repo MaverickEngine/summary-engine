@@ -52,3 +52,22 @@ export function apiDelete(path) {
         });
     });
 }
+
+export function apiPut(path, data) {
+    return new Promise((resolve, reject) => {
+        wp.apiRequest({
+            path,
+            data,
+            type: "PUT",
+        })
+        .done(async (response) => {
+            if (response.error) {
+                reject(response);
+            }
+            resolve(response);
+        })
+        .fail(async (response) => {
+            reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+        });
+    });
+}

@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { apiGet } from '../libs/ajax.js';
+    import { apiGet, apiPut } from '../libs/ajax.js';
 
     // Interfaces
     import type {ISettings} from '../types/SettingsInterface';
@@ -12,6 +12,7 @@
     import Rate from '../components/Rate.svelte';
     import GenerateSummary from '../components/GenerateSummary.svelte';
     import Settings from '../components/Settings.svelte';
+    import Spinner from '../components/Spinner.svelte';
 
     const post_id = jQuery("#post_ID").val();
     export let type : IType;
@@ -31,9 +32,11 @@
         openai_top_p: 1,
     };
     let settings_visible = false;
+    let editing = false;
+    let saving = false;
+    let loading = true;
 
     function setSummarySettings(summary) {
-        console.log(summary);
         settings.openai_model = summary.openai_model;
         settings.openai_prompt = summary.prompt;
         settings.openai_append_prompt = summary.append_prompt;
@@ -61,10 +64,22 @@
         submissions_left = (max_summaries - summaries.length) > 0 ? max_summaries -  summaries.length : 0;
     }
 
+    async function save() {
+        try {
+            saving = true;
+            await apiPut(`/summaryengine/v1/summary/${summary_id}`, { summary: summary_text });
+            editing = false;
+            saving = false;
+        } catch(err) {
+            console.error(err);
+            alert("An error occured: " + err);
+            editing = false;
+            saving = false;
+        }
+    }
+
     onMount(async () => {
         try {
-            // console.log(summaryengine_settings);
-            // settings = summaryengine_settings;
             summaries = await apiGet(`summaryengine/v1/post/${post_id}?type_id=${type.ID}`);
             const current_summary = await apiGet(`summaryengine/v1/summary/${post_id}?type_id=${type.ID}`);
             summary_text = current_summary.summary;
@@ -76,8 +91,11 @@
                 setDefaultSettings(type);
             }
             calcSubmissionsLeft();
+            loading = false;
         } catch (e) {
             console.error(e);
+            alert("An error occured: " + e);
+            loading = false;
         }
     });
 
@@ -86,21 +104,39 @@
 <div id="summaryEngineMetaBlock">
     <div class="summaryengine-header">
         <h3>{type.name}</h3>
-        <button class="button summaryengine-settings-button" on:click|preventDefault="{() => settings_visible = !settings_visible}">Settings</button>
-    </div>
-    <Settings bind:settings={settings} visible={settings_visible} />
-    <label class="screen-reader-text" for="summary">Summary</label>
-    <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" value={summary_text} readonly></textarea>
-    <div id="summaryEngineMetaBlockSummariseButtonContainer">
-        <GenerateSummary type={type} bind:summary_text={summary_text} bind:summary_id={summary_id} bind:summary_index={summary_index} bind:submissions_left={submissions_left} bind:summaries={summaries} settings={settings} />
-        <SubmissionsLeft summaries={summaries} bind:submissions_left={submissions_left} />
-        {#if summaries.length > 1}
-            <Navigation summaries={summaries} type={type} bind:summary_text={summary_text} bind:summary_index={summary_index} bind:settings={settings} />
-        {/if}
-        {#if summary_id > 0}
-            <Rate bind:summaries={summaries} type={type} summary_id={summary_id} summary_index={summary_index} />
+        {#if !loading}
+            <button class="button summaryengine-settings-button" on:click|preventDefault="{() => settings_visible = !settings_visible}">Settings</button>
         {/if}
     </div>
+    {#if loading}
+            <Spinner />
+    {:else}
+        <Settings bind:settings={settings} visible={settings_visible} />
+        <label class="screen-reader-text" for="summary">Summary</label>
+        
+        {#if editing}
+            <textarea cols="40" class="summaryengine-summarise__summary-textarea" bind:value={summary_text} />
+            {#if (!saving)}
+                <input class="summaryengine-button button" type="button" name="save" value="Save" on:click={save} />
+                <input class="summaryengine-button button" type="button" name="cancel" value="Cancel" on:click={() => editing = false} />
+            {:else}
+                <input class="summaryengine-button button" type="button" name="save" value="Saving..." disabled />
+            {/if}
+        {:else if (summary_id)}
+            <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" value={summary_text} readonly></textarea>
+            <input class="summaryengine-button button" type="button" name="edit" value="Edit" on:click={() => editing = true} />
+        {/if}
+        <div id="summaryEngineMetaBlockSummariseButtonContainer">
+            <GenerateSummary type={type} bind:summary_text={summary_text} bind:summary_id={summary_id} bind:summary_index={summary_index} bind:submissions_left={submissions_left} bind:summaries={summaries} settings={settings} />
+            <SubmissionsLeft summaries={summaries} bind:submissions_left={submissions_left} />
+            {#if summaries.length > 1}
+                <Navigation summaries={summaries} type={type} bind:summary_text={summary_text} bind:summary_index={summary_index} bind:settings={settings} />
+            {/if}
+            {#if summary_id > 0}
+                <Rate bind:summaries={summaries} type={type} summary_id={summary_id} summary_index={summary_index} />
+            {/if}
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -124,5 +160,10 @@
 
     .summaryengine-settings-button {
         height: 20px;
+    }
+
+    .summaryengine-summarise__summary-textarea {
+        width: 100%;
+        height: 8em;
     }
 </style>

@@ -46,6 +46,14 @@ class SummaryEngineAPI {
                 return current_user_can( 'edit_others_posts' );
             }
         ));
+        // Edit existing summary
+        register_rest_route('summaryengine/v1', '/summary/(?P<id>\d+)', array(
+            'methods' => 'PUT',
+            'callback' => array( $this, 'put_summary' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
         register_rest_route('summaryengine/v1', '/summary/(?P<id>\d+)', array(
             'methods' => 'GET',
             'callback' => array( $this, 'get_post_summary' ),
@@ -392,6 +400,39 @@ class SummaryEngineAPI {
         }
         update_post_meta($post_id, 'summaryengine_' . $type->slug, sanitize_text_field(trim($summary)));
         update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', intval($summary_id));
+        return array("success" => true);
+    }
+
+    // Edit existing summary
+    public function put_summary(WP_REST_Request $request) {
+        global $wpdb;
+        $summary_id = $request->get_param('id');
+        $summary = $request->get_param('summary');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $wpdb->update(
+            $this->table_name,
+            array(
+                'summary' => $summary,
+                'edited_at' => current_time('mysql', 1),
+                'edited_by' => get_current_user_id(),
+            ),
+            array(
+                'ID' => $summary_id,
+            ),
+            array(
+                '%s',
+                '%s',
+                '%d',
+            ),
+        );
+        // Check for errors
+        if ($wpdb->last_error !== '') {
+            return new WP_Error( 'summaryengine_api_error', __( 'Error updating summary', 'summaryengine' ), array( 'status' => 500 ) );
+        }
+        // Set new summary in post meta
+        $summary = $this->_get_summary($summary_id);
+        $type = $this->_get_type($summary->type_id);
+        update_post_meta($summary->post_id, 'summaryengine_' . $type->slug, $summary->summary);
         return array("success" => true);
     }
 
