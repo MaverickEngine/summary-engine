@@ -23,6 +23,7 @@
     let settings : ISettings = {
         openai_model: "",
         openai_prompt: "",
+        openai_append_prompt: "",
         openai_frequency_penalty: 0.5,
         openai_max_tokens: 300,
         openai_presence_penalty: 0,
@@ -35,6 +36,7 @@
         console.log(summary);
         settings.openai_model = summary.openai_model;
         settings.openai_prompt = summary.prompt;
+        settings.openai_append_prompt = summary.append_prompt;
         settings.openai_frequency_penalty = summary.frequency_penalty;
         settings.openai_max_tokens = summary.max_tokens;
         settings.openai_presence_penalty = summary.presence_penalty;
@@ -45,6 +47,7 @@
     function setDefaultSettings(type) {
         settings.openai_model = type.openai_model;
         settings.openai_prompt = type.openai_prompt;
+        settings.openai_append_prompt = type.openai_append_prompt;
         settings.openai_frequency_penalty = type.openai_frequency_penalty;
         settings.openai_max_tokens = type.openai_max_tokens;
         settings.openai_presence_penalty = type.openai_presence_penalty;

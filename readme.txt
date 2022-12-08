@@ -32,6 +32,16 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= 0.6.3 =
+ * Append Prompt feature
+
+= 0.6.2 =
+ * Summary limits per summary type
+ * API key can be set as OPENAI_APIKEY constant
+    * Hide API key setting if constant is set
+    * Make API key a password field
+    * Delete the API key as an option when the constant is set
+
 = 0.6.0 =
 * Quickly generate and review summaries with Review screen
 * Summaries all custom types in post edit window

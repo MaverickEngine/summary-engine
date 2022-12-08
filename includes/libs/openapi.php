@@ -5,7 +5,7 @@ class OpenAPI {
         $this->apikey = $apikey;
     }
 
-    public function summarise($content, $params) {
+    public function summarise($params) {
         $url = "https://api.openai.com/v1/completions";
         $args = array(
             'headers' => array(

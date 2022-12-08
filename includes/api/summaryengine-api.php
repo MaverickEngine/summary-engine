@@ -157,14 +157,14 @@ class SummaryEngineAPI {
         return $summary;
     }
 
-    protected function save_results($post_id, $type_id, $content, $original_prompt, $params, $summary_result) {
+    protected function save_results($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary_result) {
         global $wpdb;
         $data = array(
             'post_id' => $post_id,
             'type_id' => $type_id,
             'user_id' => get_current_user_id(),
             'submitted_text' => $content,
-            'summary' => trim($summary_result['choices'][0]['text']),
+            'summary' => $original_append_prompt . trim($summary_result['choices'][0]['text']),
             'openai_id' => $summary_result['id'],
             'openai_model' => $summary_result['model'],
             'frequency_penalty' => $params['frequency_penalty'],
@@ -173,6 +173,7 @@ class SummaryEngineAPI {
             'temperature' => $params['temperature'],
             'top_p' => $params['top_p'],
             'prompt' => $original_prompt ?? get_option('summaryengine_openai_prompt'),
+            'append_prompt' => $original_append_prompt ?? get_option('summaryengine_openai_append_prompt'),
             'openai_object' => $summary_result['object'],
             'openai_usage_completion_tokens' => $summary_result['usage']['completion_tokens'],
             'openai_usage_prompt_tokens' => $summary_result['usage']['prompt_tokens'],
@@ -194,6 +195,7 @@ class SummaryEngineAPI {
                 '%f',
                 '%f',
                 '%f',
+                '%s',
                 '%s',
                 '%s',
                 '%d',
@@ -261,6 +263,7 @@ class SummaryEngineAPI {
             $type_settings = [
                 'openai_model' => $type->openai_model,
                 'openai_prompt' => $type->openai_prompt,
+                'openai_append_prompt' => $type->openai_append_prompt,
                 'openai_max_tokens' => $type->openai_max_tokens,
                 'openai_temperature' => $type->openai_temperature,
                 'openai_top_p' => $type->openai_top_p,
@@ -296,6 +299,7 @@ class SummaryEngineAPI {
             $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
             $openapi = new OpenAPI($apikey);
             $original_prompt =  $settings["openai_prompt"] ?? get_option('summaryengine_openai_prompt');
+            $original_append_prompt = $settings["openai_append_prompt"] ?? get_option('summaryengine_openai_append_prompt');
             $params = array(
                 'model' => get_option( 'summaryengine_openai_model'),
                 'frequency_penalty' => floatval(get_option( 'summaryengine_openai_frequency_penalty')),
@@ -303,7 +307,7 @@ class SummaryEngineAPI {
                 'presence_penalty' => floatval(get_option( 'summaryengine_openai_presence_penalty')),
                 'temperature' => floatval(get_option( 'summaryengine_openai_temperature')),
                 'top_p' => floatval(get_option( 'summaryengine_openai_top_p')),
-                'prompt' => $original_prompt . "\n\n" . $content,
+                'prompt' => $original_prompt . "\n\n" . $content . "\n\n" . $original_append_prompt,
             );
             if (isset($settings["openai_model"])) {
                 $params['model'] = $settings["openai_model"];
@@ -323,9 +327,9 @@ class SummaryEngineAPI {
             if (isset($settings["openai_top_p"])) {
                 $params['top_p'] = floatval($settings["openai_top_p"]);
             }
-            $summary = $openapi->summarise($content, $params);
+            $summary = $openapi->summarise($params);
             if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
-            $result = $this->save_results($post_id, $type_id, $content, $original_prompt, $params, $summary);
+            $result = $this->save_results($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary);
             // Set meta data for post
             update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
             update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
@@ -487,6 +491,7 @@ class SummaryEngineAPI {
         $openai_temperature = $request->get_param('openai_temperature');
         $openai_top_p = $request->get_param('openai_top_p');
         $openai_prompt = $request->get_param('openai_prompt');
+        $openai_append_prompt = $request->get_param('openai_append_prompt');
         $data = array(
             'name' => $name,
             'slug' => $slug,
@@ -499,6 +504,7 @@ class SummaryEngineAPI {
             'openai_temperature' => $openai_temperature,
             'openai_top_p' => $openai_top_p,
             'openai_prompt' => $openai_prompt,
+            'openai_append_prompt' => $openai_append_prompt,
         );
         $pattern = array(
             '%s',
@@ -510,6 +516,7 @@ class SummaryEngineAPI {
             '%d',
             '%f',
             '%f',
+            '%s',
             '%s',
         );
         if (!empty($id)) {

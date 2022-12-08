@@ -33,6 +33,7 @@
         settings.openai_frequency_penalty =  Number(summaries[summary_index].frequency_penalty);
         settings.openai_presence_penalty =  Number(summaries[summary_index].presence_penalty);
         settings.openai_prompt = summaries[summary_index].prompt;
+        settigns.openai_append_prompt = summaries[summary_index].append_prompt;
         settings.openai_top_p =  Number(summaries[summary_index].top_p);
         settings = settings;
         console.log(settings);

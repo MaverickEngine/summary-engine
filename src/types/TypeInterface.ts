@@ -12,4 +12,5 @@ export interface IType {
     openai_temperature: number;
     openai_top_p: number;
     openai_prompt: string;
+    openai_append_prompt: string;
 }

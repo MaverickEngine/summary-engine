@@ -51,8 +51,9 @@ class SummaryEngineAdmin {
             openai_presence_penalty: " . floatval(get_option("summaryengine_openai_presence_penalty", 0)) . ",
             openai_temperature: " . floatval(get_option("summaryengine_openai_temperature", 0.6)) . ",
             openai_top_p: " . floatval(get_option("summaryengine_openai_top_p", 1)) . ",
-            openai_prompt: '" . esc_js(get_option("summaryengine_openai_prompt", "Summarize in 100 words: ")) . "'
-        };    
+            openai_prompt: '" . esc_js(get_option("summaryengine_openai_prompt", "Summarize in 100 words: ")) . ",
+            openai_append_prompt: '" . esc_js(get_option("summaryengine_openai_append_prompt", "")) . "',
+        };
         ", "before" );
     }
 }

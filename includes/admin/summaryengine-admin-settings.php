@@ -12,6 +12,7 @@ class SummaryEngineAdminSettings {
         "summaryengine_openai_temperature",
         "summaryengine_openai_top_p",
         "summaryengine_openai_prompt",
+        "openai_append_prompt",
         "summaryengine_max_number_of_submissions_per_post",
         "summaryengine_rss_limit",
     ];
@@ -28,6 +29,7 @@ class SummaryEngineAdminSettings {
         "summaryengine_openai_temperature" => 0.6,
         "summaryengine_openai_top_p" => 1,
         "summaryengine_openai_prompt" => "Summarize in 100 words: ",
+        "openai_append_prompt" => "",
         "summaryengine_max_number_of_submissions_per_post" => 3,
         "summaryengine_rss_limit" => 10,
     ];

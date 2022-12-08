@@ -11,10 +11,17 @@
     <div class="summaryengine-settings" transition:slide={{ duration: 1000 }}>
         <table class="form-table" >
             <tr>
-                <th scope="row">Prompt</th>
+                <th scope="row">Prepend Prompt</th>
                 <td>
                     <input type="text" class="regular-text" bind:value="{settings.openai_prompt}" required>
-                    <p>The instruction to the model on what you'd like to generate.</p>
+                    <p>The instruction to the model on what you'd like to generate, prepended.</p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">Append Prompt</th>
+                <td>
+                    <input type="text" class="regular-text" bind:value="{settings.openai_append_prompt}" required>
+                    <p>The instruction to the model on what you'd like to generate, appended.</p>
                 </td>
             </tr>
             <tr>

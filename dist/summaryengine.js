@@ -890,6 +890,7 @@ var summaryengine = (function (exports) {
     		$$invalidate(7, settings.openai_frequency_penalty = Number(summaries[summary_index].frequency_penalty), settings);
     		$$invalidate(7, settings.openai_presence_penalty = Number(summaries[summary_index].presence_penalty), settings);
     		$$invalidate(7, settings.openai_prompt = summaries[summary_index].prompt, settings);
+    		settigns.openai_append_prompt = summaries[summary_index].append_prompt;
     		$$invalidate(7, settings.openai_top_p = Number(summaries[summary_index].top_p), settings);
     		$$invalidate(7, settings);
     		console.log(settings);
@@ -1493,20 +1494,20 @@ var summaryengine = (function (exports) {
     	let th1;
     	let t6;
     	let td1;
+    	let input1;
+    	let t7;
+    	let p1;
+    	let t9;
+    	let tr2;
+    	let th2;
+    	let t11;
+    	let td2;
     	let select;
     	let option0;
     	let option1;
     	let option2;
     	let option3;
     	let option4;
-    	let t12;
-    	let tr2;
-    	let th2;
-    	let t14;
-    	let td2;
-    	let input1;
-    	let t15;
-    	let p1;
     	let t17;
     	let tr3;
     	let th3;
@@ -1539,6 +1540,14 @@ var summaryengine = (function (exports) {
     	let input5;
     	let t35;
     	let p5;
+    	let t37;
+    	let tr7;
+    	let th7;
+    	let t39;
+    	let td7;
+    	let input6;
+    	let t40;
+    	let p6;
     	let div_transition;
     	let current;
     	let mounted;
@@ -1550,19 +1559,29 @@ var summaryengine = (function (exports) {
     			table = element("table");
     			tr0 = element("tr");
     			th0 = element("th");
-    			th0.textContent = "Prompt";
+    			th0.textContent = "Prepend Prompt";
     			t1 = space();
     			td0 = element("td");
     			input0 = element("input");
     			t2 = space();
     			p0 = element("p");
-    			p0.textContent = "The instruction to the model on what you'd like to generate.";
+    			p0.textContent = "The instruction to the model on what you'd like to generate, prepended.";
     			t4 = space();
     			tr1 = element("tr");
     			th1 = element("th");
-    			th1.textContent = "OpenAPI Model";
+    			th1.textContent = "Append Prompt";
     			t6 = space();
     			td1 = element("td");
+    			input1 = element("input");
+    			t7 = space();
+    			p1 = element("p");
+    			p1.textContent = "The instruction to the model on what you'd like to generate, appended.";
+    			t9 = space();
+    			tr2 = element("tr");
+    			th2 = element("th");
+    			th2.textContent = "OpenAPI Model";
+    			t11 = space();
+    			td2 = element("td");
     			select = element("select");
     			option0 = element("option");
     			option0.textContent = "Text-Davinci-003";
@@ -1574,61 +1593,65 @@ var summaryengine = (function (exports) {
     			option3.textContent = "Text-Babbage-001";
     			option4 = element("option");
     			option4.textContent = "Text-Ada-001";
-    			t12 = space();
-    			tr2 = element("tr");
-    			th2 = element("th");
-    			th2.textContent = "Max tokens";
-    			t14 = space();
-    			td2 = element("td");
-    			input1 = element("input");
-    			t15 = space();
-    			p1 = element("p");
-    			p1.textContent = "The maximum number of tokens to generate in the completion.";
     			t17 = space();
     			tr3 = element("tr");
     			th3 = element("th");
-    			th3.textContent = "Temperature";
+    			th3.textContent = "Max tokens";
     			t19 = space();
     			td3 = element("td");
     			input2 = element("input");
     			t20 = space();
     			p2 = element("p");
-    			p2.textContent = "What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. We generally recommend altering this or top_p but not both.";
+    			p2.textContent = "The maximum number of tokens to generate in the completion.";
     			t22 = space();
     			tr4 = element("tr");
     			th4 = element("th");
-    			th4.textContent = "Top-P";
+    			th4.textContent = "Temperature";
     			t24 = space();
     			td4 = element("td");
     			input3 = element("input");
     			t25 = space();
     			p3 = element("p");
-    			p3.textContent = "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both.";
+    			p3.textContent = "What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. We generally recommend altering this or top_p but not both.";
     			t27 = space();
     			tr5 = element("tr");
     			th5 = element("th");
-    			th5.textContent = "Presence penalty";
+    			th5.textContent = "Top-P";
     			t29 = space();
     			td5 = element("td");
     			input4 = element("input");
     			t30 = space();
     			p4 = element("p");
-    			p4.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.";
+    			p4.textContent = "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both.";
     			t32 = space();
     			tr6 = element("tr");
     			th6 = element("th");
-    			th6.textContent = "Frequency penalty";
+    			th6.textContent = "Presence penalty";
     			t34 = space();
     			td6 = element("td");
     			input5 = element("input");
     			t35 = space();
     			p5 = element("p");
-    			p5.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.";
+    			p5.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.";
+    			t37 = space();
+    			tr7 = element("tr");
+    			th7 = element("th");
+    			th7.textContent = "Frequency penalty";
+    			t39 = space();
+    			td7 = element("td");
+    			input6 = element("input");
+    			t40 = space();
+    			p6 = element("p");
+    			p6.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.";
     			attr(th0, "scope", "row");
     			attr(input0, "type", "text");
     			attr(input0, "class", "regular-text");
     			input0.required = true;
     			attr(th1, "scope", "row");
+    			attr(input1, "type", "text");
+    			attr(input1, "class", "regular-text");
+    			input1.required = true;
+    			attr(th2, "scope", "row");
     			option0.__value = "text-davinci-003";
     			option0.value = option0.__value;
     			option1.__value = "text-davinci-002";
@@ -1639,19 +1662,13 @@ var summaryengine = (function (exports) {
     			option3.value = option3.__value;
     			option4.__value = "text-ada-001";
     			option4.value = option4.__value;
-    			if (/*settings*/ ctx[0].openai_model === void 0) add_render_callback(() => /*select_change_handler*/ ctx[3].call(select));
-    			attr(th2, "scope", "row");
-    			attr(input1, "type", "number");
-    			attr(input1, "class", "regular-text");
-    			attr(input1, "min", "0");
-    			attr(input1, "max", "2048");
-    			attr(input1, "step", "1");
+    			if (/*settings*/ ctx[0].openai_model === void 0) add_render_callback(() => /*select_change_handler*/ ctx[4].call(select));
     			attr(th3, "scope", "row");
     			attr(input2, "type", "number");
     			attr(input2, "class", "regular-text");
     			attr(input2, "min", "0");
-    			attr(input2, "max", "1");
-    			attr(input2, "step", "0.1");
+    			attr(input2, "max", "2048");
+    			attr(input2, "step", "1");
     			attr(th4, "scope", "row");
     			attr(input3, "type", "number");
     			attr(input3, "class", "regular-text");
@@ -1661,8 +1678,8 @@ var summaryengine = (function (exports) {
     			attr(th5, "scope", "row");
     			attr(input4, "type", "number");
     			attr(input4, "class", "regular-text");
-    			attr(input4, "min", "-2");
-    			attr(input4, "max", "2");
+    			attr(input4, "min", "0");
+    			attr(input4, "max", "1");
     			attr(input4, "step", "0.1");
     			attr(th6, "scope", "row");
     			attr(input5, "type", "number");
@@ -1670,6 +1687,12 @@ var summaryengine = (function (exports) {
     			attr(input5, "min", "-2");
     			attr(input5, "max", "2");
     			attr(input5, "step", "0.1");
+    			attr(th7, "scope", "row");
+    			attr(input6, "type", "number");
+    			attr(input6, "class", "regular-text");
+    			attr(input6, "min", "-2");
+    			attr(input6, "max", "2");
+    			attr(input6, "step", "0.1");
     			attr(table, "class", "form-table");
     			attr(div, "class", "summaryengine-settings");
     		},
@@ -1689,29 +1712,29 @@ var summaryengine = (function (exports) {
     			append(tr1, th1);
     			append(tr1, t6);
     			append(tr1, td1);
-    			append(td1, select);
+    			append(td1, input1);
+    			set_input_value(input1, /*settings*/ ctx[0].openai_append_prompt);
+    			append(td1, t7);
+    			append(td1, p1);
+    			append(table, t9);
+    			append(table, tr2);
+    			append(tr2, th2);
+    			append(tr2, t11);
+    			append(tr2, td2);
+    			append(td2, select);
     			append(select, option0);
     			append(select, option1);
     			append(select, option2);
     			append(select, option3);
     			append(select, option4);
     			select_option(select, /*settings*/ ctx[0].openai_model);
-    			append(table, t12);
-    			append(table, tr2);
-    			append(tr2, th2);
-    			append(tr2, t14);
-    			append(tr2, td2);
-    			append(td2, input1);
-    			set_input_value(input1, /*settings*/ ctx[0].openai_max_tokens);
-    			append(td2, t15);
-    			append(td2, p1);
     			append(table, t17);
     			append(table, tr3);
     			append(tr3, th3);
     			append(tr3, t19);
     			append(tr3, td3);
     			append(td3, input2);
-    			set_input_value(input2, /*settings*/ ctx[0].openai_temperature);
+    			set_input_value(input2, /*settings*/ ctx[0].openai_max_tokens);
     			append(td3, t20);
     			append(td3, p2);
     			append(table, t22);
@@ -1720,7 +1743,7 @@ var summaryengine = (function (exports) {
     			append(tr4, t24);
     			append(tr4, td4);
     			append(td4, input3);
-    			set_input_value(input3, /*settings*/ ctx[0].openai_top_p);
+    			set_input_value(input3, /*settings*/ ctx[0].openai_temperature);
     			append(td4, t25);
     			append(td4, p3);
     			append(table, t27);
@@ -1729,7 +1752,7 @@ var summaryengine = (function (exports) {
     			append(tr5, t29);
     			append(tr5, td5);
     			append(td5, input4);
-    			set_input_value(input4, /*settings*/ ctx[0].openai_presence_penalty);
+    			set_input_value(input4, /*settings*/ ctx[0].openai_top_p);
     			append(td5, t30);
     			append(td5, p4);
     			append(table, t32);
@@ -1738,20 +1761,30 @@ var summaryengine = (function (exports) {
     			append(tr6, t34);
     			append(tr6, td6);
     			append(td6, input5);
-    			set_input_value(input5, /*settings*/ ctx[0].openai_frequency_penalty);
+    			set_input_value(input5, /*settings*/ ctx[0].openai_presence_penalty);
     			append(td6, t35);
     			append(td6, p5);
+    			append(table, t37);
+    			append(table, tr7);
+    			append(tr7, th7);
+    			append(tr7, t39);
+    			append(tr7, td7);
+    			append(td7, input6);
+    			set_input_value(input6, /*settings*/ ctx[0].openai_frequency_penalty);
+    			append(td7, t40);
+    			append(td7, p6);
     			current = true;
 
     			if (!mounted) {
     				dispose = [
     					listen(input0, "input", /*input0_input_handler*/ ctx[2]),
-    					listen(select, "change", /*select_change_handler*/ ctx[3]),
-    					listen(input1, "input", /*input1_input_handler*/ ctx[4]),
+    					listen(input1, "input", /*input1_input_handler*/ ctx[3]),
+    					listen(select, "change", /*select_change_handler*/ ctx[4]),
     					listen(input2, "input", /*input2_input_handler*/ ctx[5]),
     					listen(input3, "input", /*input3_input_handler*/ ctx[6]),
     					listen(input4, "input", /*input4_input_handler*/ ctx[7]),
-    					listen(input5, "input", /*input5_input_handler*/ ctx[8])
+    					listen(input5, "input", /*input5_input_handler*/ ctx[8]),
+    					listen(input6, "input", /*input6_input_handler*/ ctx[9])
     				];
 
     				mounted = true;
@@ -1762,28 +1795,32 @@ var summaryengine = (function (exports) {
     				set_input_value(input0, /*settings*/ ctx[0].openai_prompt);
     			}
 
+    			if (dirty & /*settings*/ 1 && input1.value !== /*settings*/ ctx[0].openai_append_prompt) {
+    				set_input_value(input1, /*settings*/ ctx[0].openai_append_prompt);
+    			}
+
     			if (dirty & /*settings*/ 1) {
     				select_option(select, /*settings*/ ctx[0].openai_model);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input1.value) !== /*settings*/ ctx[0].openai_max_tokens) {
-    				set_input_value(input1, /*settings*/ ctx[0].openai_max_tokens);
+    			if (dirty & /*settings*/ 1 && to_number(input2.value) !== /*settings*/ ctx[0].openai_max_tokens) {
+    				set_input_value(input2, /*settings*/ ctx[0].openai_max_tokens);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input2.value) !== /*settings*/ ctx[0].openai_temperature) {
-    				set_input_value(input2, /*settings*/ ctx[0].openai_temperature);
+    			if (dirty & /*settings*/ 1 && to_number(input3.value) !== /*settings*/ ctx[0].openai_temperature) {
+    				set_input_value(input3, /*settings*/ ctx[0].openai_temperature);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input3.value) !== /*settings*/ ctx[0].openai_top_p) {
-    				set_input_value(input3, /*settings*/ ctx[0].openai_top_p);
+    			if (dirty & /*settings*/ 1 && to_number(input4.value) !== /*settings*/ ctx[0].openai_top_p) {
+    				set_input_value(input4, /*settings*/ ctx[0].openai_top_p);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input4.value) !== /*settings*/ ctx[0].openai_presence_penalty) {
-    				set_input_value(input4, /*settings*/ ctx[0].openai_presence_penalty);
+    			if (dirty & /*settings*/ 1 && to_number(input5.value) !== /*settings*/ ctx[0].openai_presence_penalty) {
+    				set_input_value(input5, /*settings*/ ctx[0].openai_presence_penalty);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input5.value) !== /*settings*/ ctx[0].openai_frequency_penalty) {
-    				set_input_value(input5, /*settings*/ ctx[0].openai_frequency_penalty);
+    			if (dirty & /*settings*/ 1 && to_number(input6.value) !== /*settings*/ ctx[0].openai_frequency_penalty) {
+    				set_input_value(input6, /*settings*/ ctx[0].openai_frequency_penalty);
     			}
     		},
     		i(local) {
@@ -1875,32 +1912,37 @@ var summaryengine = (function (exports) {
     		$$invalidate(0, settings);
     	}
 
+    	function input1_input_handler() {
+    		settings.openai_append_prompt = this.value;
+    		$$invalidate(0, settings);
+    	}
+
     	function select_change_handler() {
     		settings.openai_model = select_value(this);
     		$$invalidate(0, settings);
     	}
 
-    	function input1_input_handler() {
+    	function input2_input_handler() {
     		settings.openai_max_tokens = to_number(this.value);
     		$$invalidate(0, settings);
     	}
 
-    	function input2_input_handler() {
+    	function input3_input_handler() {
     		settings.openai_temperature = to_number(this.value);
     		$$invalidate(0, settings);
     	}
 
-    	function input3_input_handler() {
+    	function input4_input_handler() {
     		settings.openai_top_p = to_number(this.value);
     		$$invalidate(0, settings);
     	}
 
-    	function input4_input_handler() {
+    	function input5_input_handler() {
     		settings.openai_presence_penalty = to_number(this.value);
     		$$invalidate(0, settings);
     	}
 
-    	function input5_input_handler() {
+    	function input6_input_handler() {
     		settings.openai_frequency_penalty = to_number(this.value);
     		$$invalidate(0, settings);
     	}
@@ -1914,12 +1956,13 @@ var summaryengine = (function (exports) {
     		settings,
     		visible,
     		input0_input_handler,
-    		select_change_handler,
     		input1_input_handler,
+    		select_change_handler,
     		input2_input_handler,
     		input3_input_handler,
     		input4_input_handler,
-    		input5_input_handler
+    		input5_input_handler,
+    		input6_input_handler
     	];
     }
 
@@ -2021,7 +2064,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (86:8) {#if summary_id > 0}
+    // (89:8) {#if summary_id > 0}
     function create_if_block(ctx) {
     	let rate;
     	let updating_summaries;
@@ -2412,6 +2455,7 @@ var summaryengine = (function (exports) {
     	let settings = {
     		openai_model: "",
     		openai_prompt: "",
+    		openai_append_prompt: "",
     		openai_frequency_penalty: 0.5,
     		openai_max_tokens: 300,
     		openai_presence_penalty: 0,
@@ -2425,6 +2469,7 @@ var summaryengine = (function (exports) {
     		console.log(summary);
     		$$invalidate(6, settings.openai_model = summary.openai_model, settings);
     		$$invalidate(6, settings.openai_prompt = summary.prompt, settings);
+    		$$invalidate(6, settings.openai_append_prompt = summary.append_prompt, settings);
     		$$invalidate(6, settings.openai_frequency_penalty = summary.frequency_penalty, settings);
     		$$invalidate(6, settings.openai_max_tokens = summary.max_tokens, settings);
     		$$invalidate(6, settings.openai_presence_penalty = summary.presence_penalty, settings);
@@ -2435,6 +2480,7 @@ var summaryengine = (function (exports) {
     	function setDefaultSettings(type) {
     		$$invalidate(6, settings.openai_model = type.openai_model, settings);
     		$$invalidate(6, settings.openai_prompt = type.openai_prompt, settings);
+    		$$invalidate(6, settings.openai_append_prompt = type.openai_append_prompt, settings);
     		$$invalidate(6, settings.openai_frequency_penalty = type.openai_frequency_penalty, settings);
     		$$invalidate(6, settings.openai_max_tokens = type.openai_max_tokens, settings);
     		$$invalidate(6, settings.openai_presence_penalty = type.openai_presence_penalty, settings);
