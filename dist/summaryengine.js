@@ -2064,7 +2064,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (89:8) {#if summary_id > 0}
+    // (90:8) {#if summary_id > 0}
     function create_if_block(ctx) {
     	let rate;
     	let updating_summaries;
@@ -2489,6 +2489,7 @@ var summaryengine = (function (exports) {
     	}
 
     	function calcSubmissionsLeft() {
+    		// @ts-ignore
     		const max_summaries = Number(summaryengine_max_number_of_submissions_per_post || 5);
 
     		$$invalidate(5, submissions_left = max_summaries - summaries.length > 0

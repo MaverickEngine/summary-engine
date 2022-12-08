@@ -32,6 +32,7 @@ class SummaryEngineAdmin {
 		if (!file_exists($svg_icon_file)) {
 			return false;
 		}
+        // phpcs:ignore
 		return 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($svg_icon_file));
 	}
 

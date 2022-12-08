@@ -12,8 +12,9 @@ class OpenAPI {
                 'Authorization' => 'Bearer ' . $this->apikey,
                 'Content-Type' => 'application/json',
             ),
+            // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
             'timeout' => 30,
-            'body' => json_encode($params),
+            'body' => wp_json_encode($params),
         );
         $response = wp_remote_post($url, $args);
         if (! is_wp_error( $response ) ) {

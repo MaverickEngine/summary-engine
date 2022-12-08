@@ -34,6 +34,7 @@ class SummaryEngineDB {
         dbDelta( $summaryengine_types_sql );
 
         // Insert the default types
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $rows_affected = $wpdb->insert( $summaryengine_types_tablename, array( 'name' => 'Summary', 'slug' => 'summary', 'ID' => 1 ) );
         dbDelta( $rows_affected );
         

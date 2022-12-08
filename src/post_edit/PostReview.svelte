@@ -56,6 +56,7 @@
     }
 
     function calcSubmissionsLeft() {
+        // @ts-ignore
         const max_summaries = Number(summaryengine_max_number_of_submissions_per_post || 5);
         submissions_left = (max_summaries - summaries.length) > 0 ? max_summaries -  summaries.length : 0;
     }
