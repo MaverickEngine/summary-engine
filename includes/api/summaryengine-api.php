@@ -276,8 +276,8 @@ class SummaryEngineAPI {
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
                 $number_of_submissions = $wpdb->get_var( $wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d",
-                    $post_id
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d AND type_id=%d",
+                    $post_id, $type_id
                 ));
                 if ($number_of_submissions >= $max_number_of_submissions_per_post) {
                     return new WP_Error( 'too_many_submissions', "You have already submitted this post for automated summary a maxiumum number of $max_number_of_submissions_per_post times.", array( 'status' => 400 ) );
