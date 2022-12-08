@@ -293,7 +293,8 @@ class SummaryEngineAPI {
             if (empty($content)) {
                 return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
             }
-            $openapi = new OpenAPI(get_option('summaryengine_openai_apikey'));
+            $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
+            $openapi = new OpenAPI($apikey);
             $original_prompt =  $settings["openai_prompt"] ?? get_option('summaryengine_openai_prompt');
             $params = array(
                 'model' => get_option( 'summaryengine_openai_model'),

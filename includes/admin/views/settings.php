@@ -28,12 +28,19 @@
                         <input type="number" name="summaryengine_rss_limit" value="<?php echo esc_attr( get_option('summaryengine_rss_limit') ); ?>" class="regular-text" />
                     </td>
                 </tr>
+                <?php
+                if (!defined('OPENAI_APIKEY')) {
+                ?>
                 <tr>
                     <th scope="row"><?php _e("OpenAI API Key", "summaryengine") ?></th>
                     <td>
-                        <input type="text" name="summaryengine_openai_apikey" value="<?php echo esc_attr(get_option('summaryengine_openai_apikey')); ?>" class="regular-text">
+                        <input type="password" name="summaryengine_openai_apikey" value="<?php echo esc_attr(get_option('summaryengine_openai_apikey')); ?>" class="regular-text">
+                        <p>For better security, set this in your wp-config.php, vip-config.php or Docker .env file using the constant <code>OPENAI_APIKEY</code>.<br /> Eg. <code>define("OPENAI_APIKEY", "sk-my-key");</code></p>
                     </td>
                 </tr>
+                <?php
+                }
+                ?>
                 <tr>
                     <th scope="row"><?php _e("OpenAPI Model", "summaryengine") ?></th>
                     <td>

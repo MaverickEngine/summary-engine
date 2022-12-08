@@ -53,6 +53,10 @@ class SummaryEngineAdminSettings {
         if (!current_user_can('manage_options')) {
             wp_die('You do not have sufficient permissions to access this page.');
         }
+        // Clear the option of summaryengine_openai_apikey if the constant OPENAI_APIKEY is set
+        if (defined('OPENAI_APIKEY')) {
+            update_option('summaryengine_openai_apikey', '');
+        }
         require_once plugin_dir_path( dirname( __FILE__ ) ).'admin/views/settings.php';
     }
 
