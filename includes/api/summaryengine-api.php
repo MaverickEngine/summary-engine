@@ -482,14 +482,19 @@ class SummaryEngineAPI {
     protected function count_rated_summaries() {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $results = $wpdb->get_results($wpdb->prepare("SELECT COUNT(*) as count, rating FROM {$wpdb->prefix}summaryengine_summaries GROUP BY rating"));
+        $results = $wpdb->get_results($wpdb->prepare("SELECT COUNT(*) as count, rating, type_id FROM {$wpdb->prefix}summaryengine_summaries GROUP BY rating, type_id"));
         return $results;
     }
 
-    protected function summaries_by_period($start, $end) {
+    protected function summaries_by_period($start, $end, $type_id) {
         global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $results = $wpdb->get_results($wpdb->prepare("SELECT DATE(created_at) as date, COUNT(*) as count, rating FROM {$wpdb->prefix}summaryengine_summaries WHERE created_at > %s AND created_at <= %s GROUP BY DATE(created_at), rating", [$start, $end]));
+        if (!isset($type_id) || empty($type_id) || $type_id <= 0) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $results = $wpdb->get_results($wpdb->prepare("SELECT DATE(created_at) as date, COUNT(*) as count, rating FROM {$wpdb->prefix}summaryengine_summaries WHERE created_at > %s AND created_at <= %s GROUP BY DATE(created_at), rating", [$start, $end]));
+        } else {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $results = $wpdb->get_results($wpdb->prepare("SELECT DATE(created_at) as date, COUNT(*) as count, rating FROM {$wpdb->prefix}summaryengine_summaries WHERE created_at > %s AND created_at <= %s AND type_id = %d GROUP BY DATE(created_at), rating", [$start, $end, $type_id]));
+        }
         return $results;
     }
 
@@ -507,7 +512,8 @@ class SummaryEngineAPI {
     public function get_reports_by_period(WP_REST_Request $request) {
         $start = $request->get_param('start') ?? gmdate('Y-m-d', strtotime('-30 days'));
         $end = $request->get_param('end') ?? gmdate('Y-m-d');
-        return $this->summaries_by_period($start, $end);
+        $type_id = $request->get_param('type');
+        return $this->summaries_by_period($start, $end, $type_id);
     }
 
     protected function _get_type($id) {
@@ -516,6 +522,19 @@ class SummaryEngineAPI {
         $type = $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE ID = %d",
             $id
+        ));
+        if (empty($type)) {
+            return new WP_Error( 'summaryengine_type_not_found', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
+        return $type;
+    }
+
+    protected function _get_type_by_slug($slug) {
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $type = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE slug = %s",
+            $slug
         ));
         if (empty($type)) {
             return new WP_Error( 'summaryengine_type_not_found', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );

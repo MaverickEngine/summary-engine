@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { Pie } from 'svelte-chartjs';
     import {
         Chart as ChartJS,
@@ -25,17 +25,17 @@
 </script>
 
 <div class="chart">
-    <Pie data={{ labels: ['Good', 'Bad', 'Unrated'],
-    datasets: [
-      {
-        data: [good, bad, unrated],
+    <Pie data={{ labels: ['Approved', 'Disapproved', 'Unapproved'],
+        datasets: [
+        {
+            data: [good, bad, unrated],
 
-      },
-    ], }}
-    options={{ responsive: true }}
+        },
+        ], }}
+        options={{ responsive: true }}
     />
 </div>
 
-<style lang="scss">
+<style lang="less">
     
 </style>

@@ -7,13 +7,16 @@ import PieChart from "./components/PieChart.svelte";
 let good_summaries = [];
 let bad_summaries = [];
 let counts;
+let types = [];
 
 onMount(async () => {
     try {
+        types = await apiGet(`summaryengine/v1/types`);
         const reports = await apiGet(`summaryengine/v1/reports`);
         good_summaries = reports.good_summaries;
         bad_summaries = reports.bad_summaries;
         counts = reports.counts;
+        console.log(counts);
     } catch (e) {
         console.error(e);
     }
@@ -22,20 +25,38 @@ onMount(async () => {
 </script>
 <!-- Path: wp-content/plugins/summary-engine/src/reports/Reports.svelte -->
 
-<div id="summaryEngineGraphs">
-    <div id="summaryEngineDayChart">
+<div class="summaryEngineGraphs">
+    <div class="summaryEngineDayChart">
         <h3>Day Chart</h3>
         <DayChart />
     </div>
-    <div id="summaryEnginePieChart">
+    <div class="summaryEnginePieChart">
         <h3>Ratings</h3>
         <PieChart 
-            good={counts?.find(d => Number(d.rating) === 1).count || 0} 
-            bad={counts?.find(d => Number(d.rating) === -1).count || 0}
-            unrated={counts?.find(d => Number(d.rating) === 0).count || 0}
+            good={counts?.filter(d => Number(d.rating) === 1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0} 
+            bad={counts?.filter(d => Number(d.rating) === -1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
+            unrated={counts?.filter(d => Number(d.rating) === 0)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
         />
     </div>
 </div>
+
+{#each types as type}
+<div class="summaryEngineGraphs">
+    <div class="summaryEngineDayChart">
+        <h3>Day Chart </h3>
+        <DayChart type_id={type.ID} />
+    </div>
+    <div class="summaryEnginePieChart">
+        <h3>Ratings</h3>
+        <PieChart 
+            good={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === 1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0} 
+            bad={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === -1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
+            unrated={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === 0)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
+        />
+    </div>
+</div>
+{/each}
+
 <h3>Good Summaries</h3>
 <table class="wp-list-table widefat fixed striped table-view-list">
     <thead>
@@ -80,19 +101,20 @@ onMount(async () => {
     </tbody>
 </table>
 
-<style lang="scss">
-    #summaryEngineGraphs {
+<style lang="less">
+    .summaryEngineGraphs {
         display: flex;
         flex-direction: row;
         justify-content: space-around;
         align-items: center;
         margin-bottom: 20px;
     }
-    #summaryEngineDayChart {
+
+    .summaryEngineDayChart {
         width: 600px;
     }
 
-    #summaryEnginePieChart {
+    .summaryEnginePieChart {
         height: 350px;
         width: 300px;
     }

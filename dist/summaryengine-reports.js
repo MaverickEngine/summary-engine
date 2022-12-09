@@ -234,6 +234,19 @@ var summaryengine_admin = (function () {
     }
     const outroing = new Set();
     let outros;
+    function group_outros() {
+        outros = {
+            r: 0,
+            c: [],
+            p: outros // parent group
+        };
+    }
+    function check_outros() {
+        if (!outros.r) {
+            run_all(outros.c);
+        }
+        outros = outros.p;
+    }
     function transition_in(block, local) {
         if (block && block.i) {
             outroing.delete(block);
@@ -21104,22 +21117,23 @@ var summaryengine_admin = (function () {
     	};
 
     	let { datasets = [] } = $$props;
+    	let { type_id } = $$props;
 
     	//onMount
     	onMount(async () => {
-    		const report = await apiGet(`summaryengine/v1/report/by_period`);
+    		const report = await apiGet(`summaryengine/v1/report/by_period?type=${type_id || -1}`);
 
     		$$invalidate(0, datasets = [
     			{
-    				label: 'Good',
+    				label: 'Approved',
     				data: report.filter(d => Number(d.rating) === 1).map(day_map)
     			},
     			{
-    				label: 'Bad',
+    				label: 'Disappproved',
     				data: report.filter(d => Number(d.rating) === -1).map(day_map)
     			},
     			{
-    				label: 'Unrated',
+    				label: 'Unapproved',
     				data: report.filter(d => Number(d.rating) === 0).map(day_map)
     			}
     		]);
@@ -21127,15 +21141,16 @@ var summaryengine_admin = (function () {
 
     	$$self.$$set = $$props => {
     		if ('datasets' in $$props) $$invalidate(0, datasets = $$props.datasets);
+    		if ('type_id' in $$props) $$invalidate(1, type_id = $$props.type_id);
     	};
 
-    	return [datasets];
+    	return [datasets, type_id];
     }
 
     class DayChart extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { datasets: 0 });
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { datasets: 0, type_id: 1 });
     	}
     }
 
@@ -21149,7 +21164,7 @@ var summaryengine_admin = (function () {
     	pie = new Pie({
     			props: {
     				data: {
-    					labels: ['Good', 'Bad', 'Unrated'],
+    					labels: ['Approved', 'Disapproved', 'Unapproved'],
     					datasets: [
     						{
     							data: [/*good*/ ctx[0], /*bad*/ ctx[1], /*unrated*/ ctx[2]]
@@ -21175,7 +21190,7 @@ var summaryengine_admin = (function () {
     			const pie_changes = {};
 
     			if (dirty & /*good, bad, unrated*/ 7) pie_changes.data = {
-    				labels: ['Good', 'Bad', 'Unrated'],
+    				labels: ['Approved', 'Disapproved', 'Unapproved'],
     				datasets: [
     					{
     						data: [/*good*/ ctx[0], /*bad*/ ctx[1], /*unrated*/ ctx[2]]
@@ -21227,35 +21242,137 @@ var summaryengine_admin = (function () {
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[6] = list[i];
+    	child_ctx[19] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_1(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[6] = list[i];
+    	child_ctx[19] = list[i];
     	return child_ctx;
     }
 
-    // (50:8) {#each good_summaries as summary}
+    function get_each_context_2(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[24] = list[i];
+    	return child_ctx;
+    }
+
+    // (43:0) {#each types as type}
+    function create_each_block_2(ctx) {
+    	let div2;
+    	let div0;
+    	let h30;
+    	let t1;
+    	let daychart;
+    	let t2;
+    	let div1;
+    	let h31;
+    	let t4;
+    	let piechart;
+    	let current;
+    	daychart = new DayChart({ props: { type_id: /*type*/ ctx[24].ID } });
+
+    	function func_6(...args) {
+    		return /*func_6*/ ctx[10](/*type*/ ctx[24], ...args);
+    	}
+
+    	function func_9(...args) {
+    		return /*func_9*/ ctx[13](/*type*/ ctx[24], ...args);
+    	}
+
+    	function func_12(...args) {
+    		return /*func_12*/ ctx[16](/*type*/ ctx[24], ...args);
+    	}
+
+    	piechart = new PieChart({
+    			props: {
+    				good: /*counts*/ ctx[2]?.filter(func_6)?.filter(/*func_7*/ ctx[11])?.reduce(/*func_8*/ ctx[12], 0) || 0,
+    				bad: /*counts*/ ctx[2]?.filter(func_9)?.filter(/*func_10*/ ctx[14])?.reduce(/*func_11*/ ctx[15], 0) || 0,
+    				unrated: /*counts*/ ctx[2]?.filter(func_12)?.filter(/*func_13*/ ctx[17])?.reduce(/*func_14*/ ctx[18], 0) || 0
+    			}
+    		});
+
+    	return {
+    		c() {
+    			div2 = element("div");
+    			div0 = element("div");
+    			h30 = element("h3");
+    			h30.textContent = "Day Chart";
+    			t1 = space();
+    			create_component(daychart.$$.fragment);
+    			t2 = space();
+    			div1 = element("div");
+    			h31 = element("h3");
+    			h31.textContent = "Ratings";
+    			t4 = space();
+    			create_component(piechart.$$.fragment);
+    			attr(div0, "class", "summaryEngineDayChart svelte-1qhapk5");
+    			attr(div1, "class", "summaryEnginePieChart svelte-1qhapk5");
+    			attr(div2, "class", "summaryEngineGraphs svelte-1qhapk5");
+    		},
+    		m(target, anchor) {
+    			insert(target, div2, anchor);
+    			append(div2, div0);
+    			append(div0, h30);
+    			append(div0, t1);
+    			mount_component(daychart, div0, null);
+    			append(div2, t2);
+    			append(div2, div1);
+    			append(div1, h31);
+    			append(div1, t4);
+    			mount_component(piechart, div1, null);
+    			current = true;
+    		},
+    		p(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			const daychart_changes = {};
+    			if (dirty & /*types*/ 8) daychart_changes.type_id = /*type*/ ctx[24].ID;
+    			daychart.$set(daychart_changes);
+    			const piechart_changes = {};
+    			if (dirty & /*counts, types*/ 12) piechart_changes.good = /*counts*/ ctx[2]?.filter(func_6)?.filter(/*func_7*/ ctx[11])?.reduce(/*func_8*/ ctx[12], 0) || 0;
+    			if (dirty & /*counts, types*/ 12) piechart_changes.bad = /*counts*/ ctx[2]?.filter(func_9)?.filter(/*func_10*/ ctx[14])?.reduce(/*func_11*/ ctx[15], 0) || 0;
+    			if (dirty & /*counts, types*/ 12) piechart_changes.unrated = /*counts*/ ctx[2]?.filter(func_12)?.filter(/*func_13*/ ctx[17])?.reduce(/*func_14*/ ctx[18], 0) || 0;
+    			piechart.$set(piechart_changes);
+    		},
+    		i(local) {
+    			if (current) return;
+    			transition_in(daychart.$$.fragment, local);
+    			transition_in(piechart.$$.fragment, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(daychart.$$.fragment, local);
+    			transition_out(piechart.$$.fragment, local);
+    			current = false;
+    		},
+    		d(detaching) {
+    			if (detaching) detach(div2);
+    			destroy_component(daychart);
+    			destroy_component(piechart);
+    		}
+    	};
+    }
+
+    // (71:8) {#each good_summaries as summary}
     function create_each_block_1(ctx) {
     	let tr;
     	let td0;
     	let a;
-    	let t0_value = /*summary*/ ctx[6].post_title + "";
+    	let t0_value = /*summary*/ ctx[19].post_title + "";
     	let t0;
     	let a_href_value;
     	let t1;
     	let td1;
-    	let t2_value = /*summary*/ ctx[6].summary + "";
+    	let t2_value = /*summary*/ ctx[19].summary + "";
     	let t2;
     	let t3;
     	let td2;
-    	let t4_value = /*summary*/ ctx[6].prompt + "";
+    	let t4_value = /*summary*/ ctx[19].prompt + "";
     	let t4;
     	let t5;
     	let td3;
-    	let t6_value = /*summary*/ ctx[6].user + "";
+    	let t6_value = /*summary*/ ctx[19].user + "";
     	let t6;
     	let t7;
 
@@ -21275,7 +21392,7 @@ var summaryengine_admin = (function () {
     			td3 = element("td");
     			t6 = text(t6_value);
     			t7 = space();
-    			attr(a, "href", a_href_value = /*summary*/ ctx[6].post_permalink);
+    			attr(a, "href", a_href_value = /*summary*/ ctx[19].post_permalink);
     		},
     		m(target, anchor) {
     			insert(target, tr, anchor);
@@ -21294,15 +21411,15 @@ var summaryengine_admin = (function () {
     			append(tr, t7);
     		},
     		p(ctx, dirty) {
-    			if (dirty & /*good_summaries*/ 1 && t0_value !== (t0_value = /*summary*/ ctx[6].post_title + "")) set_data(t0, t0_value);
+    			if (dirty & /*good_summaries*/ 1 && t0_value !== (t0_value = /*summary*/ ctx[19].post_title + "")) set_data(t0, t0_value);
 
-    			if (dirty & /*good_summaries*/ 1 && a_href_value !== (a_href_value = /*summary*/ ctx[6].post_permalink)) {
+    			if (dirty & /*good_summaries*/ 1 && a_href_value !== (a_href_value = /*summary*/ ctx[19].post_permalink)) {
     				attr(a, "href", a_href_value);
     			}
 
-    			if (dirty & /*good_summaries*/ 1 && t2_value !== (t2_value = /*summary*/ ctx[6].summary + "")) set_data(t2, t2_value);
-    			if (dirty & /*good_summaries*/ 1 && t4_value !== (t4_value = /*summary*/ ctx[6].prompt + "")) set_data(t4, t4_value);
-    			if (dirty & /*good_summaries*/ 1 && t6_value !== (t6_value = /*summary*/ ctx[6].user + "")) set_data(t6, t6_value);
+    			if (dirty & /*good_summaries*/ 1 && t2_value !== (t2_value = /*summary*/ ctx[19].summary + "")) set_data(t2, t2_value);
+    			if (dirty & /*good_summaries*/ 1 && t4_value !== (t4_value = /*summary*/ ctx[19].prompt + "")) set_data(t4, t4_value);
+    			if (dirty & /*good_summaries*/ 1 && t6_value !== (t6_value = /*summary*/ ctx[19].user + "")) set_data(t6, t6_value);
     		},
     		d(detaching) {
     			if (detaching) detach(tr);
@@ -21310,25 +21427,25 @@ var summaryengine_admin = (function () {
     	};
     }
 
-    // (72:8) {#each bad_summaries as summary}
+    // (93:8) {#each bad_summaries as summary}
     function create_each_block(ctx) {
     	let tr;
     	let td0;
     	let a;
-    	let t0_value = /*summary*/ ctx[6].post_title + "";
+    	let t0_value = /*summary*/ ctx[19].post_title + "";
     	let t0;
     	let a_href_value;
     	let t1;
     	let td1;
-    	let t2_value = /*summary*/ ctx[6].summary + "";
+    	let t2_value = /*summary*/ ctx[19].summary + "";
     	let t2;
     	let t3;
     	let td2;
-    	let t4_value = /*summary*/ ctx[6].prompt + "";
+    	let t4_value = /*summary*/ ctx[19].prompt + "";
     	let t4;
     	let t5;
     	let td3;
-    	let t6_value = /*summary*/ ctx[6].user + "";
+    	let t6_value = /*summary*/ ctx[19].user + "";
     	let t6;
     	let t7;
 
@@ -21348,7 +21465,7 @@ var summaryengine_admin = (function () {
     			td3 = element("td");
     			t6 = text(t6_value);
     			t7 = space();
-    			attr(a, "href", a_href_value = /*summary*/ ctx[6].post_permalink);
+    			attr(a, "href", a_href_value = /*summary*/ ctx[19].post_permalink);
     		},
     		m(target, anchor) {
     			insert(target, tr, anchor);
@@ -21367,15 +21484,15 @@ var summaryengine_admin = (function () {
     			append(tr, t7);
     		},
     		p(ctx, dirty) {
-    			if (dirty & /*bad_summaries*/ 2 && t0_value !== (t0_value = /*summary*/ ctx[6].post_title + "")) set_data(t0, t0_value);
+    			if (dirty & /*bad_summaries*/ 2 && t0_value !== (t0_value = /*summary*/ ctx[19].post_title + "")) set_data(t0, t0_value);
 
-    			if (dirty & /*bad_summaries*/ 2 && a_href_value !== (a_href_value = /*summary*/ ctx[6].post_permalink)) {
+    			if (dirty & /*bad_summaries*/ 2 && a_href_value !== (a_href_value = /*summary*/ ctx[19].post_permalink)) {
     				attr(a, "href", a_href_value);
     			}
 
-    			if (dirty & /*bad_summaries*/ 2 && t2_value !== (t2_value = /*summary*/ ctx[6].summary + "")) set_data(t2, t2_value);
-    			if (dirty & /*bad_summaries*/ 2 && t4_value !== (t4_value = /*summary*/ ctx[6].prompt + "")) set_data(t4, t4_value);
-    			if (dirty & /*bad_summaries*/ 2 && t6_value !== (t6_value = /*summary*/ ctx[6].user + "")) set_data(t6, t6_value);
+    			if (dirty & /*bad_summaries*/ 2 && t2_value !== (t2_value = /*summary*/ ctx[19].summary + "")) set_data(t2, t2_value);
+    			if (dirty & /*bad_summaries*/ 2 && t4_value !== (t4_value = /*summary*/ ctx[19].prompt + "")) set_data(t4, t4_value);
+    			if (dirty & /*bad_summaries*/ 2 && t6_value !== (t6_value = /*summary*/ ctx[19].user + "")) set_data(t6, t6_value);
     		},
     		d(detaching) {
     			if (detaching) detach(tr);
@@ -21395,29 +21512,41 @@ var summaryengine_admin = (function () {
     	let t4;
     	let piechart;
     	let t5;
+    	let t6;
     	let h32;
-    	let t7;
+    	let t8;
     	let table0;
     	let thead0;
-    	let t15;
-    	let tbody0;
     	let t16;
+    	let tbody0;
+    	let t17;
     	let h33;
-    	let t18;
+    	let t19;
     	let table1;
     	let thead1;
-    	let t26;
+    	let t27;
     	let tbody1;
     	let current;
     	daychart = new DayChart({});
 
     	piechart = new PieChart({
     			props: {
-    				good: /*counts*/ ctx[2]?.find(/*func*/ ctx[3]).count || 0,
-    				bad: /*counts*/ ctx[2]?.find(/*func_1*/ ctx[4]).count || 0,
-    				unrated: /*counts*/ ctx[2]?.find(/*func_2*/ ctx[5]).count || 0
+    				good: /*counts*/ ctx[2]?.filter(/*func*/ ctx[4])?.reduce(/*func_1*/ ctx[5], 0) || 0,
+    				bad: /*counts*/ ctx[2]?.filter(/*func_2*/ ctx[6])?.reduce(/*func_3*/ ctx[7], 0) || 0,
+    				unrated: /*counts*/ ctx[2]?.filter(/*func_4*/ ctx[8])?.reduce(/*func_5*/ ctx[9], 0) || 0
     			}
     		});
+
+    	let each_value_2 = /*types*/ ctx[3];
+    	let each_blocks_2 = [];
+
+    	for (let i = 0; i < each_value_2.length; i += 1) {
+    		each_blocks_2[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
+    	}
+
+    	const out = i => transition_out(each_blocks_2[i], 1, 1, () => {
+    		each_blocks_2[i] = null;
+    	});
 
     	let each_value_1 = /*good_summaries*/ ctx[0];
     	let each_blocks_1 = [];
@@ -21448,9 +21577,15 @@ var summaryengine_admin = (function () {
     			t4 = space();
     			create_component(piechart.$$.fragment);
     			t5 = space();
+
+    			for (let i = 0; i < each_blocks_2.length; i += 1) {
+    				each_blocks_2[i].c();
+    			}
+
+    			t6 = space();
     			h32 = element("h3");
     			h32.textContent = "Good Summaries";
-    			t7 = space();
+    			t8 = space();
     			table0 = element("table");
     			thead0 = element("thead");
 
@@ -21459,17 +21594,17 @@ var summaryengine_admin = (function () {
             <th>Prompt</th> 
             <th>User</th></tr>`;
 
-    			t15 = space();
+    			t16 = space();
     			tbody0 = element("tbody");
 
     			for (let i = 0; i < each_blocks_1.length; i += 1) {
     				each_blocks_1[i].c();
     			}
 
-    			t16 = space();
+    			t17 = space();
     			h33 = element("h3");
     			h33.textContent = "Bad Summaries";
-    			t18 = space();
+    			t19 = space();
     			table1 = element("table");
     			thead1 = element("thead");
 
@@ -21478,19 +21613,16 @@ var summaryengine_admin = (function () {
             <th>Prompt</th> 
             <th>User</th></tr>`;
 
-    			t26 = space();
+    			t27 = space();
     			tbody1 = element("tbody");
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
     				each_blocks[i].c();
     			}
 
-    			attr(div0, "id", "summaryEngineDayChart");
-    			attr(div0, "class", "svelte-dmhftc");
-    			attr(div1, "id", "summaryEnginePieChart");
-    			attr(div1, "class", "svelte-dmhftc");
-    			attr(div2, "id", "summaryEngineGraphs");
-    			attr(div2, "class", "svelte-dmhftc");
+    			attr(div0, "class", "summaryEngineDayChart svelte-1qhapk5");
+    			attr(div1, "class", "summaryEnginePieChart svelte-1qhapk5");
+    			attr(div2, "class", "summaryEngineGraphs svelte-1qhapk5");
     			attr(table0, "class", "wp-list-table widefat fixed striped table-view-list");
     			attr(table1, "class", "wp-list-table widefat fixed striped table-view-list");
     		},
@@ -21506,23 +21638,29 @@ var summaryengine_admin = (function () {
     			append(div1, t4);
     			mount_component(piechart, div1, null);
     			insert(target, t5, anchor);
+
+    			for (let i = 0; i < each_blocks_2.length; i += 1) {
+    				each_blocks_2[i].m(target, anchor);
+    			}
+
+    			insert(target, t6, anchor);
     			insert(target, h32, anchor);
-    			insert(target, t7, anchor);
+    			insert(target, t8, anchor);
     			insert(target, table0, anchor);
     			append(table0, thead0);
-    			append(table0, t15);
+    			append(table0, t16);
     			append(table0, tbody0);
 
     			for (let i = 0; i < each_blocks_1.length; i += 1) {
     				each_blocks_1[i].m(tbody0, null);
     			}
 
-    			insert(target, t16, anchor);
+    			insert(target, t17, anchor);
     			insert(target, h33, anchor);
-    			insert(target, t18, anchor);
+    			insert(target, t19, anchor);
     			insert(target, table1, anchor);
     			append(table1, thead1);
-    			append(table1, t26);
+    			append(table1, t27);
     			append(table1, tbody1);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
@@ -21533,10 +21671,37 @@ var summaryengine_admin = (function () {
     		},
     		p(ctx, [dirty]) {
     			const piechart_changes = {};
-    			if (dirty & /*counts*/ 4) piechart_changes.good = /*counts*/ ctx[2]?.find(/*func*/ ctx[3]).count || 0;
-    			if (dirty & /*counts*/ 4) piechart_changes.bad = /*counts*/ ctx[2]?.find(/*func_1*/ ctx[4]).count || 0;
-    			if (dirty & /*counts*/ 4) piechart_changes.unrated = /*counts*/ ctx[2]?.find(/*func_2*/ ctx[5]).count || 0;
+    			if (dirty & /*counts*/ 4) piechart_changes.good = /*counts*/ ctx[2]?.filter(/*func*/ ctx[4])?.reduce(/*func_1*/ ctx[5], 0) || 0;
+    			if (dirty & /*counts*/ 4) piechart_changes.bad = /*counts*/ ctx[2]?.filter(/*func_2*/ ctx[6])?.reduce(/*func_3*/ ctx[7], 0) || 0;
+    			if (dirty & /*counts*/ 4) piechart_changes.unrated = /*counts*/ ctx[2]?.filter(/*func_4*/ ctx[8])?.reduce(/*func_5*/ ctx[9], 0) || 0;
     			piechart.$set(piechart_changes);
+
+    			if (dirty & /*counts, Number, types*/ 12) {
+    				each_value_2 = /*types*/ ctx[3];
+    				let i;
+
+    				for (i = 0; i < each_value_2.length; i += 1) {
+    					const child_ctx = get_each_context_2(ctx, each_value_2, i);
+
+    					if (each_blocks_2[i]) {
+    						each_blocks_2[i].p(child_ctx, dirty);
+    						transition_in(each_blocks_2[i], 1);
+    					} else {
+    						each_blocks_2[i] = create_each_block_2(child_ctx);
+    						each_blocks_2[i].c();
+    						transition_in(each_blocks_2[i], 1);
+    						each_blocks_2[i].m(t6.parentNode, t6);
+    					}
+    				}
+
+    				group_outros();
+
+    				for (i = each_value_2.length; i < each_blocks_2.length; i += 1) {
+    					out(i);
+    				}
+
+    				check_outros();
+    			}
 
     			if (dirty & /*good_summaries*/ 1) {
     				each_value_1 = /*good_summaries*/ ctx[0];
@@ -21588,11 +21753,22 @@ var summaryengine_admin = (function () {
     			if (current) return;
     			transition_in(daychart.$$.fragment, local);
     			transition_in(piechart.$$.fragment, local);
+
+    			for (let i = 0; i < each_value_2.length; i += 1) {
+    				transition_in(each_blocks_2[i]);
+    			}
+
     			current = true;
     		},
     		o(local) {
     			transition_out(daychart.$$.fragment, local);
     			transition_out(piechart.$$.fragment, local);
+    			each_blocks_2 = each_blocks_2.filter(Boolean);
+
+    			for (let i = 0; i < each_blocks_2.length; i += 1) {
+    				transition_out(each_blocks_2[i]);
+    			}
+
     			current = false;
     		},
     		d(detaching) {
@@ -21600,13 +21776,15 @@ var summaryengine_admin = (function () {
     			destroy_component(daychart);
     			destroy_component(piechart);
     			if (detaching) detach(t5);
+    			destroy_each(each_blocks_2, detaching);
+    			if (detaching) detach(t6);
     			if (detaching) detach(h32);
-    			if (detaching) detach(t7);
+    			if (detaching) detach(t8);
     			if (detaching) detach(table0);
     			destroy_each(each_blocks_1, detaching);
-    			if (detaching) detach(t16);
+    			if (detaching) detach(t17);
     			if (detaching) detach(h33);
-    			if (detaching) detach(t18);
+    			if (detaching) detach(t19);
     			if (detaching) detach(table1);
     			destroy_each(each_blocks, detaching);
     		}
@@ -21617,22 +21795,58 @@ var summaryengine_admin = (function () {
     	let good_summaries = [];
     	let bad_summaries = [];
     	let counts;
+    	let types = [];
 
     	onMount(async () => {
     		try {
+    			$$invalidate(3, types = await apiGet(`summaryengine/v1/types`));
     			const reports = await apiGet(`summaryengine/v1/reports`);
     			$$invalidate(0, good_summaries = reports.good_summaries);
     			$$invalidate(1, bad_summaries = reports.bad_summaries);
     			$$invalidate(2, counts = reports.counts);
+    			console.log(counts);
     		} catch(e) {
     			console.error(e);
     		}
     	});
 
     	const func = d => Number(d.rating) === 1;
-    	const func_1 = d => Number(d.rating) === -1;
-    	const func_2 = d => Number(d.rating) === 0;
-    	return [good_summaries, bad_summaries, counts, func, func_1, func_2];
+    	const func_1 = (prev, curr) => prev + Number(curr.count);
+    	const func_2 = d => Number(d.rating) === -1;
+    	const func_3 = (prev, curr) => prev + Number(curr.count);
+    	const func_4 = d => Number(d.rating) === 0;
+    	const func_5 = (prev, curr) => prev + Number(curr.count);
+    	const func_6 = (type, d) => Number(d.type_id) === Number(type.ID);
+    	const func_7 = d => Number(d.rating) === 1;
+    	const func_8 = (prev, curr) => prev + Number(curr.count);
+    	const func_9 = (type, d) => Number(d.type_id) === Number(type.ID);
+    	const func_10 = d => Number(d.rating) === -1;
+    	const func_11 = (prev, curr) => prev + Number(curr.count);
+    	const func_12 = (type, d) => Number(d.type_id) === Number(type.ID);
+    	const func_13 = d => Number(d.rating) === 0;
+    	const func_14 = (prev, curr) => prev + Number(curr.count);
+
+    	return [
+    		good_summaries,
+    		bad_summaries,
+    		counts,
+    		types,
+    		func,
+    		func_1,
+    		func_2,
+    		func_3,
+    		func_4,
+    		func_5,
+    		func_6,
+    		func_7,
+    		func_8,
+    		func_9,
+    		func_10,
+    		func_11,
+    		func_12,
+    		func_13,
+    		func_14
+    	];
     }
 
     class Reports extends SvelteComponent {

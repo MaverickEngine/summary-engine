@@ -1,13 +1,13 @@
-#summaryEngineGraphs.svelte-dmhftc {
+.summaryEngineGraphs.svelte-1qhapk5 {
   display: flex;
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
   margin-bottom: 20px; }
 
-#summaryEngineDayChart.svelte-dmhftc {
+.summaryEngineDayChart.svelte-1qhapk5 {
   width: 600px; }
 
-#summaryEnginePieChart.svelte-dmhftc {
+.summaryEnginePieChart.svelte-1qhapk5 {
   height: 350px;
   width: 300px; }

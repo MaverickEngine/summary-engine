@@ -39,21 +39,22 @@
     };
 
     export let datasets = [];
+    export let type_id;
 
     //onMount
     onMount(async () => {
-        const report = await apiGet(`summaryengine/v1/report/by_period`);
+        const report = await apiGet(`summaryengine/v1/report/by_period?type=${type_id || -1}`);
         datasets = [
             {
-                label: 'Good',
+                label: 'Approved',
                 data: report.filter(d => Number(d.rating) === 1).map(day_map),
             },
             {
-                label: 'Bad',
+                label: 'Disappproved',
                 data: report.filter(d => Number(d.rating) === -1).map(day_map),
             },
             {
-                label: 'Unrated',
+                label: 'Unapproved',
                 data: report.filter(d => Number(d.rating) === 0).map(day_map),
             },
         ]
@@ -95,6 +96,6 @@
     />
 </div>
 
-<style lang="scss">
+<style lang="less">
     
 </style>
