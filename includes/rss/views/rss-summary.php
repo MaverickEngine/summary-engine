@@ -2,7 +2,7 @@
 /**
 * Template Name: Summary RSS - SummaryEngine
 */
-echo '<?xml version="1.0" encoding="'. esc_attr(get_option('blog_charset')).'"?'.'>';
+echo '<?xml version="1.0" encoding="'. esc_attr(get_option('blog_charset', 'UTF-8')).'"?'.'>';
 ?>
 <rss version="2.0"
 xmlns:content="http://purl.org/rss/1.0/modules/content/"

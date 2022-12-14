@@ -7,7 +7,7 @@ class SummaryEnginePost {
     }
 
     public function summary_meta_block() {
-        if (in_array(get_post_type(), get_option('summaryengine_post_types'))) {
+        if (in_array(get_post_type(), get_option('summaryengine_post_types', []))) {
             add_meta_box('summaryengine-meta-box', __('Summary', 'summaryengine'), [ $this, 'summary_meta_block_view' ], get_post_type(), "normal", "high");
         }
     }
@@ -18,12 +18,12 @@ class SummaryEnginePost {
     }
 
     public function enqueue_scripts() {
-        if (!in_array(get_post_type(), get_option('summaryengine_post_types'))) {
+        if (!in_array(get_post_type(), get_option('summaryengine_post_types', []))) {
             return false;
         }
         wp_enqueue_script( "summaryengine-post-script", plugin_dir_url(__FILE__) . "../../dist/summaryengine.js", [], SUMMARYENGINE_SCRIPT_VERSION, true );
         wp_enqueue_style( "summaryengine-post-style", plugin_dir_url(__FILE__) . "../../dist/summaryengine.css", [], SUMMARYENGINE_SCRIPT_VERSION );
-        $script = "var summaryengine_max_number_of_submissions_per_post = " . json_encode(get_option('summaryengine_max_number_of_submissions_per_post')) . ";";
+        $script = "var summaryengine_max_number_of_submissions_per_post = " . wp_json_encode(get_option('summaryengine_max_number_of_submissions_per_post', 3)) . ";";
         wp_add_inline_script('summaryengine-post-script', $script, 'before');
     }
 

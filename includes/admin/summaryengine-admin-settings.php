@@ -69,12 +69,12 @@ class SummaryEngineAdminSettings {
     }
 
     public function set_defaults() {
-        $version = get_option('summaryengine_plugin_version');
+        $version = get_option('summaryengine_plugin_version', 0);
         if ($version == SUMMARYENGINE_PLUGIN_VERSION) {
             return;
         }
         foreach($this->defaults as $option => $value) {
-            if (!get_option($option)) {
+            if (get_option($option, "_unset") == "_unset") {
                 update_option($option, $value);
             }
         }

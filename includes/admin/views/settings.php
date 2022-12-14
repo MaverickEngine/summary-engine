@@ -16,7 +16,7 @@
                                 return strcmp($a->name, $b->name);
                             });
                             foreach($post_types as $pt) {
-                                $checked = (get_option('summaryengine_post_types') && in_array($pt->name, get_option('summaryengine_post_types'))) ? 'checked' : '';
+                                $checked = (get_option('summaryengine_post_types') && in_array($pt->name, get_option('summaryengine_post_types', []))) ? 'checked' : '';
                                 echo '<input type="checkbox" name="summaryengine_post_types[]" value="' . esc_attr($pt->name) . '" ' . esc_attr($checked) . '> ' . esc_html($pt->label) . '<br>';
                             }
                         ?>
@@ -110,14 +110,14 @@
                 <tr>
                     <th scope="row"><?php _e("Prepend Prompt", "summaryengine") ?></th>
                     <td>
-                        <input type="text" name="summaryengine_openai_prompt" value="<?php echo esc_attr(get_option('summaryengine_openai_prompt')); ?>" class="regular-text">
+                        <input type="text" name="summaryengine_openai_prompt" value="<?php echo esc_attr(get_option('summaryengine_openai_prompt', '')); ?>" class="regular-text">
                         <p>The instruction to the model on what you'd like to generate, prepended.</p>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><?php _e("Append Prompt", "summaryengine") ?></th>
                     <td>
-                        <input type="text" name="summaryengine_openai_append_prompt" value="<?php echo esc_attr(get_option('summaryengine_openai_append_prompt')); ?>" class="regular-text">
+                        <input type="text" name="summaryengine_openai_append_prompt" value="<?php echo esc_attr(get_option('summaryengine_openai_append_prompt', '')); ?>" class="regular-text">
                         <p>The instruction to the model on what you'd like to generate, appended.</p>
                     </td>
                 </tr>

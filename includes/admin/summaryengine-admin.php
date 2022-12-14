@@ -45,7 +45,7 @@ class SummaryEngineAdmin {
         wp_add_inline_script( "summaryengine-admin-script", 
         "var summaryengine_summary = " . wp_json_encode(get_post_meta( $post->ID, 'summaryengine_summary', true )) .  "; 
         var summaryengine_settings = {
-            openai_model: '" . esc_js(get_option("summaryengine_openai_model"), "text-davinci-002") . "',
+            openai_model: '" . esc_js(get_option("summaryengine_openai_model", "text-davinci-002")) . "',
             openai_word_limit: " . intval(get_option("summaryengine_openai_word_limit", 750)) . ", 
             openai_frequency_penalty: " . floatval(get_option("summaryengine_openai_frequency_penalty", 0.5)) . ",
             openai_max_tokens: " . floatval(get_option("summaryengine_openai_max_tokens", 300)) . ",

@@ -81,12 +81,13 @@ class SummaryEngineRSS {
             $rating = intval($_GET["rating"]);
         }
         $query = array(
-            'post_type' => get_option('summaryengine_post_types'),
+            'post_type' => get_option('summaryengine_post_types', array('post')),
             'post_status' => 'publish',
             'posts_per_page' => $limit,
             'paged' => $page,
             'orderby' => 'date',
             'order' => 'DESC',
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
             'meta_query' => array(
                 array(
                    'key' => 'summaryengine_' . $slug,
@@ -115,6 +116,7 @@ class SummaryEngineRSS {
             $slug = sanitize_text_field($_GET["type"]);
         }
         global $wpdb;
+        // phpcs:ignore WordPress.DB
         $type = $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE slug = %s",
             $slug
