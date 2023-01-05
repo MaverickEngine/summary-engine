@@ -1245,7 +1245,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (66:0) {#if !loading}
+    // (67:0) {#if !loading}
     function create_if_block$2(ctx) {
     	let button;
     	let t;
@@ -1417,6 +1417,15 @@ var summaryengine = (function (exports) {
     			$$invalidate(4, summary_text = response.summary.trim());
     			$$invalidate(0, loading = false);
     			$$invalidate(1, submissions_left--, submissions_left);
+
+    			console.log({
+    				summary_id,
+    				summaries,
+    				summary_index,
+    				summary_text,
+    				submissions_left
+    			});
+
     			return;
     		} catch(err) {
     			alert(err);

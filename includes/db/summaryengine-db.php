@@ -70,10 +70,9 @@ class SummaryEngineDB {
             INDEX user_id (user_id),
             INDEX created_at (created_at),
             INDEX post_id_created_at (post_id, created_at),
-            INDEX rating (rating),
+            INDEX rating (rating)
         ) $charset_collate;";
         dbDelta( $summaryengine_tests_sql );
-        
         update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
     }
 }

@@ -21164,7 +21164,7 @@ var summaryengine_admin = (function () {
     	pie = new Pie({
     			props: {
     				data: {
-    					labels: ['Approved', 'Disapproved', 'Unapproved'],
+    					labels: ['Approved', 'Rejected', 'Unapproved'],
     					datasets: [
     						{
     							data: [/*good*/ ctx[0], /*bad*/ ctx[1], /*unrated*/ ctx[2]]
@@ -21190,7 +21190,7 @@ var summaryengine_admin = (function () {
     			const pie_changes = {};
 
     			if (dirty & /*good, bad, unrated*/ 7) pie_changes.data = {
-    				labels: ['Approved', 'Disapproved', 'Unapproved'],
+    				labels: ['Approved', 'Rejected', 'Unapproved'],
     				datasets: [
     					{
     						data: [/*good*/ ctx[0], /*bad*/ ctx[1], /*unrated*/ ctx[2]]
@@ -21258,17 +21258,28 @@ var summaryengine_admin = (function () {
     	return child_ctx;
     }
 
-    // (43:0) {#each types as type}
+    // (45:0) {#each types as type}
     function create_each_block_2(ctx) {
+    	let div3;
+    	let h2;
+    	let t0_value = /*type*/ ctx[24].name + "";
+    	let t0;
+    	let t1;
     	let div2;
     	let div0;
     	let h30;
-    	let t1;
-    	let daychart;
+    	let t2_value = /*type*/ ctx[24].name + "";
     	let t2;
+    	let t3;
+    	let t4;
+    	let daychart;
+    	let t5;
     	let div1;
     	let h31;
-    	let t4;
+    	let t6_value = /*type*/ ctx[24].name + "";
+    	let t6;
+    	let t7;
+    	let t8;
     	let piechart;
     	let current;
     	daychart = new DayChart({ props: { type_id: /*type*/ ctx[24].ID } });
@@ -21295,40 +21306,58 @@ var summaryengine_admin = (function () {
 
     	return {
     		c() {
+    			div3 = element("div");
+    			h2 = element("h2");
+    			t0 = text(t0_value);
+    			t1 = space();
     			div2 = element("div");
     			div0 = element("div");
     			h30 = element("h3");
-    			h30.textContent = "Day Chart";
-    			t1 = space();
+    			t2 = text(t2_value);
+    			t3 = text(" Day Chart");
+    			t4 = space();
     			create_component(daychart.$$.fragment);
-    			t2 = space();
+    			t5 = space();
     			div1 = element("div");
     			h31 = element("h3");
-    			h31.textContent = "Ratings";
-    			t4 = space();
+    			t6 = text(t6_value);
+    			t7 = text(" Ratings");
+    			t8 = space();
     			create_component(piechart.$$.fragment);
-    			attr(div0, "class", "summaryEngineDayChart svelte-1qhapk5");
-    			attr(div1, "class", "summaryEnginePieChart svelte-1qhapk5");
-    			attr(div2, "class", "summaryEngineGraphs svelte-1qhapk5");
+    			attr(div0, "class", "summaryEngineDayChart svelte-iv3dad");
+    			attr(div1, "class", "summaryEnginePieChart svelte-iv3dad");
+    			attr(div2, "class", "summaryEngineGraphs svelte-iv3dad");
+    			attr(div3, "class", "summaryEngineCard svelte-iv3dad");
     		},
     		m(target, anchor) {
-    			insert(target, div2, anchor);
+    			insert(target, div3, anchor);
+    			append(div3, h2);
+    			append(h2, t0);
+    			append(div3, t1);
+    			append(div3, div2);
     			append(div2, div0);
     			append(div0, h30);
-    			append(div0, t1);
+    			append(h30, t2);
+    			append(h30, t3);
+    			append(div0, t4);
     			mount_component(daychart, div0, null);
-    			append(div2, t2);
+    			append(div2, t5);
     			append(div2, div1);
     			append(div1, h31);
-    			append(div1, t4);
+    			append(h31, t6);
+    			append(h31, t7);
+    			append(div1, t8);
     			mount_component(piechart, div1, null);
     			current = true;
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
+    			if ((!current || dirty & /*types*/ 8) && t0_value !== (t0_value = /*type*/ ctx[24].name + "")) set_data(t0, t0_value);
+    			if ((!current || dirty & /*types*/ 8) && t2_value !== (t2_value = /*type*/ ctx[24].name + "")) set_data(t2, t2_value);
     			const daychart_changes = {};
     			if (dirty & /*types*/ 8) daychart_changes.type_id = /*type*/ ctx[24].ID;
     			daychart.$set(daychart_changes);
+    			if ((!current || dirty & /*types*/ 8) && t6_value !== (t6_value = /*type*/ ctx[24].name + "")) set_data(t6, t6_value);
     			const piechart_changes = {};
     			if (dirty & /*counts, types*/ 12) piechart_changes.good = /*counts*/ ctx[2]?.filter(func_6)?.filter(/*func_7*/ ctx[11])?.reduce(/*func_8*/ ctx[12], 0) || 0;
     			if (dirty & /*counts, types*/ 12) piechart_changes.bad = /*counts*/ ctx[2]?.filter(func_9)?.filter(/*func_10*/ ctx[14])?.reduce(/*func_11*/ ctx[15], 0) || 0;
@@ -21347,14 +21376,14 @@ var summaryengine_admin = (function () {
     			current = false;
     		},
     		d(detaching) {
-    			if (detaching) detach(div2);
+    			if (detaching) detach(div3);
     			destroy_component(daychart);
     			destroy_component(piechart);
     		}
     	};
     }
 
-    // (71:8) {#each good_summaries as summary}
+    // (76:8) {#each good_summaries as summary}
     function create_each_block_1(ctx) {
     	let tr;
     	let td0;
@@ -21427,7 +21456,7 @@ var summaryengine_admin = (function () {
     	};
     }
 
-    // (93:8) {#each bad_summaries as summary}
+    // (98:8) {#each bad_summaries as summary}
     function create_each_block(ctx) {
     	let tr;
     	let td0;
@@ -21501,6 +21530,7 @@ var summaryengine_admin = (function () {
     }
 
     function create_fragment(ctx) {
+    	let div3;
     	let div2;
     	let div0;
     	let h30;
@@ -21564,6 +21594,7 @@ var summaryengine_admin = (function () {
 
     	return {
     		c() {
+    			div3 = element("div");
     			div2 = element("div");
     			div0 = element("div");
     			h30 = element("h3");
@@ -21620,14 +21651,16 @@ var summaryengine_admin = (function () {
     				each_blocks[i].c();
     			}
 
-    			attr(div0, "class", "summaryEngineDayChart svelte-1qhapk5");
-    			attr(div1, "class", "summaryEnginePieChart svelte-1qhapk5");
-    			attr(div2, "class", "summaryEngineGraphs svelte-1qhapk5");
+    			attr(div0, "class", "summaryEngineDayChart svelte-iv3dad");
+    			attr(div1, "class", "summaryEnginePieChart svelte-iv3dad");
+    			attr(div2, "class", "summaryEngineGraphs svelte-iv3dad");
+    			attr(div3, "class", "summaryEngineCard svelte-iv3dad");
     			attr(table0, "class", "wp-list-table widefat fixed striped table-view-list");
     			attr(table1, "class", "wp-list-table widefat fixed striped table-view-list");
     		},
     		m(target, anchor) {
-    			insert(target, div2, anchor);
+    			insert(target, div3, anchor);
+    			append(div3, div2);
     			append(div2, div0);
     			append(div0, h30);
     			append(div0, t1);
@@ -21772,7 +21805,7 @@ var summaryengine_admin = (function () {
     			current = false;
     		},
     		d(detaching) {
-    			if (detaching) detach(div2);
+    			if (detaching) detach(div3);
     			destroy_component(daychart);
     			destroy_component(piechart);
     			if (detaching) detach(t5);

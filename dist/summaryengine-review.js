@@ -1021,7 +1021,7 @@ var summaryengine_review = (function () {
     			attr(input, "class", "summaryengine-button button svelte-vmhuq8");
     			attr(input, "type", "button");
     			attr(input, "name", "disapprove");
-    			input.value = "Disapprove";
+    			input.value = "Reject";
     		},
     		m(target, anchor) {
     			insert(target, input, anchor);
@@ -1050,7 +1050,7 @@ var summaryengine_review = (function () {
     			attr(input, "class", "summaryengine-button button svelte-vmhuq8");
     			attr(input, "type", "button");
     			attr(input, "name", "disapprove");
-    			input.value = "Disapproving...";
+    			input.value = "Rejecting...";
     			input.disabled = "disabled";
     		},
     		m(target, anchor) {

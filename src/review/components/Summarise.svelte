@@ -130,9 +130,9 @@
                     {/if}
                 {/if}
                 {#if disapproving}
-                    <input class="summaryengine-button button" type="button" name="disapprove" value="Disapproving..." disabled="disabled" />
+                    <input class="summaryengine-button button" type="button" name="disapprove" value="Rejecting..." disabled="disabled" />
                 {:else if !approving}
-                    <input class="summaryengine-button button" type="button" name="disapprove" value="Disapprove" on:click={disapprove} />
+                    <input class="summaryengine-button button" type="button" name="disapprove" value="Reject" on:click={disapprove} />
                 {/if}
                 <input class="summaryengine-button button" type="button" name="edit" value="Edit" on:click={() => editing = true} />
             {/if}

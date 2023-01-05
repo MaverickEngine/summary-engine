@@ -25,7 +25,7 @@
 </script>
 
 <div class="chart">
-    <Pie data={{ labels: ['Approved', 'Disapproved', 'Unapproved'],
+    <Pie data={{ labels: ['Approved', 'Rejected', 'Unapproved'],
         datasets: [
         {
             data: [good, bad, unrated],

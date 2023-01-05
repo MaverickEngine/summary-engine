@@ -56,6 +56,7 @@
             summary_text = response.summary.trim();
             loading = false;
             submissions_left--;
+            console.log({ summary_id, summaries, summary_index, summary_text, submissions_left });
             return;
         } catch (err) {
             alert(err);

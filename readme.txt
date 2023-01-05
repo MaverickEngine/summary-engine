@@ -32,6 +32,12 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= 0.6.7 = 
+ * Remove deprecated Javascript variable injection that was throwing an error anyway
+ * Fix bug with table creation
+ * Add name to summary type tables in reports
+ * Cards for reports
+
 = 0.6.6 =
  * Fix bad bug with default options
  

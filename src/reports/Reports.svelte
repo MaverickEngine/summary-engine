@@ -25,34 +25,39 @@ onMount(async () => {
 </script>
 <!-- Path: wp-content/plugins/summary-engine/src/reports/Reports.svelte -->
 
-<div class="summaryEngineGraphs">
-    <div class="summaryEngineDayChart">
-        <h3>Day Chart</h3>
-        <DayChart />
-    </div>
-    <div class="summaryEnginePieChart">
-        <h3>Ratings</h3>
-        <PieChart 
-            good={counts?.filter(d => Number(d.rating) === 1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0} 
-            bad={counts?.filter(d => Number(d.rating) === -1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
-            unrated={counts?.filter(d => Number(d.rating) === 0)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
-        />
+<div class="summaryEngineCard">
+    <div class="summaryEngineGraphs">
+        <div class="summaryEngineDayChart">
+            <h3>Day Chart</h3>
+            <DayChart />
+        </div>
+        <div class="summaryEnginePieChart">
+            <h3>Ratings</h3>
+            <PieChart 
+                good={counts?.filter(d => Number(d.rating) === 1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0} 
+                bad={counts?.filter(d => Number(d.rating) === -1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
+                unrated={counts?.filter(d => Number(d.rating) === 0)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
+            />
+        </div>
     </div>
 </div>
 
 {#each types as type}
-<div class="summaryEngineGraphs">
-    <div class="summaryEngineDayChart">
-        <h3>Day Chart </h3>
-        <DayChart type_id={type.ID} />
-    </div>
-    <div class="summaryEnginePieChart">
-        <h3>Ratings</h3>
-        <PieChart 
-            good={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === 1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0} 
-            bad={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === -1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
-            unrated={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === 0)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
-        />
+<div class="summaryEngineCard">
+    <h2>{type.name}</h2>
+    <div class="summaryEngineGraphs">
+        <div class="summaryEngineDayChart">
+            <h3>{type.name} Day Chart</h3>
+            <DayChart type_id={type.ID} />
+        </div>
+        <div class="summaryEnginePieChart">
+            <h3>{type.name} Ratings</h3>
+            <PieChart 
+                good={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === 1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0} 
+                bad={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === -1)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
+                unrated={counts?.filter(d => Number(d.type_id) === Number(type.ID))?.filter(d => Number(d.rating) === 0)?.reduce((prev, curr) => prev + Number(curr.count), 0) || 0}
+            />
+        </div>
     </div>
 </div>
 {/each}
@@ -117,5 +122,14 @@ onMount(async () => {
     .summaryEnginePieChart {
         height: 350px;
         width: 300px;
+    }
+
+    .summaryEngineCard {
+        margin-bottom: 20px;
+        border-radius: 3px;
+        border: 1px solid #e5e5e5;
+        background-color: #fff;
+        box-shadow: 0 1px 1px rgba(0,0,0,.04);
+        padding: 20px;
     }
 </style>
