@@ -1,5 +1,4 @@
 <script>
-    export let summaries = [];
     export let submissions_left;
 </script>
 

@@ -10,6 +10,14 @@ class SummaryEngineAPI {
     }
     
     public function register_api_routes() {
+        register_rest_route('summaryengine/v1', '/models', array(
+            'methods' => 'GET',
+            'callback' => array( $this, 'get_models' ),
+            'permission_callback' => function () {
+                return current_user_can( 'edit_others_posts' );
+            }
+        ));
+
         register_rest_route( 'summaryengine/v1', '/summarise', array(
             'methods' => 'POST',
             'callback' => array( $this, 'post_summarise' ),
@@ -214,6 +222,13 @@ class SummaryEngineAPI {
         );
         $data["ID"] = $wpdb->insert_id;
         return $data;
+    }
+
+    public function get_models() {
+        $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
+        $openapi = new OpenAPI($apikey);
+        $models = $openapi->list_models();
+        return $models;
     }
 
     public function get_post_summaries(WP_REST_Request $request) {

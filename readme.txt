@@ -32,6 +32,11 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= 0.6.8 =
+ * Detect if able to connect to OpenAI with API Key
+ * Display error on Settings and Types page if issue with API Key
+ * Remove some deprecated options from the Settings page
+
 = 0.6.7 = 
  * Remove deprecated Javascript variable injection that was throwing an error anyway
  * Fix bug with table creation

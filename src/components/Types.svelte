@@ -8,6 +8,9 @@
     let saving = false;
     let pending_delete = false;
     let deleting = false;
+    let models = [];
+    let has_error = false;
+    let error_message = "";
 
     const addEmptyType = () => {
         $types.push({
@@ -25,6 +28,13 @@
 
     onMount(async () => {
         try {
+            models = await apiGet(`summaryengine/v1/models`);
+        } catch (e) {
+            has_error = true;
+            error_message = "Unable to connect to OpenAI API. Please check your API key and try again.";
+        }
+        try {
+            console.log(models);
             $types = (await apiGet(`summaryengine/v1/types`)).map(type => {
                 type.ID = Number(type.ID);
                 type.cut_at_paragraph = Number(type.cut_at_paragraph);
@@ -85,6 +95,12 @@
         type.slug = type.name.slugify();
     });
 </script>
+
+{#if has_error}
+    <div class="notice notice-error is-dismissible">
+        <p>{error_message}</p>
+    </div>
+{/if}
 
 <nav class="nav-tab-wrapper">
     {#each $types as type, i}

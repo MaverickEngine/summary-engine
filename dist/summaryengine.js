@@ -739,21 +739,19 @@ var summaryengine = (function (exports) {
     }
 
     function instance$6($$self, $$props, $$invalidate) {
-    	let { summaries = [] } = $$props;
     	let { submissions_left } = $$props;
 
     	$$self.$$set = $$props => {
-    		if ('summaries' in $$props) $$invalidate(1, summaries = $$props.summaries);
     		if ('submissions_left' in $$props) $$invalidate(0, submissions_left = $$props.submissions_left);
     	};
 
-    	return [submissions_left, summaries];
+    	return [submissions_left];
     }
 
     class SubmissionsLeft extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$6, create_fragment$7, safe_not_equal, { summaries: 1, submissions_left: 0 });
+    		init(this, options, instance$6, create_fragment$7, safe_not_equal, { submissions_left: 0 });
     	}
     }
 

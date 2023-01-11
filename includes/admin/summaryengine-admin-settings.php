@@ -1,4 +1,5 @@
 <?php
+require_once(plugin_dir_path( __FILE__ ) . '../libs/openapi.php');
 class SummaryEngineAdminSettings {
     private $options = [
         "summaryengine_post_types",
@@ -58,6 +59,25 @@ class SummaryEngineAdminSettings {
         // Clear the option of summaryengine_openai_apikey if the constant OPENAI_APIKEY is set
         if (defined('OPENAI_APIKEY')) {
             update_option('summaryengine_openai_apikey', '');
+        }
+        // Check that we can connect...
+        try {
+            if (defined('OPENAI_APIKEY')) {
+                $apikey = OPENAI_APIKEY;
+            } else {
+                $apikey = get_option('summaryengine_openai_apikey');
+            }
+            $openapi = new OpenAPI($apikey);
+            $models = $openapi->list_models();
+            if (is_wp_error($models)) {
+                $error = "Could not connect to OpenAI API. Please check your API key.";
+                $models = [];
+            } else {
+                $error = false;
+            }
+        } catch (Exception $e) {
+            $error = "Could not connect to OpenAI API. Please check your API key.";
+            $models = [];
         }
         require_once plugin_dir_path( dirname( __FILE__ ) ).'admin/views/settings.php';
     }
