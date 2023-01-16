@@ -195,6 +195,13 @@
                             <p>Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.</p>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row">Custom action</th>
+                        <td>
+                            <textarea name="custom_action" class="regular-text" bind:value="{type.custom_action}"></textarea>
+                            <p>Call a custom action based on the summary and post, eg. post to Twitter. Use [post_url] and [summary], and [summary_encoded] as variables.</p>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>

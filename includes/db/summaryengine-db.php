@@ -27,6 +27,7 @@ class SummaryEngineDB {
             openai_top_p float NOT NULL DEFAULT 1,
             openai_prompt varchar(100) NOT NULL DEFAULT 'Summarize in 100 words: ',
             openai_append_prompt varchar(100) NOT NULL DEFAULT '',
+            custom_action varchar(255) NOT NULL DEFAULT '',
             INDEX created_at (created_at),
             UNIQUE KEY unique_name (name),
             UNIQUE KEY unique_slug (slug)

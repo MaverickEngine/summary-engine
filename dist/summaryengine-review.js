@@ -52,6 +52,9 @@ var summaryengine_review = (function () {
     function element(name) {
         return document.createElement(name);
     }
+    function svg_element(name) {
+        return document.createElementNS('http://www.w3.org/2000/svg', name);
+    }
     function text(data) {
         return document.createTextNode(data);
     }
@@ -113,6 +116,44 @@ var summaryengine_review = (function () {
         const e = document.createEvent('CustomEvent');
         e.initCustomEvent(type, bubbles, cancelable, detail);
         return e;
+    }
+    class HtmlTag {
+        constructor(is_svg = false) {
+            this.is_svg = false;
+            this.is_svg = is_svg;
+            this.e = this.n = null;
+        }
+        c(html) {
+            this.h(html);
+        }
+        m(html, target, anchor = null) {
+            if (!this.e) {
+                if (this.is_svg)
+                    this.e = svg_element(target.nodeName);
+                else
+                    this.e = element(target.nodeName);
+                this.t = target;
+                this.c(html);
+            }
+            this.i(anchor);
+        }
+        h(html) {
+            this.e.innerHTML = html;
+            this.n = Array.from(this.e.childNodes);
+        }
+        i(anchor) {
+            for (let i = 0; i < this.n.length; i += 1) {
+                insert(this.t, this.n[i], anchor);
+            }
+        }
+        p(html) {
+            this.d();
+            this.h(html);
+            this.i(this.a);
+        }
+        d() {
+            this.n.forEach(detach);
+        }
     }
 
     let current_component;
@@ -841,7 +882,7 @@ var summaryengine_review = (function () {
     	let if_block0 = !/*approved*/ ctx[5] && !/*disapproving*/ ctx[3] && create_if_block_4(ctx);
 
     	function select_block_type_4(ctx, dirty) {
-    		if (/*disapproving*/ ctx[3]) return create_if_block_2;
+    		if (/*disapproving*/ ctx[3]) return create_if_block_2$1;
     		if (!/*approving*/ ctx[4]) return create_if_block_3;
     	}
 
@@ -1041,7 +1082,7 @@ var summaryengine_review = (function () {
     }
 
     // (132:16) {#if disapproving}
-    function create_if_block_2(ctx) {
+    function create_if_block_2$1(ctx) {
     	let input;
 
     	return {
@@ -1964,10 +2005,37 @@ var summaryengine_review = (function () {
     	};
     }
 
+    // (122:28) {#if (type.custom_action)}
+    function create_if_block_2(ctx) {
+    	let html_tag;
+    	let raw_value = /*type*/ ctx[15].custom_action.replace("[post_url]", /*post*/ ctx[12].permalink).replace("[summary_encoded]", encodeURIComponent(/*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "")).replace("[summary]", /*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "") + "";
+    	let html_anchor;
+
+    	return {
+    		c() {
+    			html_tag = new HtmlTag(false);
+    			html_anchor = empty();
+    			html_tag.a = html_anchor;
+    		},
+    		m(target, anchor) {
+    			html_tag.m(raw_value, target, anchor);
+    			insert(target, html_anchor, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty & /*$types, $posts*/ 6 && raw_value !== (raw_value = /*type*/ ctx[15].custom_action.replace("[post_url]", /*post*/ ctx[12].permalink).replace("[summary_encoded]", encodeURIComponent(/*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "")).replace("[summary]", /*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "") + "")) html_tag.p(raw_value);
+    		},
+    		d(detaching) {
+    			if (detaching) detach(html_anchor);
+    			if (detaching) html_tag.d();
+    		}
+    	};
+    }
+
     // (119:20) {#each $types as type}
     function create_each_block_1(ctx) {
     	let td;
     	let summarise;
+    	let t;
     	let current;
 
     	summarise = new Summarise({
@@ -1978,14 +2046,20 @@ var summaryengine_review = (function () {
     			}
     		});
 
+    	let if_block = /*type*/ ctx[15].custom_action && create_if_block_2(ctx);
+
     	return {
     		c() {
     			td = element("td");
     			create_component(summarise.$$.fragment);
+    			t = space();
+    			if (if_block) if_block.c();
     		},
     		m(target, anchor) {
     			insert(target, td, anchor);
     			mount_component(summarise, td, null);
+    			append(td, t);
+    			if (if_block) if_block.m(td, null);
     			current = true;
     		},
     		p(ctx, dirty) {
@@ -1994,6 +2068,19 @@ var summaryengine_review = (function () {
     			if (dirty & /*$posts*/ 2) summarise_changes.post_id = /*post*/ ctx[12].id;
     			if (dirty & /*$posts, $types*/ 6) summarise_changes.summary = /*post*/ ctx[12].summaries[/*type*/ ctx[15].slug];
     			summarise.$set(summarise_changes);
+
+    			if (/*type*/ ctx[15].custom_action) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+    				} else {
+    					if_block = create_if_block_2(ctx);
+    					if_block.c();
+    					if_block.m(td, null);
+    				}
+    			} else if (if_block) {
+    				if_block.d(1);
+    				if_block = null;
+    			}
     		},
     		i(local) {
     			if (current) return;
@@ -2007,11 +2094,12 @@ var summaryengine_review = (function () {
     		d(detaching) {
     			if (detaching) detach(td);
     			destroy_component(summarise);
+    			if (if_block) if_block.d();
     		}
     	};
     }
 
-    // (125:24) {#if !checkSummariesSet(post)}
+    // (128:24) {#if !checkSummariesSet(post)}
     function create_if_block(ctx) {
     	let if_block_anchor;
 
@@ -2052,7 +2140,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (128:28) {:else}
+    // (131:28) {:else}
     function create_else_block(ctx) {
     	let button;
     	let mounted;
@@ -2087,7 +2175,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (126:28) {#if (summarising_all)}
+    // (129:28) {#if (summarising_all)}
     function create_if_block_1(ctx) {
     	let button;
 
@@ -2200,7 +2288,7 @@ var summaryengine_review = (function () {
     			if ((!current || dirty & /*$posts*/ 2) && t2_value !== (t2_value = /*post*/ ctx[12].post_date + "")) set_data(t2, t2_value);
     			if ((!current || dirty & /*$posts*/ 2) && t4_value !== (t4_value = /*post*/ ctx[12].post_author + "")) set_data(t4, t4_value);
 
-    			if (dirty & /*$types, $posts*/ 6) {
+    			if (dirty & /*$types, $posts, encodeURIComponent*/ 6) {
     				each_value_1 = /*$types*/ ctx[2];
     				let i;
 
@@ -2438,7 +2526,7 @@ var summaryengine_review = (function () {
     				each_blocks_1.length = each_value_2.length;
     			}
 
-    			if (dirty & /*summarising_all, generateAllSummaries, $posts, checkSummariesSet, $types*/ 39) {
+    			if (dirty & /*summarising_all, generateAllSummaries, $posts, checkSummariesSet, $types, encodeURIComponent*/ 39) {
     				each_value = /*$posts*/ ctx[1];
     				let i;
 

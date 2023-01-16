@@ -119,6 +119,9 @@
                     {#each $types as type}
                         <td>
                             <Summarise type_id={type.ID} post_id={post.id} summary={post.summaries[type.slug]} />
+                            {#if (type.custom_action)}
+                                {@html type.custom_action.replace("[post_url]", post.permalink).replace("[summary_encoded]", encodeURIComponent(post.summaries[type.slug]?.summary || "")).replace("[summary]", post.summaries[type.slug]?.summary || "")}
+                            {/if}
                         </td>
                     {/each}
                     <td>

@@ -465,16 +465,16 @@ var summaryengine_types = (function (exports) {
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[26] = list[i];
-    	child_ctx[27] = list;
-    	child_ctx[28] = i;
+    	child_ctx[27] = list[i];
+    	child_ctx[28] = list;
+    	child_ctx[29] = i;
     	return child_ctx;
     }
 
     function get_each_context_1(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[26] = list[i];
-    	child_ctx[28] = i;
+    	child_ctx[27] = list[i];
+    	child_ctx[29] = i;
     	return child_ctx;
     }
 
@@ -508,23 +508,23 @@ var summaryengine_types = (function (exports) {
     // (106:4) {#each $types as type, i}
     function create_each_block_1(ctx) {
     	let a;
-    	let t_value = /*type*/ ctx[26].name + "";
+    	let t_value = /*type*/ ctx[27].name + "";
     	let t;
     	let a_href_value;
     	let mounted;
     	let dispose;
 
     	function click_handler() {
-    		return /*click_handler*/ ctx[9](/*i*/ ctx[28]);
+    		return /*click_handler*/ ctx[9](/*i*/ ctx[29]);
     	}
 
     	return {
     		c() {
     			a = element("a");
     			t = text(t_value);
-    			attr(a, "href", a_href_value = "#type-" + /*type*/ ctx[26].ID);
+    			attr(a, "href", a_href_value = "#type-" + /*type*/ ctx[27].ID);
     			attr(a, "class", "nav-tab");
-    			toggle_class(a, "nav-tab-active", /*tab*/ ctx[1] === /*i*/ ctx[28]);
+    			toggle_class(a, "nav-tab-active", /*tab*/ ctx[1] === /*i*/ ctx[29]);
     		},
     		m(target, anchor) {
     			insert(target, a, anchor);
@@ -537,14 +537,14 @@ var summaryengine_types = (function (exports) {
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty & /*$types*/ 1 && t_value !== (t_value = /*type*/ ctx[26].name + "")) set_data(t, t_value);
+    			if (dirty & /*$types*/ 1 && t_value !== (t_value = /*type*/ ctx[27].name + "")) set_data(t, t_value);
 
-    			if (dirty & /*$types*/ 1 && a_href_value !== (a_href_value = "#type-" + /*type*/ ctx[26].ID)) {
+    			if (dirty & /*$types*/ 1 && a_href_value !== (a_href_value = "#type-" + /*type*/ ctx[27].ID)) {
     				attr(a, "href", a_href_value);
     			}
 
     			if (dirty & /*tab*/ 2) {
-    				toggle_class(a, "nav-tab-active", /*tab*/ ctx[1] === /*i*/ ctx[28]);
+    				toggle_class(a, "nav-tab-active", /*tab*/ ctx[1] === /*i*/ ctx[29]);
     			}
     		},
     		d(detaching) {
@@ -559,7 +559,7 @@ var summaryengine_types = (function (exports) {
     function create_if_block(ctx) {
     	let div;
     	let h2;
-    	let t0_value = /*type*/ ctx[26].name + "";
+    	let t0_value = /*type*/ ctx[27].name + "";
     	let t0;
     	let t1;
     	let t2;
@@ -616,7 +616,7 @@ var summaryengine_types = (function (exports) {
     	let td6;
     	let input5;
     	let t32;
-    	let t33_value = /*type*/ ctx[26].cut_at_paragraph + "";
+    	let t33_value = /*type*/ ctx[27].cut_at_paragraph + "";
     	let t33;
     	let t34;
     	let tr7;
@@ -659,60 +659,72 @@ var summaryengine_types = (function (exports) {
     	let t57;
     	let p6;
     	let t59;
-    	let t60;
-    	let show_if = Number(/*type*/ ctx[26].ID) !== 1 && !/*deleting*/ ctx[4];
+    	let tr12;
+    	let th12;
     	let t61;
+    	let td12;
+    	let textarea;
     	let t62;
+    	let p7;
+    	let t64;
+    	let t65;
+    	let show_if = Number(/*type*/ ctx[27].ID) !== 1 && !/*deleting*/ ctx[4];
+    	let t66;
+    	let t67;
     	let if_block3_anchor;
     	let mounted;
     	let dispose;
 
     	function input0_input_handler() {
-    		/*input0_input_handler*/ ctx[10].call(input0, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input0_input_handler*/ ctx[10].call(input0, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input1_input_handler() {
-    		/*input1_input_handler*/ ctx[11].call(input1, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input1_input_handler*/ ctx[11].call(input1, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input2_input_handler() {
-    		/*input2_input_handler*/ ctx[12].call(input2, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input2_input_handler*/ ctx[12].call(input2, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input3_input_handler() {
-    		/*input3_input_handler*/ ctx[13].call(input3, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input3_input_handler*/ ctx[13].call(input3, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function select_change_handler() {
-    		/*select_change_handler*/ ctx[14].call(select, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*select_change_handler*/ ctx[14].call(select, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input4_input_handler() {
-    		/*input4_input_handler*/ ctx[15].call(input4, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input4_input_handler*/ ctx[15].call(input4, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input5_change_handler() {
-    		/*input5_change_handler*/ ctx[16].call(input5, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input5_change_handler*/ ctx[16].call(input5, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input6_input_handler() {
-    		/*input6_input_handler*/ ctx[17].call(input6, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input6_input_handler*/ ctx[17].call(input6, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input7_input_handler() {
-    		/*input7_input_handler*/ ctx[18].call(input7, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input7_input_handler*/ ctx[18].call(input7, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input8_input_handler() {
-    		/*input8_input_handler*/ ctx[19].call(input8, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input8_input_handler*/ ctx[19].call(input8, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input9_input_handler() {
-    		/*input9_input_handler*/ ctx[20].call(input9, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input9_input_handler*/ ctx[20].call(input9, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function input10_input_handler() {
-    		/*input10_input_handler*/ ctx[21].call(input10, /*each_value*/ ctx[27], /*i*/ ctx[28]);
+    		/*input10_input_handler*/ ctx[21].call(input10, /*each_value*/ ctx[28], /*i*/ ctx[29]);
+    	}
+
+    	function textarea_input_handler() {
+    		/*textarea_input_handler*/ ctx[22].call(textarea, /*each_value*/ ctx[28], /*i*/ ctx[29]);
     	}
 
     	function select_block_type(ctx, dirty) {
@@ -852,12 +864,22 @@ var summaryengine_types = (function (exports) {
     			p6 = element("p");
     			p6.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.";
     			t59 = space();
-    			if_block0.c();
-    			t60 = space();
-    			if (if_block1) if_block1.c();
+    			tr12 = element("tr");
+    			th12 = element("th");
+    			th12.textContent = "Custom action";
     			t61 = space();
-    			if (if_block2) if_block2.c();
+    			td12 = element("td");
+    			textarea = element("textarea");
     			t62 = space();
+    			p7 = element("p");
+    			p7.textContent = "Call a custom action based on the summary and post, eg. post to Twitter. Use [post_url] and [summary], and [summary_encoded] as variables.";
+    			t64 = space();
+    			if_block0.c();
+    			t65 = space();
+    			if (if_block1) if_block1.c();
+    			t66 = space();
+    			if (if_block2) if_block2.c();
+    			t67 = space();
     			if (if_block3) if_block3.c();
     			if_block3_anchor = empty();
     			attr(th0, "scope", "row");
@@ -891,7 +913,7 @@ var summaryengine_types = (function (exports) {
     			option4.__value = "text-ada-001";
     			option4.value = option4.__value;
     			attr(select, "name", "openai_model");
-    			if (/*type*/ ctx[26].openai_model === void 0) add_render_callback(select_change_handler);
+    			if (/*type*/ ctx[27].openai_model === void 0) add_render_callback(select_change_handler);
     			attr(th5, "scope", "row");
     			attr(input4, "type", "number");
     			attr(input4, "name", "openai_word_limit");
@@ -934,6 +956,9 @@ var summaryengine_types = (function (exports) {
     			attr(input10, "min", "-2");
     			attr(input10, "max", "2");
     			attr(input10, "step", "0.1");
+    			attr(th12, "scope", "row");
+    			attr(textarea, "name", "custom_action");
+    			attr(textarea, "class", "regular-text");
     			attr(table, "class", "form-table");
     			attr(div, "class", "tab-content");
     		},
@@ -950,21 +975,21 @@ var summaryengine_types = (function (exports) {
     			append(tr0, t4);
     			append(tr0, td0);
     			append(td0, input0);
-    			set_input_value(input0, /*type*/ ctx[26].name);
+    			set_input_value(input0, /*type*/ ctx[27].name);
     			append(tbody, t5);
     			append(tbody, tr1);
     			append(tr1, th1);
     			append(tr1, t7);
     			append(tr1, td1);
     			append(td1, input1);
-    			set_input_value(input1, /*type*/ ctx[26].slug);
+    			set_input_value(input1, /*type*/ ctx[27].slug);
     			append(tbody, t8);
     			append(tbody, tr2);
     			append(tr2, th2);
     			append(tr2, t10);
     			append(tr2, td2);
     			append(td2, input2);
-    			set_input_value(input2, /*type*/ ctx[26].openai_prompt);
+    			set_input_value(input2, /*type*/ ctx[27].openai_prompt);
     			append(td2, t11);
     			append(td2, p0);
     			append(tbody, t13);
@@ -973,7 +998,7 @@ var summaryengine_types = (function (exports) {
     			append(tr3, t15);
     			append(tr3, td3);
     			append(td3, input3);
-    			set_input_value(input3, /*type*/ ctx[26].openai_append_prompt);
+    			set_input_value(input3, /*type*/ ctx[27].openai_append_prompt);
     			append(td3, t16);
     			append(td3, p1);
     			append(tbody, t18);
@@ -987,21 +1012,21 @@ var summaryengine_types = (function (exports) {
     			append(select, option2);
     			append(select, option3);
     			append(select, option4);
-    			select_option(select, /*type*/ ctx[26].openai_model);
+    			select_option(select, /*type*/ ctx[27].openai_model);
     			append(tbody, t26);
     			append(tbody, tr5);
     			append(tr5, th5);
     			append(tr5, t28);
     			append(tr5, td5);
     			append(td5, input4);
-    			set_input_value(input4, /*type*/ ctx[26].openai_word_limit);
+    			set_input_value(input4, /*type*/ ctx[27].openai_word_limit);
     			append(tbody, t29);
     			append(tbody, tr6);
     			append(tr6, th6);
     			append(tr6, t31);
     			append(tr6, td6);
     			append(td6, input5);
-    			input5.checked = /*type*/ ctx[26].cut_at_paragraph;
+    			input5.checked = /*type*/ ctx[27].cut_at_paragraph;
     			append(td6, t32);
     			append(td6, t33);
     			append(tbody, t34);
@@ -1010,7 +1035,7 @@ var summaryengine_types = (function (exports) {
     			append(tr7, t36);
     			append(tr7, td7);
     			append(td7, input6);
-    			set_input_value(input6, /*type*/ ctx[26].openai_max_tokens);
+    			set_input_value(input6, /*type*/ ctx[27].openai_max_tokens);
     			append(td7, t37);
     			append(td7, p2);
     			append(tbody, t39);
@@ -1019,7 +1044,7 @@ var summaryengine_types = (function (exports) {
     			append(tr8, t41);
     			append(tr8, td8);
     			append(td8, input7);
-    			set_input_value(input7, /*type*/ ctx[26].openai_temperature);
+    			set_input_value(input7, /*type*/ ctx[27].openai_temperature);
     			append(td8, t42);
     			append(td8, p3);
     			append(tbody, t44);
@@ -1028,7 +1053,7 @@ var summaryengine_types = (function (exports) {
     			append(tr9, t46);
     			append(tr9, td9);
     			append(td9, input8);
-    			set_input_value(input8, /*type*/ ctx[26].openai_top_p);
+    			set_input_value(input8, /*type*/ ctx[27].openai_top_p);
     			append(td9, t47);
     			append(td9, p4);
     			append(tbody, t49);
@@ -1037,7 +1062,7 @@ var summaryengine_types = (function (exports) {
     			append(tr10, t51);
     			append(tr10, td10);
     			append(td10, input9);
-    			set_input_value(input9, /*type*/ ctx[26].openai_presence_penalty);
+    			set_input_value(input9, /*type*/ ctx[27].openai_presence_penalty);
     			append(td10, t52);
     			append(td10, p5);
     			append(tbody, t54);
@@ -1046,16 +1071,25 @@ var summaryengine_types = (function (exports) {
     			append(tr11, t56);
     			append(tr11, td11);
     			append(td11, input10);
-    			set_input_value(input10, /*type*/ ctx[26].openai_frequency_penalty);
+    			set_input_value(input10, /*type*/ ctx[27].openai_frequency_penalty);
     			append(td11, t57);
     			append(td11, p6);
-    			insert(target, t59, anchor);
+    			append(tbody, t59);
+    			append(tbody, tr12);
+    			append(tr12, th12);
+    			append(tr12, t61);
+    			append(tr12, td12);
+    			append(td12, textarea);
+    			set_input_value(textarea, /*type*/ ctx[27].custom_action);
+    			append(td12, t62);
+    			append(td12, p7);
+    			insert(target, t64, anchor);
     			if_block0.m(target, anchor);
-    			insert(target, t60, anchor);
+    			insert(target, t65, anchor);
     			if (if_block1) if_block1.m(target, anchor);
-    			insert(target, t61, anchor);
+    			insert(target, t66, anchor);
     			if (if_block2) if_block2.m(target, anchor);
-    			insert(target, t62, anchor);
+    			insert(target, t67, anchor);
     			if (if_block3) if_block3.m(target, anchor);
     			insert(target, if_block3_anchor, anchor);
 
@@ -1072,7 +1106,8 @@ var summaryengine_types = (function (exports) {
     					listen(input7, "input", input7_input_handler),
     					listen(input8, "input", input8_input_handler),
     					listen(input9, "input", input9_input_handler),
-    					listen(input10, "input", input10_input_handler)
+    					listen(input10, "input", input10_input_handler),
+    					listen(textarea, "input", textarea_input_handler)
     				];
 
     				mounted = true;
@@ -1080,56 +1115,60 @@ var summaryengine_types = (function (exports) {
     		},
     		p(new_ctx, dirty) {
     			ctx = new_ctx;
-    			if (dirty & /*$types*/ 1 && t0_value !== (t0_value = /*type*/ ctx[26].name + "")) set_data(t0, t0_value);
+    			if (dirty & /*$types*/ 1 && t0_value !== (t0_value = /*type*/ ctx[27].name + "")) set_data(t0, t0_value);
 
-    			if (dirty & /*$types*/ 1 && input0.value !== /*type*/ ctx[26].name) {
-    				set_input_value(input0, /*type*/ ctx[26].name);
+    			if (dirty & /*$types*/ 1 && input0.value !== /*type*/ ctx[27].name) {
+    				set_input_value(input0, /*type*/ ctx[27].name);
     			}
 
-    			if (dirty & /*$types*/ 1 && input1.value !== /*type*/ ctx[26].slug) {
-    				set_input_value(input1, /*type*/ ctx[26].slug);
+    			if (dirty & /*$types*/ 1 && input1.value !== /*type*/ ctx[27].slug) {
+    				set_input_value(input1, /*type*/ ctx[27].slug);
     			}
 
-    			if (dirty & /*$types*/ 1 && input2.value !== /*type*/ ctx[26].openai_prompt) {
-    				set_input_value(input2, /*type*/ ctx[26].openai_prompt);
+    			if (dirty & /*$types*/ 1 && input2.value !== /*type*/ ctx[27].openai_prompt) {
+    				set_input_value(input2, /*type*/ ctx[27].openai_prompt);
     			}
 
-    			if (dirty & /*$types*/ 1 && input3.value !== /*type*/ ctx[26].openai_append_prompt) {
-    				set_input_value(input3, /*type*/ ctx[26].openai_append_prompt);
-    			}
-
-    			if (dirty & /*$types*/ 1) {
-    				select_option(select, /*type*/ ctx[26].openai_model);
-    			}
-
-    			if (dirty & /*$types*/ 1 && to_number(input4.value) !== /*type*/ ctx[26].openai_word_limit) {
-    				set_input_value(input4, /*type*/ ctx[26].openai_word_limit);
+    			if (dirty & /*$types*/ 1 && input3.value !== /*type*/ ctx[27].openai_append_prompt) {
+    				set_input_value(input3, /*type*/ ctx[27].openai_append_prompt);
     			}
 
     			if (dirty & /*$types*/ 1) {
-    				input5.checked = /*type*/ ctx[26].cut_at_paragraph;
+    				select_option(select, /*type*/ ctx[27].openai_model);
     			}
 
-    			if (dirty & /*$types*/ 1 && t33_value !== (t33_value = /*type*/ ctx[26].cut_at_paragraph + "")) set_data(t33, t33_value);
-
-    			if (dirty & /*$types*/ 1 && to_number(input6.value) !== /*type*/ ctx[26].openai_max_tokens) {
-    				set_input_value(input6, /*type*/ ctx[26].openai_max_tokens);
+    			if (dirty & /*$types*/ 1 && to_number(input4.value) !== /*type*/ ctx[27].openai_word_limit) {
+    				set_input_value(input4, /*type*/ ctx[27].openai_word_limit);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input7.value) !== /*type*/ ctx[26].openai_temperature) {
-    				set_input_value(input7, /*type*/ ctx[26].openai_temperature);
+    			if (dirty & /*$types*/ 1) {
+    				input5.checked = /*type*/ ctx[27].cut_at_paragraph;
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input8.value) !== /*type*/ ctx[26].openai_top_p) {
-    				set_input_value(input8, /*type*/ ctx[26].openai_top_p);
+    			if (dirty & /*$types*/ 1 && t33_value !== (t33_value = /*type*/ ctx[27].cut_at_paragraph + "")) set_data(t33, t33_value);
+
+    			if (dirty & /*$types*/ 1 && to_number(input6.value) !== /*type*/ ctx[27].openai_max_tokens) {
+    				set_input_value(input6, /*type*/ ctx[27].openai_max_tokens);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input9.value) !== /*type*/ ctx[26].openai_presence_penalty) {
-    				set_input_value(input9, /*type*/ ctx[26].openai_presence_penalty);
+    			if (dirty & /*$types*/ 1 && to_number(input7.value) !== /*type*/ ctx[27].openai_temperature) {
+    				set_input_value(input7, /*type*/ ctx[27].openai_temperature);
     			}
 
-    			if (dirty & /*$types*/ 1 && to_number(input10.value) !== /*type*/ ctx[26].openai_frequency_penalty) {
-    				set_input_value(input10, /*type*/ ctx[26].openai_frequency_penalty);
+    			if (dirty & /*$types*/ 1 && to_number(input8.value) !== /*type*/ ctx[27].openai_top_p) {
+    				set_input_value(input8, /*type*/ ctx[27].openai_top_p);
+    			}
+
+    			if (dirty & /*$types*/ 1 && to_number(input9.value) !== /*type*/ ctx[27].openai_presence_penalty) {
+    				set_input_value(input9, /*type*/ ctx[27].openai_presence_penalty);
+    			}
+
+    			if (dirty & /*$types*/ 1 && to_number(input10.value) !== /*type*/ ctx[27].openai_frequency_penalty) {
+    				set_input_value(input10, /*type*/ ctx[27].openai_frequency_penalty);
+    			}
+
+    			if (dirty & /*$types*/ 1) {
+    				set_input_value(textarea, /*type*/ ctx[27].custom_action);
     			}
 
     			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block0) {
@@ -1140,11 +1179,11 @@ var summaryengine_types = (function (exports) {
 
     				if (if_block0) {
     					if_block0.c();
-    					if_block0.m(t60.parentNode, t60);
+    					if_block0.m(t65.parentNode, t65);
     				}
     			}
 
-    			if (dirty & /*$types, deleting*/ 17) show_if = Number(/*type*/ ctx[26].ID) !== 1 && !/*deleting*/ ctx[4];
+    			if (dirty & /*$types, deleting*/ 17) show_if = Number(/*type*/ ctx[27].ID) !== 1 && !/*deleting*/ ctx[4];
 
     			if (show_if) {
     				if (if_block1) {
@@ -1152,7 +1191,7 @@ var summaryengine_types = (function (exports) {
     				} else {
     					if_block1 = create_if_block_3(ctx);
     					if_block1.c();
-    					if_block1.m(t61.parentNode, t61);
+    					if_block1.m(t66.parentNode, t66);
     				}
     			} else if (if_block1) {
     				if_block1.d(1);
@@ -1163,7 +1202,7 @@ var summaryengine_types = (function (exports) {
     				if (if_block2) ; else {
     					if_block2 = create_if_block_2();
     					if_block2.c();
-    					if_block2.m(t62.parentNode, t62);
+    					if_block2.m(t67.parentNode, t67);
     				}
     			} else if (if_block2) {
     				if_block2.d(1);
@@ -1185,13 +1224,13 @@ var summaryengine_types = (function (exports) {
     		},
     		d(detaching) {
     			if (detaching) detach(div);
-    			if (detaching) detach(t59);
+    			if (detaching) detach(t64);
     			if_block0.d(detaching);
-    			if (detaching) detach(t60);
+    			if (detaching) detach(t65);
     			if (if_block1) if_block1.d(detaching);
-    			if (detaching) detach(t61);
+    			if (detaching) detach(t66);
     			if (if_block2) if_block2.d(detaching);
-    			if (detaching) detach(t62);
+    			if (detaching) detach(t67);
     			if (if_block3) if_block3.d(detaching);
     			if (detaching) detach(if_block3_anchor);
     			mounted = false;
@@ -1200,7 +1239,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (203:8) {:else}
+    // (210:8) {:else}
     function create_else_block(ctx) {
     	let input;
 
@@ -1224,7 +1263,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (201:8) {#if !saving}
+    // (208:8) {#if !saving}
     function create_if_block_4(ctx) {
     	let input;
     	let mounted;
@@ -1244,7 +1283,7 @@ var summaryengine_types = (function (exports) {
 
     			if (!mounted) {
     				dispose = listen(input, "click", function () {
-    					if (is_function(/*saveType*/ ctx[7](/*type*/ ctx[26]))) /*saveType*/ ctx[7](/*type*/ ctx[26]).apply(this, arguments);
+    					if (is_function(/*saveType*/ ctx[7](/*type*/ ctx[27]))) /*saveType*/ ctx[7](/*type*/ ctx[27]).apply(this, arguments);
     				});
 
     				mounted = true;
@@ -1261,7 +1300,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (206:8) {#if (Number(type.ID) !== 1) && (!deleting)}
+    // (213:8) {#if (Number(type.ID) !== 1) && (!deleting)}
     function create_if_block_3(ctx) {
     	let input;
     	let mounted;
@@ -1280,7 +1319,7 @@ var summaryengine_types = (function (exports) {
     			insert(target, input, anchor);
 
     			if (!mounted) {
-    				dispose = listen(input, "click", /*click_handler_1*/ ctx[22]);
+    				dispose = listen(input, "click", /*click_handler_1*/ ctx[23]);
     				mounted = true;
     			}
     		},
@@ -1293,7 +1332,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (209:8) {#if (deleting)}
+    // (216:8) {#if (deleting)}
     function create_if_block_2(ctx) {
     	let input;
 
@@ -1316,7 +1355,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (212:8) {#if pending_delete}
+    // (219:8) {#if pending_delete}
     function create_if_block_1(ctx) {
     	let p;
     	let t1;
@@ -1355,9 +1394,9 @@ var summaryengine_types = (function (exports) {
     			if (!mounted) {
     				dispose = [
     					listen(input0, "click", function () {
-    						if (is_function(/*deleteType*/ ctx[8](/*type*/ ctx[26]))) /*deleteType*/ ctx[8](/*type*/ ctx[26]).apply(this, arguments);
+    						if (is_function(/*deleteType*/ ctx[8](/*type*/ ctx[27]))) /*deleteType*/ ctx[8](/*type*/ ctx[27]).apply(this, arguments);
     					}),
-    					listen(input1, "click", /*click_handler_2*/ ctx[23])
+    					listen(input1, "click", /*click_handler_2*/ ctx[24])
     				];
 
     				mounted = true;
@@ -1381,7 +1420,7 @@ var summaryengine_types = (function (exports) {
     // (111:0) {#each $types as type, i}
     function create_each_block(ctx) {
     	let if_block_anchor;
-    	let if_block = /*tab*/ ctx[1] === /*i*/ ctx[28] && create_if_block(ctx);
+    	let if_block = /*tab*/ ctx[1] === /*i*/ ctx[29] && create_if_block(ctx);
 
     	return {
     		c() {
@@ -1393,7 +1432,7 @@ var summaryengine_types = (function (exports) {
     			insert(target, if_block_anchor, anchor);
     		},
     		p(ctx, dirty) {
-    			if (/*tab*/ ctx[1] === /*i*/ ctx[28]) {
+    			if (/*tab*/ ctx[1] === /*i*/ ctx[29]) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
@@ -1708,6 +1747,11 @@ var summaryengine_types = (function (exports) {
     		types.set($types);
     	}
 
+    	function textarea_input_handler(each_value, i) {
+    		each_value[i].custom_action = this.value;
+    		types.set($types);
+    	}
+
     	const click_handler_1 = () => $$invalidate(3, pending_delete = true);
     	const click_handler_2 = () => $$invalidate(3, pending_delete = false);
 
@@ -1742,6 +1786,7 @@ var summaryengine_types = (function (exports) {
     		input8_input_handler,
     		input9_input_handler,
     		input10_input_handler,
+    		textarea_input_handler,
     		click_handler_1,
     		click_handler_2
     	];

@@ -32,6 +32,9 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= 0.6.9 =
+ * Add custom links on the Review screen, eg. to quickly Tweet a summary
+ 
 = 0.6.8 =
  * Detect if able to connect to OpenAI with API Key
  * Display error on Settings and Types page if issue with API Key

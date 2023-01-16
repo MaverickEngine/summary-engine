@@ -579,6 +579,7 @@ class SummaryEngineAPI {
         $openai_top_p = $request->get_param('openai_top_p');
         $openai_prompt = $request->get_param('openai_prompt');
         $openai_append_prompt = $request->get_param('openai_append_prompt');
+        $custom_action = $request->get_param('custom_action');
         $data = array(
             'name' => $name,
             'slug' => $slug,
@@ -592,6 +593,7 @@ class SummaryEngineAPI {
             'openai_top_p' => $openai_top_p,
             'openai_prompt' => $openai_prompt,
             'openai_append_prompt' => $openai_append_prompt,
+            'custom_action' => $custom_action,
         );
         $pattern = array(
             '%s',
@@ -603,6 +605,7 @@ class SummaryEngineAPI {
             '%d',
             '%f',
             '%f',
+            '%s',
             '%s',
             '%s',
         );
