@@ -32,6 +32,11 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= v0.7.0 =
+ * Create summaries automatically on Publish
+ * Setting to enable automatic summaries
+ * Uses action-scheduler [https://actionscheduler.org/] to create summaries in the background
+
 = 0.6.9 =
  * Add custom links on the Review screen, eg. to quickly Tweet a summary
  
