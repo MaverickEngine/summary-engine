@@ -16,6 +16,7 @@ class SummaryEngineAdminSettings {
         "openai_append_prompt",
         "summaryengine_max_number_of_submissions_per_post",
         "summaryengine_rss_limit",
+        "summaryengine_summarise_on_publish"
     ];
 
     public $defaults = [
@@ -33,6 +34,7 @@ class SummaryEngineAdminSettings {
         "openai_append_prompt" => "",
         "summaryengine_max_number_of_submissions_per_post" => 3,
         "summaryengine_rss_limit" => 10,
+        "summaryengine_summarise_on_publish" => false
     ];
     
     public function __construct() {

@@ -76,4 +76,87 @@ class SummaryEngineDB {
         dbDelta( $summaryengine_tests_sql );
         update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
     }
+
+    public static function get_types() {
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        return $wpdb->get_results("SELECT * FROM {$wpdb->prefix}summaryengine_types ORDER BY name ASC");
+    }
+
+    public static function get_type(int $type_id) {
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $type = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE ID = %d",
+            $type_id
+        ));
+        if (empty($type)) {
+            return new WP_Error( 'summaryengine_type_not_found', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
+        return $type;
+    }
+
+    public static function get_summary(int $summary_id) {
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $summary = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE ID = %d",
+            $summary_id
+        ));
+        if (empty($summary)) {
+            return new WP_Error( 'summaryengine_summary_not_found', __( 'Summary not found', 'summaryengine' ), array( 'status' => 404 ) );
+        }
+        return $summary;
+    }
+
+    public static function save_summary($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary_result) {
+        global $wpdb;
+        $data = array(
+            'post_id' => $post_id,
+            'type_id' => $type_id,
+            'user_id' => get_current_user_id(),
+            'submitted_text' => $content,
+            'summary' => $original_append_prompt . trim($summary_result['choices'][0]['text']),
+            'openai_id' => $summary_result['id'],
+            'openai_model' => $summary_result['model'],
+            'frequency_penalty' => $params['frequency_penalty'],
+            'max_tokens' => $params['max_tokens'],
+            'presence_penalty' => $params['presence_penalty'],
+            'temperature' => $params['temperature'],
+            'top_p' => $params['top_p'],
+            'prompt' => $original_prompt ?? get_option('summaryengine_openai_prompt'),
+            'append_prompt' => $original_append_prompt ?? get_option('summaryengine_openai_append_prompt'),
+            'openai_object' => $summary_result['object'],
+            'openai_usage_completion_tokens' => $summary_result['usage']['completion_tokens'],
+            'openai_usage_prompt_tokens' => $summary_result['usage']['prompt_tokens'],
+            'openai_usage_total_tokens' => $summary_result['usage']['total_tokens'],
+        );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $wpdb->insert(
+            $wpdb->prefix . 'summaryengine_summaries',
+            $data,
+            array(
+                '%d',
+                '%d',
+                '%d',
+                '%s',
+                '%s',
+                '%s',
+                '%s',
+                '%f',
+                '%d',
+                '%f',
+                '%f',
+                '%f',
+                '%s',
+                '%s',
+                '%s',
+                '%d',
+                '%d',
+                '%d',
+            )
+        );
+        $data["ID"] = $wpdb->insert_id;
+        return $data;
+    }
 }

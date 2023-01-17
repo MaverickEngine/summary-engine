@@ -5,7 +5,7 @@
 * Description: Use machine learning to help editors generate summaries to articles. Brought to you by MavEngine, &lt;em&gt;Powering Media. 
 * Author: MavEngine
 * Author URI: https://mavengine.com
-* Version: 0.6.9
+* Version: 0.7.0
 * License: GPLv2 or later
 * License URI: https://www.gnu.org/licenses/gpl-3.0.html
 * WC requires at least: 5.8.0
@@ -16,9 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const SUMMARYENGINE_SCRIPT_VERSION = "0.6.9";
-const SUMMARYENGINE_PLUGIN_VERSION = "0.6.9";
-const SUMMARYENGINE_DB_VERSION = "0.6.9";
+const SUMMARYENGINE_SCRIPT_VERSION = "0.7.0";
+const SUMMARYENGINE_PLUGIN_VERSION = "0.7.0";
+const SUMMARYENGINE_DB_VERSION = "0.7.0";
 
 // Setup database tables
 function summaryengine_database_setup() {
@@ -54,3 +54,17 @@ function summaryengine_rss_init() {
     new SummaryEngineRSS();
 }
 add_action( 'init', 'summaryengine_rss_init' );
+
+// Action Scheduler
+require_once( plugin_dir_path( __FILE__ ) . '/libraries/action-scheduler/action-scheduler.php' );
+function summaryengine_async_init() {
+    require_once( plugin_dir_path( __FILE__ ) . 'includes/async/summaryengine-async.php' );
+    new SummaryEngineAsync();
+}
+add_action( 'init', 'summaryengine_async_init' );
+
+function summaryengine_generate_summary($post_id, $type_id) {
+    require_once( plugin_dir_path( __FILE__ ) . 'includes/async/summaryengine-async.php' );
+    SummaryEngineAsync::generate_summary($post_id, $type_id);
+}
+add_action('summaryengine_generate_summary', 'summaryengine_generate_summary', 2, 3);

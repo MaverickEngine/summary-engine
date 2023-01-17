@@ -28,6 +28,12 @@
                     </td>
                 </tr>
                 <tr>
+                    <th scope="row"><?php _e("Generate summaries when posts are published?", "summaryengine") ?></th>
+                    <td>
+                        <input type="checkbox" name="summaryengine_summarise_on_publish" value="1" <?php checked(1, get_option('summaryengine_summarise_on_publish')); ?>>
+                    </td>
+                </tr>
+                <tr>
                     <th scope="row"><?php _e("RSS post limit", "summaryengine") ?></th>
                     <td>
                         <input type="number" name="summaryengine_rss_limit" value="<?php echo esc_attr( get_option('summaryengine_rss_limit') ); ?>" class="regular-text" />

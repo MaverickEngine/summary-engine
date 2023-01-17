@@ -1,6 +1,8 @@
 <?php
 
 require_once(plugin_dir_path( __FILE__ ) . '../libs/openapi.php');
+require_once(plugin_dir_path( __FILE__ ) . '../db/summaryengine-db.php');
+require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-content.php');
 
 class SummaryEngineAPI {
     public function __construct() {
@@ -142,88 +144,6 @@ class SummaryEngineAPI {
         ));
     }
 
-    protected function cut_at_paragraph($content, $wordcount) {
-        $paragraphs = explode("\n", $content);
-        $summary = "";
-        $wordcount_remaining = $wordcount;
-        foreach($paragraphs as $paragraph) {
-            $words = explode(" ", $paragraph);
-            $wordcount_remaining -= count($words);
-            if ($wordcount_remaining <= 0) {
-                $summary .= $paragraph . "\n";
-                break;
-            }
-            $summary .= $paragraph . "\n";
-        }
-        return $summary;
-    }
-
-    protected function cut_at_wordcount($content, $wordcount) {
-        $words = explode(" ", $content);
-        $summary = "";
-        $wordcount_remaining = $wordcount;
-        foreach($words as $word) {
-            $wordcount_remaining -= strlen($word);
-            if ($wordcount_remaining <= 0) {
-                $summary .= $word . " ";
-                break;
-            }
-            $summary .= $word . " ";
-        }
-        return $summary;
-    }
-
-    protected function save_results($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary_result) {
-        global $wpdb;
-        $data = array(
-            'post_id' => $post_id,
-            'type_id' => $type_id,
-            'user_id' => get_current_user_id(),
-            'submitted_text' => $content,
-            'summary' => $original_append_prompt . trim($summary_result['choices'][0]['text']),
-            'openai_id' => $summary_result['id'],
-            'openai_model' => $summary_result['model'],
-            'frequency_penalty' => $params['frequency_penalty'],
-            'max_tokens' => $params['max_tokens'],
-            'presence_penalty' => $params['presence_penalty'],
-            'temperature' => $params['temperature'],
-            'top_p' => $params['top_p'],
-            'prompt' => $original_prompt ?? get_option('summaryengine_openai_prompt'),
-            'append_prompt' => $original_append_prompt ?? get_option('summaryengine_openai_append_prompt'),
-            'openai_object' => $summary_result['object'],
-            'openai_usage_completion_tokens' => $summary_result['usage']['completion_tokens'],
-            'openai_usage_prompt_tokens' => $summary_result['usage']['prompt_tokens'],
-            'openai_usage_total_tokens' => $summary_result['usage']['total_tokens'],
-        );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $wpdb->insert(
-            $this->table_name,
-            $data,
-            array(
-                '%d',
-                '%d',
-                '%d',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%f',
-                '%d',
-                '%f',
-                '%f',
-                '%f',
-                '%s',
-                '%s',
-                '%s',
-                '%d',
-                '%d',
-                '%d',
-            )
-        );
-        $data["ID"] = $wpdb->insert_id;
-        return $data;
-    }
-
     public function get_models() {
         $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
         $openapi = new OpenAPI($apikey);
@@ -238,7 +158,7 @@ class SummaryEngineAPI {
         if (empty($type_id)) {
             $type_id = 1;
         }
-        $type = $this->_get_type($type_id);
+        $type = SummaryEngineDB::get_type($type_id);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $result = $wpdb->get_results( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE post_id = %d AND type_id=%d ORDER BY created_at DESC",
@@ -285,7 +205,7 @@ class SummaryEngineAPI {
             if (empty($type_id)) {
                 throw new Exception("Type ID is empty");
             }
-            $type = $this->_get_type($type_id);
+            $type = SummaryEngineDB::get_type($type_id);
             $type_settings = [
                 'openai_model' => $type->openai_model,
                 'openai_prompt' => $type->openai_prompt,
@@ -316,9 +236,9 @@ class SummaryEngineAPI {
             $cut_at_paragraph = get_option( "summaryengine_cut_at_paragraph", false );
             $wordcount = get_option( "summaryengine_openai_word_limit", 750 );
             if ($cut_at_paragraph) {
-                $content = $this->cut_at_paragraph($content, $wordcount);
+                $content = SummaryEngineContent::cut_at_paragraph($content, $wordcount);
             } else {
-                $content = $this->cut_at_wordcount($content, $wordcount);
+                $content = SummaryEngineContent::cut_at_wordcount($content, $wordcount);
             }
             if (empty($content)) {
                 return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
@@ -356,7 +276,7 @@ class SummaryEngineAPI {
             }
             $summary = $openapi->summarise($params);
             if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
-            $result = $this->save_results($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary);
+            $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary);
             // Set meta data for post
             update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
             update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
@@ -376,7 +296,7 @@ class SummaryEngineAPI {
             "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE ID = %d",
             $id
         ));
-        $type = $this->_get_type($summary->type_id);
+        $type = SummaryEngineDB::get_type($summary->type_id);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $wpdb->update(
             $this->table_name,
@@ -403,7 +323,7 @@ class SummaryEngineAPI {
         $summary = $request->get_param('summary');
         $summary_id = $request->get_param('summary_id');
         $type_id = $request->get_param('type_id');
-        $type = $this->_get_type($type_id);
+        $type = SummaryEngineDB::get_type($type_id);
         if (empty($type)) {
             return new WP_Error( 'summaryengine_api_error', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
         }
@@ -445,23 +365,10 @@ class SummaryEngineAPI {
             return new WP_Error( 'summaryengine_api_error', __( 'Error updating summary', 'summaryengine' ), array( 'status' => 500 ) );
         }
         // Set new summary in post meta
-        $summary = $this->_get_summary($summary_id);
-        $type = $this->_get_type($summary->type_id);
+        $summary = SummaryEngineDB::get_summary($summary_id);
+        $type = SummaryEngineDB::get_type($summary->type_id);
         update_post_meta($summary->post_id, 'summaryengine_' . $type->slug, $summary->summary);
         return array("success" => true);
-    }
-
-    protected function _get_summary($id) {
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $summary = $wpdb->get_row( $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}summaryengine_summaries WHERE ID = %d",
-            $id
-        ));
-        if (empty($summary)) {
-            return new WP_Error( 'summaryengine_summary_not_found', __( 'Summary not found', 'summaryengine' ), array( 'status' => 404 ) );
-        }
-        return $summary;
     }
 
     public function get_post_summary(WP_REST_Request $request) {
@@ -470,7 +377,7 @@ class SummaryEngineAPI {
         if (empty($type_id)) {
             $type_id = 1;
         }
-        $type = $this->_get_type($type_id);
+        $type = SummaryEngineDB::get_type($type_id);
         if (empty($type)) {
             return new WP_Error( 'summaryengine_api_error', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
         }
@@ -531,37 +438,8 @@ class SummaryEngineAPI {
         return $this->summaries_by_period($start, $end, $type_id);
     }
 
-    protected function _get_type($id) {
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $type = $wpdb->get_row( $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE ID = %d",
-            $id
-        ));
-        if (empty($type)) {
-            return new WP_Error( 'summaryengine_type_not_found', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
-        }
-        return $type;
-    }
-
-    protected function _get_type_by_slug($slug) {
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $type = $wpdb->get_row( $wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}summaryengine_types WHERE slug = %s",
-            $slug
-        ));
-        if (empty($type)) {
-            return new WP_Error( 'summaryengine_type_not_found', __( 'Type not found', 'summaryengine' ), array( 'status' => 404 ) );
-        }
-        return $type;
-    }
-
     public function get_types(WP_REST_Request $request) {
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $results = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}summaryengine_types ORDER BY name ASC");
-        return $results;
+        return SummaryEngineDB::get_types();
     }
 
     public function post_type(WP_REST_Request $request) {
@@ -690,7 +568,7 @@ class SummaryEngineAPI {
             foreach($types as $type) {
                 $summary = get_post_meta($post->ID, 'summaryengine_' . $type->slug, true);
                 $summary_id = get_post_meta($post->ID, 'summaryengine_' . $type->slug . '_id', true);
-                $summary_details = $this->_get_summary($summary_id);
+                $summary_details = SummaryEngineDB::get_summary(intval($summary_id));
                 $summaries[$type->slug] = array(
                     'summary' => $summary,
                     'summary_id' => $summary_id,
