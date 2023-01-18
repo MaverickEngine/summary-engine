@@ -36,7 +36,6 @@
         settigns.openai_append_prompt = summaries[summary_index].append_prompt;
         settings.openai_top_p =  Number(summaries[summary_index].top_p);
         settings = settings;
-        console.log(settings);
     }
 
     const saveCurrentSummary = async () => {
@@ -59,10 +58,10 @@
 
 <div id="summaryEngineNavigator">
     <button id="summaryEngineNavigatorPrev" type="button" class="button button-secondary" on:click={prev} disabled={summary_index === 0}>
-        Previous
+        Next
     </button>
     <button id="summaryEngineNavigatorNext" type="button" class="button button-secondary" on:click={next} disabled={summary_index === summaries.length - 1}>
-        Next
+        Previous
     </button>
     {#if (summary_index != current_summary_index)}
         <button id="summaryEngineNavigatorUse" type="button" class="button button-secondary" on:click={saveCurrentSummary}>

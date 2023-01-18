@@ -9,7 +9,6 @@
     // Components
     import SubmissionsLeft from '../components/SubmissionsLeft.svelte';
     import Navigation from '../components/Navigation.svelte';
-    import Rate from '../components/Rate.svelte';
     import GenerateSummary from '../components/GenerateSummary.svelte';
     import Settings from '../components/Settings.svelte';
     import Spinner from '../components/Spinner.svelte';
@@ -113,7 +112,6 @@
     {:else}
         <Settings bind:settings={settings} visible={settings_visible} />
         <label class="screen-reader-text" for="summary">Summary</label>
-        
         {#if editing}
             <textarea cols="40" class="summaryengine-summarise__summary-textarea" bind:value={summary_text} />
             {#if (!saving)}
@@ -124,17 +122,17 @@
             {/if}
         {:else if (summary_id)}
             <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" value={summary_text} readonly></textarea>
-            <input class="summaryengine-button button" type="button" name="edit" value="Edit" on:click={() => editing = true} />
+            <div class="summaryengine-nav">
+                <input class="summaryengine-button button" type="button" name="edit" value="Edit" on:click={() => editing = true} />
+                {#if summaries.length > 1}
+                    <Navigation summaries={summaries} type={type} bind:summary_text={summary_text} bind:summary_index={summary_index} bind:settings={settings} />
+                {/if}
+            </div>
         {/if}
         <div id="summaryEngineMetaBlockSummariseButtonContainer">
             <GenerateSummary type={type} bind:summary_text={summary_text} bind:summary_id={summary_id} bind:summary_index={summary_index} bind:submissions_left={submissions_left} bind:summaries={summaries} settings={settings} />
-            <SubmissionsLeft summaries={summaries} bind:submissions_left={submissions_left} />
-            {#if summaries.length > 1}
-                <Navigation summaries={summaries} type={type} bind:summary_text={summary_text} bind:summary_index={summary_index} bind:settings={settings} />
-            {/if}
-            {#if summary_id > 0}
-                <Rate bind:summaries={summaries} type={type} summary_id={summary_id} summary_index={summary_index} />
-            {/if}
+            <SubmissionsLeft bind:submissions_left={submissions_left} />
+            
         </div>
     {/if}
 </div>
@@ -146,6 +144,13 @@
     }
 
     .summaryengine-header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .summaryengine-nav {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
