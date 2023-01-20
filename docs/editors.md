@@ -38,4 +38,6 @@ To generate a single summary, click "Summarise" next to the post. To generate su
 
 To approve a summary, simply mouseover the summary to expand it, and click the "Approve" button. To reject a summary, click the "Reject" button. A new summary will automatically be generated. To edit a summary, click the "Edit" button. To generate a new summary, click the "Generate" button.
 
+To preview an article, click the icon of the eye next to the article's title. To edit the article, click the article's title.
+
 You can search or filter the posts by date.
