@@ -1,0 +1,10 @@
+site_name: SummaryEngine
+theme: readthedocs
+site_author: Jason Norwood-Young
+copyright: Daily Maverick
+nav:
+  - Home: index.md
+  - For Editors: editors.md
+  - For Administrators: admins.md
+  - For Developers: developers.md
+  - RSS Feed: rss.md
