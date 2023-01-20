@@ -6,9 +6,12 @@
     import Pages from "./components/Pages.svelte";
     import Search from "./components/Search.svelte";
     import { apiGet, apiPost } from '../libs/ajax.js';
+    import Modal from './components/Modal.svelte';
 
     let per_page = 10;
     let summarising_all = false;
+    let show_modal = false;
+    let modal_url = "";
 
     async function getPosts () {
         try {
@@ -81,9 +84,17 @@
         $page = 1;
         await getPosts();
     }
-    
-</script>
 
+    function showIframe(url) {
+        modal_url = url;
+        show_modal = true;
+    }
+</script>
+{#if show_modal}
+    <Modal on:close={() => show_modal = false}>
+        <iframe title="Preview" src="{modal_url}" style="width: 100%; height: 80vh"/>
+    </Modal>
+{/if}
 <div id="summaryEngineMetaBlock">
     <div id="summaryEngineMetaBlockSummariseButtonContainer">
         <div id="summaryEngineMetaBlockSummariseButtonContainerLeft">
@@ -113,15 +124,17 @@
         <tbody>
             {#each $posts as post}
                 <tr>
-                    <td><a href="/wp-admin/post.php?post={post.id}&action=edit">{post.post_title || "Untitled"}</a></td>
+                    <td>
+                        <span class="dashicons dashicons-welcome-view-site" on:click={() => showIframe(post.permalink)} on:keydown={() => showIframe(post.permalink)} style="cursor:pointer">
+                            <span class="screen-reader-text">View Post</span>
+                        </span>
+                        <a href="/wp-admin/post.php?post={post.id}&action=edit">{post.post_title || "Untitled"}</a>
+                    </td>
                     <td>{post.post_date}</td>
                     <td>{post.post_author}</td>
                     {#each $types as type}
                         <td>
-                            <Summarise type_id={type.ID} post_id={post.id} summary={post.summaries[type.slug]} />
-                            {#if (type.custom_action)}
-                                {@html type.custom_action.replace("[post_url]", post.permalink).replace("[summary_encoded]", encodeURIComponent(post.summaries[type.slug]?.summary || "")).replace("[summary]", post.summaries[type.slug]?.summary || "")}
-                            {/if}
+                            <Summarise type_id={type.ID} post={post} summary={post.summaries[type.slug]} custom_action={type.custom_action} />
                         </td>
                     {/each}
                     <td>

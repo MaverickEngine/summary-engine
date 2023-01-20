@@ -3,7 +3,8 @@
     import { onMount } from 'svelte';
     export let summary;
     export let type_id;
-    export let post_id;
+    export let post;
+    export let custom_action;
     
     let hovering = false;
     let editing = false;
@@ -36,7 +37,7 @@
     async function summarise() {
         try {
             summary.summarising = true;
-            const result = await apiPost(`/summaryengine/v1/summarise`, { type_id, post_id });
+            const result = await apiPost(`/summaryengine/v1/summarise`, { type_id, post_id: post.id });
             if (!result?.summary) throw "No summary returned";
             summary.summary = result.summary;
             summary.summary_id = result.ID;
@@ -111,6 +112,9 @@
             <div class="summaryengine-summarise__summary">
                 {@html summary.summary?.nl2br()}
             </div>
+        {/if}
+        {#if (custom_action)}
+            {@html custom_action.replace("[post_url]", post.permalink).replace("[summary_encoded]", encodeURIComponent(summary.summary || "")).replace("[summary]", summary.summary)}
         {/if}
     {:else}
         {#if summary.summarising}

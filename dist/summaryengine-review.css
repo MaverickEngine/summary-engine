@@ -55,3 +55,36 @@ table.loading.svelte-90dff3 {
   width: 100%;
   height: 200px;
   margin-bottom: 10px; }
+
+.modal-background.svelte-1yv89n5 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 10000; }
+
+.modal.svelte-1yv89n5 {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: calc(100vw - 4em);
+  max-width: 90%;
+  max-height: calc(100vh - 6em);
+  overflow: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 0.2em;
+  background: white;
+  z-index: 10001; }
+
+button.svelte-1yv89n5 {
+  display: block; }
+
+.modal-footer.svelte-1yv89n5 {
+  margin-top: 1em;
+  padding: 1em;
+  position: sticky;
+  border-top: 1px solid #989696;
+  width: 100%;
+  box-sizing: border-box; }

@@ -2,6 +2,12 @@ var summaryengine_review = (function () {
     'use strict';
 
     function noop() { }
+    function assign(tar, src) {
+        // @ts-ignore
+        for (const k in src)
+            tar[k] = src[k];
+        return tar;
+    }
     function run(fn) {
         return fn();
     }
@@ -17,6 +23,14 @@ var summaryengine_review = (function () {
     function safe_not_equal(a, b) {
         return a != a ? b == b : a !== b || ((a && typeof a === 'object') || typeof a === 'function');
     }
+    let src_url_equal_anchor;
+    function src_url_equal(element_src, url) {
+        if (!src_url_equal_anchor) {
+            src_url_equal_anchor = document.createElement('a');
+        }
+        src_url_equal_anchor.href = url;
+        return element_src === src_url_equal_anchor.href;
+    }
     function is_empty(obj) {
         return Object.keys(obj).length === 0;
     }
@@ -29,6 +43,52 @@ var summaryengine_review = (function () {
     }
     function component_subscribe(component, store, callback) {
         component.$$.on_destroy.push(subscribe(store, callback));
+    }
+    function create_slot(definition, ctx, $$scope, fn) {
+        if (definition) {
+            const slot_ctx = get_slot_context(definition, ctx, $$scope, fn);
+            return definition[0](slot_ctx);
+        }
+    }
+    function get_slot_context(definition, ctx, $$scope, fn) {
+        return definition[1] && fn
+            ? assign($$scope.ctx.slice(), definition[1](fn(ctx)))
+            : $$scope.ctx;
+    }
+    function get_slot_changes(definition, $$scope, dirty, fn) {
+        if (definition[2] && fn) {
+            const lets = definition[2](fn(dirty));
+            if ($$scope.dirty === undefined) {
+                return lets;
+            }
+            if (typeof lets === 'object') {
+                const merged = [];
+                const len = Math.max($$scope.dirty.length, lets.length);
+                for (let i = 0; i < len; i += 1) {
+                    merged[i] = $$scope.dirty[i] | lets[i];
+                }
+                return merged;
+            }
+            return $$scope.dirty | lets;
+        }
+        return $$scope.dirty;
+    }
+    function update_slot_base(slot, slot_definition, ctx, $$scope, slot_changes, get_slot_context_fn) {
+        if (slot_changes) {
+            const slot_context = get_slot_context(slot_definition, ctx, $$scope, get_slot_context_fn);
+            slot.p(slot_context, slot_changes);
+        }
+    }
+    function get_all_dirty_from_scope($$scope) {
+        if ($$scope.ctx.length > 32) {
+            const dirty = [];
+            const length = $$scope.ctx.length / 32;
+            for (let i = 0; i < length; i++) {
+                dirty[i] = -1;
+            }
+            return dirty;
+        }
+        return -1;
     }
     function set_store_value(store, ret, value) {
         store.set(value);
@@ -94,6 +154,14 @@ var summaryengine_review = (function () {
     }
     function set_input_value(input, value) {
         input.value = value == null ? '' : value;
+    }
+    function set_style(node, key, value, important) {
+        if (value === null) {
+            node.style.removeProperty(key);
+        }
+        else {
+            node.style.setProperty(key, value, important ? 'important' : '');
+        }
     }
     function select_option(select, value) {
         for (let i = 0; i < select.options.length; i += 1) {
@@ -176,6 +244,17 @@ var summaryengine_review = (function () {
      */
     function onMount(fn) {
         get_current_component().$$.on_mount.push(fn);
+    }
+    /**
+     * Schedules a callback to run immediately before the component is unmounted.
+     *
+     * Out of `onMount`, `beforeUpdate`, `afterUpdate` and `onDestroy`, this is the
+     * only one that runs inside a server-side component.
+     *
+     * https://svelte.dev/docs#run-time-svelte-ondestroy
+     */
+    function onDestroy(fn) {
+        get_current_component().$$.on_destroy.push(fn);
     }
     /**
      * Creates an event dispatcher that can be used to dispatch [component events](/docs#template-syntax-component-directives-on-eventname).
@@ -603,7 +682,7 @@ var summaryengine_review = (function () {
     			insert(target, input, anchor);
 
     			if (!mounted) {
-    				dispose = listen(input, "click", /*summarise*/ ctx[8]);
+    				dispose = listen(input, "click", /*summarise*/ ctx[10]);
     				mounted = true;
     			}
     		},
@@ -616,8 +695,8 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (116:8) {#if summary.summarising}
-    function create_if_block_9(ctx) {
+    // (120:8) {#if summary.summarising}
+    function create_if_block_10(ctx) {
     	let input;
 
     	return {
@@ -639,48 +718,69 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (101:4) {#if summary.summary}
+    // (102:4) {#if summary.summary}
     function create_if_block_6(ctx) {
-    	let if_block_anchor;
+    	let t;
+    	let if_block1_anchor;
 
     	function select_block_type_1(ctx, dirty) {
-    		if (/*editing*/ ctx[2]) return create_if_block_7;
+    		if (/*editing*/ ctx[4]) return create_if_block_8;
     		return create_else_block_2;
     	}
 
     	let current_block_type = select_block_type_1(ctx);
-    	let if_block = current_block_type(ctx);
+    	let if_block0 = current_block_type(ctx);
+    	let if_block1 = /*custom_action*/ ctx[2] && create_if_block_7(ctx);
 
     	return {
     		c() {
-    			if_block.c();
-    			if_block_anchor = empty();
+    			if_block0.c();
+    			t = space();
+    			if (if_block1) if_block1.c();
+    			if_block1_anchor = empty();
     		},
     		m(target, anchor) {
-    			if_block.m(target, anchor);
-    			insert(target, if_block_anchor, anchor);
+    			if_block0.m(target, anchor);
+    			insert(target, t, anchor);
+    			if (if_block1) if_block1.m(target, anchor);
+    			insert(target, if_block1_anchor, anchor);
     		},
     		p(ctx, dirty) {
-    			if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block) {
-    				if_block.p(ctx, dirty);
+    			if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block0) {
+    				if_block0.p(ctx, dirty);
     			} else {
-    				if_block.d(1);
-    				if_block = current_block_type(ctx);
+    				if_block0.d(1);
+    				if_block0 = current_block_type(ctx);
 
-    				if (if_block) {
-    					if_block.c();
-    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				if (if_block0) {
+    					if_block0.c();
+    					if_block0.m(t.parentNode, t);
     				}
+    			}
+
+    			if (/*custom_action*/ ctx[2]) {
+    				if (if_block1) {
+    					if_block1.p(ctx, dirty);
+    				} else {
+    					if_block1 = create_if_block_7(ctx);
+    					if_block1.c();
+    					if_block1.m(if_block1_anchor.parentNode, if_block1_anchor);
+    				}
+    			} else if (if_block1) {
+    				if_block1.d(1);
+    				if_block1 = null;
     			}
     		},
     		d(detaching) {
-    			if_block.d(detaching);
-    			if (detaching) detach(if_block_anchor);
+    			if_block0.d(detaching);
+    			if (detaching) detach(t);
+    			if (if_block1) if_block1.d(detaching);
+    			if (detaching) detach(if_block1_anchor);
     		}
     	};
     }
 
-    // (110:8) {:else}
+    // (111:8) {:else}
     function create_else_block_2(ctx) {
     	let div;
     	let raw_value = /*summary*/ ctx[0].summary?.nl2br() + "";
@@ -702,8 +802,8 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (102:8) {#if editing}
-    function create_if_block_7(ctx) {
+    // (103:8) {#if editing}
+    function create_if_block_8(ctx) {
     	let textarea;
     	let t;
     	let if_block_anchor;
@@ -711,7 +811,7 @@ var summaryengine_review = (function () {
     	let dispose;
 
     	function select_block_type_2(ctx, dirty) {
-    		if (!/*saving*/ ctx[7]) return create_if_block_8;
+    		if (!/*saving*/ ctx[9]) return create_if_block_9;
     		return create_else_block_1;
     	}
 
@@ -734,7 +834,7 @@ var summaryengine_review = (function () {
     			insert(target, if_block_anchor, anchor);
 
     			if (!mounted) {
-    				dispose = listen(textarea, "input", /*textarea_input_handler*/ ctx[14]);
+    				dispose = listen(textarea, "input", /*textarea_input_handler*/ ctx[15]);
     				mounted = true;
     			}
     		},
@@ -766,7 +866,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (107:12) {:else}
+    // (108:12) {:else}
     function create_else_block_1(ctx) {
     	let input;
 
@@ -789,8 +889,8 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (104:12) {#if (!saving)}
-    function create_if_block_8(ctx) {
+    // (105:12) {#if (!saving)}
+    function create_if_block_9(ctx) {
     	let input0;
     	let t;
     	let input1;
@@ -818,8 +918,8 @@ var summaryengine_review = (function () {
 
     			if (!mounted) {
     				dispose = [
-    					listen(input0, "click", /*save*/ ctx[11]),
-    					listen(input1, "click", /*click_handler*/ ctx[15])
+    					listen(input0, "click", /*save*/ ctx[13]),
+    					listen(input1, "click", /*click_handler*/ ctx[16])
     				];
 
     				mounted = true;
@@ -836,10 +936,36 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (122:4) {#if hovering || just_summarised}
+    // (116:8) {#if (custom_action)}
+    function create_if_block_7(ctx) {
+    	let html_tag;
+    	let raw_value = /*custom_action*/ ctx[2].replace("[post_url]", /*post*/ ctx[1].permalink).replace("[summary_encoded]", encodeURIComponent(/*summary*/ ctx[0].summary || "")).replace("[summary]", /*summary*/ ctx[0].summary) + "";
+    	let html_anchor;
+
+    	return {
+    		c() {
+    			html_tag = new HtmlTag(false);
+    			html_anchor = empty();
+    			html_tag.a = html_anchor;
+    		},
+    		m(target, anchor) {
+    			html_tag.m(raw_value, target, anchor);
+    			insert(target, html_anchor, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty & /*custom_action, post, summary*/ 7 && raw_value !== (raw_value = /*custom_action*/ ctx[2].replace("[post_url]", /*post*/ ctx[1].permalink).replace("[summary_encoded]", encodeURIComponent(/*summary*/ ctx[0].summary || "")).replace("[summary]", /*summary*/ ctx[0].summary) + "")) html_tag.p(raw_value);
+    		},
+    		d(detaching) {
+    			if (detaching) detach(html_anchor);
+    			if (detaching) html_tag.d();
+    		}
+    	};
+    }
+
+    // (126:4) {#if hovering || just_summarised}
     function create_if_block$1(ctx) {
     	let div;
-    	let if_block = /*summary*/ ctx[0]?.summary && !/*editing*/ ctx[2] && create_if_block_1$1(ctx);
+    	let if_block = /*summary*/ ctx[0]?.summary && !/*editing*/ ctx[4] && create_if_block_1$1(ctx);
 
     	return {
     		c() {
@@ -852,7 +978,7 @@ var summaryengine_review = (function () {
     			if (if_block) if_block.m(div, null);
     		},
     		p(ctx, dirty) {
-    			if (/*summary*/ ctx[0]?.summary && !/*editing*/ ctx[2]) {
+    			if (/*summary*/ ctx[0]?.summary && !/*editing*/ ctx[4]) {
     				if (if_block) {
     					if_block.p(ctx, dirty);
     				} else {
@@ -872,18 +998,18 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (124:12) {#if summary?.summary && !editing}
+    // (128:12) {#if summary?.summary && !editing}
     function create_if_block_1$1(ctx) {
     	let t0;
     	let t1;
     	let input;
     	let mounted;
     	let dispose;
-    	let if_block0 = !/*approved*/ ctx[5] && !/*disapproving*/ ctx[3] && create_if_block_4(ctx);
+    	let if_block0 = !/*approved*/ ctx[7] && !/*disapproving*/ ctx[5] && create_if_block_4(ctx);
 
     	function select_block_type_4(ctx, dirty) {
-    		if (/*disapproving*/ ctx[3]) return create_if_block_2$1;
-    		if (!/*approving*/ ctx[4]) return create_if_block_3;
+    		if (/*disapproving*/ ctx[5]) return create_if_block_2$1;
+    		if (!/*approving*/ ctx[6]) return create_if_block_3;
     	}
 
     	let current_block_type = select_block_type_4(ctx);
@@ -909,12 +1035,12 @@ var summaryengine_review = (function () {
     			insert(target, input, anchor);
 
     			if (!mounted) {
-    				dispose = listen(input, "click", /*click_handler_1*/ ctx[16]);
+    				dispose = listen(input, "click", /*click_handler_1*/ ctx[17]);
     				mounted = true;
     			}
     		},
     		p(ctx, dirty) {
-    			if (!/*approved*/ ctx[5] && !/*disapproving*/ ctx[3]) {
+    			if (!/*approved*/ ctx[7] && !/*disapproving*/ ctx[5]) {
     				if (if_block0) {
     					if_block0.p(ctx, dirty);
     				} else {
@@ -955,12 +1081,12 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (125:16) {#if (!approved && !disapproving)}
+    // (129:16) {#if (!approved && !disapproving)}
     function create_if_block_4(ctx) {
     	let if_block_anchor;
 
     	function select_block_type_3(ctx, dirty) {
-    		if (/*approving*/ ctx[4]) return create_if_block_5;
+    		if (/*approving*/ ctx[6]) return create_if_block_5;
     		return create_else_block$1;
     	}
 
@@ -996,7 +1122,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (128:20) {:else}
+    // (132:20) {:else}
     function create_else_block$1(ctx) {
     	let input;
     	let mounted;
@@ -1014,7 +1140,7 @@ var summaryengine_review = (function () {
     			insert(target, input, anchor);
 
     			if (!mounted) {
-    				dispose = listen(input, "click", /*approve*/ ctx[9]);
+    				dispose = listen(input, "click", /*approve*/ ctx[11]);
     				mounted = true;
     			}
     		},
@@ -1027,7 +1153,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (126:20) {#if approving}
+    // (130:20) {#if approving}
     function create_if_block_5(ctx) {
     	let input;
 
@@ -1050,7 +1176,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (134:37) 
+    // (138:37) 
     function create_if_block_3(ctx) {
     	let input;
     	let mounted;
@@ -1068,7 +1194,7 @@ var summaryengine_review = (function () {
     			insert(target, input, anchor);
 
     			if (!mounted) {
-    				dispose = listen(input, "click", /*disapprove*/ ctx[10]);
+    				dispose = listen(input, "click", /*disapprove*/ ctx[12]);
     				mounted = true;
     			}
     		},
@@ -1081,7 +1207,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (132:16) {#if disapproving}
+    // (136:16) {#if disapproving}
     function create_if_block_2$1(ctx) {
     	let input;
 
@@ -1104,7 +1230,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    function create_fragment$4(ctx) {
+    function create_fragment$5(ctx) {
     	let div;
     	let t;
     	let mounted;
@@ -1112,13 +1238,13 @@ var summaryengine_review = (function () {
 
     	function select_block_type(ctx, dirty) {
     		if (/*summary*/ ctx[0].summary) return create_if_block_6;
-    		if (/*summary*/ ctx[0].summarising) return create_if_block_9;
+    		if (/*summary*/ ctx[0].summarising) return create_if_block_10;
     		return create_else_block_3;
     	}
 
     	let current_block_type = select_block_type(ctx);
     	let if_block0 = current_block_type(ctx);
-    	let if_block1 = (/*hovering*/ ctx[1] || /*just_summarised*/ ctx[6]) && create_if_block$1(ctx);
+    	let if_block1 = (/*hovering*/ ctx[3] || /*just_summarised*/ ctx[8]) && create_if_block$1(ctx);
 
     	return {
     		c() {
@@ -1127,8 +1253,8 @@ var summaryengine_review = (function () {
     			t = space();
     			if (if_block1) if_block1.c();
     			attr(div, "class", "summaryengine-summarise svelte-vmhuq8");
-    			toggle_class(div, "is_hovering", /*hovering*/ ctx[1]);
-    			toggle_class(div, "just_summarised", /*just_summarised*/ ctx[6]);
+    			toggle_class(div, "is_hovering", /*hovering*/ ctx[3]);
+    			toggle_class(div, "just_summarised", /*just_summarised*/ ctx[8]);
     			toggle_class(div, "approved", Number(/*summary*/ ctx[0].summary_details.rating) === 1);
     			toggle_class(div, "unapproved", Number(/*summary*/ ctx[0].summary_details.rating) === 0);
     			toggle_class(div, "disapproved", Number(/*summary*/ ctx[0].summary_details.rating) === -1);
@@ -1141,8 +1267,8 @@ var summaryengine_review = (function () {
 
     			if (!mounted) {
     				dispose = [
-    					listen(div, "mouseenter", /*mouseenter_handler*/ ctx[17]),
-    					listen(div, "mouseleave", /*mouseleave_handler*/ ctx[18])
+    					listen(div, "mouseenter", /*mouseenter_handler*/ ctx[18]),
+    					listen(div, "mouseleave", /*mouseleave_handler*/ ctx[19])
     				];
 
     				mounted = true;
@@ -1161,7 +1287,7 @@ var summaryengine_review = (function () {
     				}
     			}
 
-    			if (/*hovering*/ ctx[1] || /*just_summarised*/ ctx[6]) {
+    			if (/*hovering*/ ctx[3] || /*just_summarised*/ ctx[8]) {
     				if (if_block1) {
     					if_block1.p(ctx, dirty);
     				} else {
@@ -1174,12 +1300,12 @@ var summaryengine_review = (function () {
     				if_block1 = null;
     			}
 
-    			if (dirty & /*hovering*/ 2) {
-    				toggle_class(div, "is_hovering", /*hovering*/ ctx[1]);
+    			if (dirty & /*hovering*/ 8) {
+    				toggle_class(div, "is_hovering", /*hovering*/ ctx[3]);
     			}
 
-    			if (dirty & /*just_summarised*/ 64) {
-    				toggle_class(div, "just_summarised", /*just_summarised*/ ctx[6]);
+    			if (dirty & /*just_summarised*/ 256) {
+    				toggle_class(div, "just_summarised", /*just_summarised*/ ctx[8]);
     			}
 
     			if (dirty & /*Number, summary*/ 1) {
@@ -1206,10 +1332,11 @@ var summaryengine_review = (function () {
     	};
     }
 
-    function instance$4($$self, $$props, $$invalidate) {
+    function instance$5($$self, $$props, $$invalidate) {
     	let { summary } = $$props;
     	let { type_id } = $$props;
-    	let { post_id } = $$props;
+    	let { post } = $$props;
+    	let { custom_action } = $$props;
     	let hovering = false;
     	let editing = false;
     	let disapproving = false;
@@ -1227,7 +1354,7 @@ var summaryengine_review = (function () {
     			$$invalidate(0, summary.summarising = false, summary);
 
     			if (Number(summary.summary_details.rating) === 1) {
-    				$$invalidate(5, approved = true);
+    				$$invalidate(7, approved = true);
     			} // } else if (Number(summary.summary_details.rating) === 0) {
     			//     unapproved = true;
     		} catch(e) {
@@ -1238,15 +1365,15 @@ var summaryengine_review = (function () {
     	async function summarise() {
     		try {
     			$$invalidate(0, summary.summarising = true, summary);
-    			const result = await apiPost(`/summaryengine/v1/summarise`, { type_id, post_id });
+    			const result = await apiPost(`/summaryengine/v1/summarise`, { type_id, post_id: post.id });
     			if (!result?.summary) throw "No summary returned";
     			$$invalidate(0, summary.summary = result.summary, summary);
     			$$invalidate(0, summary.summary_id = result.ID, summary);
     			$$invalidate(0, summary.summary_details = result, summary);
     			$$invalidate(0, summary.summary_details.rating = 0, summary);
     			$$invalidate(0, summary.summarising = false, summary);
-    			$$invalidate(5, approved = false);
-    			$$invalidate(6, just_summarised = true);
+    			$$invalidate(7, approved = false);
+    			$$invalidate(8, just_summarised = true);
     		} catch(err) {
     			console.error(err);
     			alert("An error occured: " + err);
@@ -1256,45 +1383,45 @@ var summaryengine_review = (function () {
 
     	async function approve() {
     		try {
-    			$$invalidate(4, approving = true);
+    			$$invalidate(6, approving = true);
     			await apiPost(`/summaryengine/v1/rate/${summary.summary_id}`, { rating: 1 });
     			$$invalidate(0, summary.summary_details.rating = 1, summary);
-    			$$invalidate(4, approving = false);
-    			$$invalidate(5, approved = true);
-    			$$invalidate(6, just_summarised = false);
+    			$$invalidate(6, approving = false);
+    			$$invalidate(7, approved = true);
+    			$$invalidate(8, just_summarised = false);
     		} catch(err) {
     			console.error(err);
     			alert("An error occured: " + err);
-    			$$invalidate(4, approving = false);
+    			$$invalidate(6, approving = false);
     		}
     	}
 
     	async function disapprove() {
     		try {
-    			$$invalidate(3, disapproving = true);
+    			$$invalidate(5, disapproving = true);
     			await apiPost(`/summaryengine/v1/rate/${summary.summary_id}`, { rating: -1 });
     			await summarise();
-    			$$invalidate(3, disapproving = false);
+    			$$invalidate(5, disapproving = false);
     			$$invalidate(0, summary.summary_details.rating = 0, summary);
-    			$$invalidate(6, just_summarised = false);
-    			$$invalidate(5, approved = false);
+    			$$invalidate(8, just_summarised = false);
+    			$$invalidate(7, approved = false);
     		} catch(err) {
     			console.error(err);
-    			$$invalidate(3, disapproving = false);
+    			$$invalidate(5, disapproving = false);
     		}
     	}
 
     	async function save() {
     		try {
-    			$$invalidate(7, saving = true);
+    			$$invalidate(9, saving = true);
     			await apiPut(`/summaryengine/v1/summary/${summary.summary_id}`, { summary: summary.summary });
-    			$$invalidate(2, editing = false);
-    			$$invalidate(7, saving = false);
+    			$$invalidate(4, editing = false);
+    			$$invalidate(9, saving = false);
     		} catch(err) {
     			console.error(err);
     			alert("An error occured: " + err);
-    			$$invalidate(2, editing = false);
-    			$$invalidate(7, saving = false);
+    			$$invalidate(4, editing = false);
+    			$$invalidate(9, saving = false);
     		}
     	}
 
@@ -1303,19 +1430,22 @@ var summaryengine_review = (function () {
     		$$invalidate(0, summary);
     	}
 
-    	const click_handler = () => $$invalidate(2, editing = false);
-    	const click_handler_1 = () => $$invalidate(2, editing = true);
-    	const mouseenter_handler = () => $$invalidate(1, hovering = true);
-    	const mouseleave_handler = () => $$invalidate(1, hovering = false);
+    	const click_handler = () => $$invalidate(4, editing = false);
+    	const click_handler_1 = () => $$invalidate(4, editing = true);
+    	const mouseenter_handler = () => $$invalidate(3, hovering = true);
+    	const mouseleave_handler = () => $$invalidate(3, hovering = false);
 
     	$$self.$$set = $$props => {
     		if ('summary' in $$props) $$invalidate(0, summary = $$props.summary);
-    		if ('type_id' in $$props) $$invalidate(12, type_id = $$props.type_id);
-    		if ('post_id' in $$props) $$invalidate(13, post_id = $$props.post_id);
+    		if ('type_id' in $$props) $$invalidate(14, type_id = $$props.type_id);
+    		if ('post' in $$props) $$invalidate(1, post = $$props.post);
+    		if ('custom_action' in $$props) $$invalidate(2, custom_action = $$props.custom_action);
     	};
 
     	return [
     		summary,
+    		post,
+    		custom_action,
     		hovering,
     		editing,
     		disapproving,
@@ -1328,7 +1458,6 @@ var summaryengine_review = (function () {
     		disapprove,
     		save,
     		type_id,
-    		post_id,
     		textarea_input_handler,
     		click_handler,
     		click_handler_1,
@@ -1340,7 +1469,13 @@ var summaryengine_review = (function () {
     class Summarise extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$4, create_fragment$4, safe_not_equal, { summary: 0, type_id: 12, post_id: 13 });
+
+    		init(this, options, instance$5, create_fragment$5, safe_not_equal, {
+    			summary: 0,
+    			type_id: 14,
+    			post: 1,
+    			custom_action: 2
+    		});
     	}
     }
 
@@ -1384,7 +1519,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    function create_fragment$3(ctx) {
+    function create_fragment$4(ctx) {
     	let div;
     	let label;
     	let t1;
@@ -1494,7 +1629,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    function instance$3($$self, $$props, $$invalidate) {
+    function instance$4($$self, $$props, $$invalidate) {
     	let $selected_date;
     	component_subscribe($$self, selected_date, $$value => $$invalidate(1, $selected_date = $$value));
     	let months = [];
@@ -1544,13 +1679,13 @@ var summaryengine_review = (function () {
     class Dates extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$3, create_fragment$3, safe_not_equal, {});
+    		init(this, options, instance$4, create_fragment$4, safe_not_equal, {});
     	}
     }
 
     /* src/review/components/Pages.svelte generated by Svelte v3.52.0 */
 
-    function create_fragment$2(ctx) {
+    function create_fragment$3(ctx) {
     	let div;
     	let span0;
     	let t0;
@@ -1776,7 +1911,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    function instance$2($$self, $$props, $$invalidate) {
+    function instance$3($$self, $$props, $$invalidate) {
     	let $page;
     	let $post_count;
     	component_subscribe($$self, page, $$value => $$invalidate(2, $page = $$value));
@@ -1871,13 +2006,13 @@ var summaryengine_review = (function () {
     class Pages extends SvelteComponent {
     	constructor(options) {
     		super();
-    		init(this, options, instance$2, create_fragment$2, safe_not_equal, { per_page: 8 });
+    		init(this, options, instance$3, create_fragment$3, safe_not_equal, { per_page: 8 });
     	}
     }
 
     /* src/review/components/Search.svelte generated by Svelte v3.52.0 */
 
-    function create_fragment$1(ctx) {
+    function create_fragment$2(ctx) {
     	let form;
     	let label;
     	let t1;
@@ -1940,7 +2075,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    function instance$1($$self, $$props, $$invalidate) {
+    function instance$2($$self, $$props, $$invalidate) {
     	let $search;
     	component_subscribe($$self, search, $$value => $$invalidate(0, $search = $$value));
     	const dispatch = createEventDispatcher();
@@ -1957,6 +2092,239 @@ var summaryengine_review = (function () {
     class Search extends SvelteComponent {
     	constructor(options) {
     		super();
+    		init(this, options, instance$2, create_fragment$2, safe_not_equal, {});
+    	}
+    }
+
+    /* src/review/components/Modal.svelte generated by Svelte v3.52.0 */
+    const get_buttons_slot_changes = dirty => ({});
+    const get_buttons_slot_context = ctx => ({});
+    const get_header_slot_changes = dirty => ({});
+    const get_header_slot_context = ctx => ({});
+
+    function create_fragment$1(ctx) {
+    	let div0;
+    	let t0;
+    	let div2;
+    	let t1;
+    	let t2;
+    	let div1;
+    	let t3;
+    	let button;
+    	let current;
+    	let mounted;
+    	let dispose;
+    	const header_slot_template = /*#slots*/ ctx[5].header;
+    	const header_slot = create_slot(header_slot_template, ctx, /*$$scope*/ ctx[4], get_header_slot_context);
+    	const default_slot_template = /*#slots*/ ctx[5].default;
+    	const default_slot = create_slot(default_slot_template, ctx, /*$$scope*/ ctx[4], null);
+    	const buttons_slot_template = /*#slots*/ ctx[5].buttons;
+    	const buttons_slot = create_slot(buttons_slot_template, ctx, /*$$scope*/ ctx[4], get_buttons_slot_context);
+
+    	return {
+    		c() {
+    			div0 = element("div");
+    			t0 = space();
+    			div2 = element("div");
+    			if (header_slot) header_slot.c();
+    			t1 = space();
+    			if (default_slot) default_slot.c();
+    			t2 = space();
+    			div1 = element("div");
+    			if (buttons_slot) buttons_slot.c();
+    			t3 = space();
+    			button = element("button");
+    			button.textContent = "Close";
+    			attr(div0, "class", "modal-background svelte-1yv89n5");
+    			attr(button, "class", "button svelte-1yv89n5");
+    			button.autofocus = true;
+    			attr(div1, "class", "modal-footer svelte-1yv89n5");
+    			attr(div2, "class", "modal svelte-1yv89n5");
+    			attr(div2, "role", "dialog");
+    			attr(div2, "aria-modal", "true");
+    		},
+    		m(target, anchor) {
+    			insert(target, div0, anchor);
+    			/*div0_binding*/ ctx[6](div0);
+    			insert(target, t0, anchor);
+    			insert(target, div2, anchor);
+
+    			if (header_slot) {
+    				header_slot.m(div2, null);
+    			}
+
+    			append(div2, t1);
+
+    			if (default_slot) {
+    				default_slot.m(div2, null);
+    			}
+
+    			append(div2, t2);
+    			append(div2, div1);
+
+    			if (buttons_slot) {
+    				buttons_slot.m(div1, null);
+    			}
+
+    			append(div1, t3);
+    			append(div1, button);
+    			/*div2_binding*/ ctx[7](div2);
+    			current = true;
+    			button.focus();
+
+    			if (!mounted) {
+    				dispose = [
+    					listen(window, "keydown", /*handle_keydown*/ ctx[3]),
+    					listen(div0, "click", /*close*/ ctx[2]),
+    					listen(div0, "keypress", /*handle_keydown*/ ctx[3]),
+    					listen(button, "click", /*close*/ ctx[2])
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, [dirty]) {
+    			if (header_slot) {
+    				if (header_slot.p && (!current || dirty & /*$$scope*/ 16)) {
+    					update_slot_base(
+    						header_slot,
+    						header_slot_template,
+    						ctx,
+    						/*$$scope*/ ctx[4],
+    						!current
+    						? get_all_dirty_from_scope(/*$$scope*/ ctx[4])
+    						: get_slot_changes(header_slot_template, /*$$scope*/ ctx[4], dirty, get_header_slot_changes),
+    						get_header_slot_context
+    					);
+    				}
+    			}
+
+    			if (default_slot) {
+    				if (default_slot.p && (!current || dirty & /*$$scope*/ 16)) {
+    					update_slot_base(
+    						default_slot,
+    						default_slot_template,
+    						ctx,
+    						/*$$scope*/ ctx[4],
+    						!current
+    						? get_all_dirty_from_scope(/*$$scope*/ ctx[4])
+    						: get_slot_changes(default_slot_template, /*$$scope*/ ctx[4], dirty, null),
+    						null
+    					);
+    				}
+    			}
+
+    			if (buttons_slot) {
+    				if (buttons_slot.p && (!current || dirty & /*$$scope*/ 16)) {
+    					update_slot_base(
+    						buttons_slot,
+    						buttons_slot_template,
+    						ctx,
+    						/*$$scope*/ ctx[4],
+    						!current
+    						? get_all_dirty_from_scope(/*$$scope*/ ctx[4])
+    						: get_slot_changes(buttons_slot_template, /*$$scope*/ ctx[4], dirty, get_buttons_slot_changes),
+    						get_buttons_slot_context
+    					);
+    				}
+    			}
+    		},
+    		i(local) {
+    			if (current) return;
+    			transition_in(header_slot, local);
+    			transition_in(default_slot, local);
+    			transition_in(buttons_slot, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(header_slot, local);
+    			transition_out(default_slot, local);
+    			transition_out(buttons_slot, local);
+    			current = false;
+    		},
+    		d(detaching) {
+    			if (detaching) detach(div0);
+    			/*div0_binding*/ ctx[6](null);
+    			if (detaching) detach(t0);
+    			if (detaching) detach(div2);
+    			if (header_slot) header_slot.d(detaching);
+    			if (default_slot) default_slot.d(detaching);
+    			if (buttons_slot) buttons_slot.d(detaching);
+    			/*div2_binding*/ ctx[7](null);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+    }
+
+    function instance$1($$self, $$props, $$invalidate) {
+    	let { $$slots: slots = {}, $$scope } = $$props;
+    	const dispatch = createEventDispatcher();
+    	const close = () => dispatch('close');
+    	let modal;
+    	let modal_background;
+
+    	const handle_keydown = e => {
+    		if (e.key === 'Escape') {
+    			close();
+    			return;
+    		}
+
+    		if (e.key === 'Tab') {
+    			// trap focus
+    			const nodes = modal.querySelectorAll('*');
+
+    			const tabbable = Array.from(nodes).filter(n => n.tabIndex >= 0);
+    			let index = tabbable.indexOf(document.activeElement);
+    			if (index === -1 && e.shiftKey) index = 0;
+    			index += tabbable.length + (e.shiftKey ? -1 : 1);
+    			index %= tabbable.length;
+    			tabbable[index].focus();
+    			e.preventDefault();
+    		}
+    	};
+
+    	const previously_focused = typeof document !== 'undefined' && document.activeElement;
+
+    	if (previously_focused) {
+    		onDestroy(() => {
+    			previously_focused.focus();
+    		});
+    	}
+
+    	function div0_binding($$value) {
+    		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
+    			modal_background = $$value;
+    			$$invalidate(1, modal_background);
+    		});
+    	}
+
+    	function div2_binding($$value) {
+    		binding_callbacks[$$value ? 'unshift' : 'push'](() => {
+    			modal = $$value;
+    			$$invalidate(0, modal);
+    		});
+    	}
+
+    	$$self.$$set = $$props => {
+    		if ('$$scope' in $$props) $$invalidate(4, $$scope = $$props.$$scope);
+    	};
+
+    	return [
+    		modal,
+    		modal_background,
+    		close,
+    		handle_keydown,
+    		$$scope,
+    		slots,
+    		div0_binding,
+    		div2_binding
+    	];
+    }
+
+    class Modal extends SvelteComponent {
+    	constructor(options) {
+    		super();
     		init(this, options, instance$1, create_fragment$1, safe_not_equal, {});
     	}
     }
@@ -1965,26 +2333,99 @@ var summaryengine_review = (function () {
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[12] = list[i];
+    	child_ctx[18] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_1(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[15] = list[i];
+    	child_ctx[21] = list[i];
     	return child_ctx;
     }
 
     function get_each_context_2(ctx, list, i) {
     	const child_ctx = ctx.slice();
-    	child_ctx[15] = list[i];
+    	child_ctx[21] = list[i];
     	return child_ctx;
     }
 
-    // (107:16) {#each $types as type}
+    // (93:0) {#if show_modal}
+    function create_if_block_2(ctx) {
+    	let modal;
+    	let current;
+
+    	modal = new Modal({
+    			props: {
+    				$$slots: { default: [create_default_slot] },
+    				$$scope: { ctx }
+    			}
+    		});
+
+    	modal.$on("close", /*close_handler*/ ctx[10]);
+
+    	return {
+    		c() {
+    			create_component(modal.$$.fragment);
+    		},
+    		m(target, anchor) {
+    			mount_component(modal, target, anchor);
+    			current = true;
+    		},
+    		p(ctx, dirty) {
+    			const modal_changes = {};
+
+    			if (dirty & /*$$scope, modal_url*/ 67108868) {
+    				modal_changes.$$scope = { dirty, ctx };
+    			}
+
+    			modal.$set(modal_changes);
+    		},
+    		i(local) {
+    			if (current) return;
+    			transition_in(modal.$$.fragment, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(modal.$$.fragment, local);
+    			current = false;
+    		},
+    		d(detaching) {
+    			destroy_component(modal, detaching);
+    		}
+    	};
+    }
+
+    // (94:4) <Modal on:close={() => show_modal = false}>
+    function create_default_slot(ctx) {
+    	let iframe;
+    	let iframe_src_value;
+
+    	return {
+    		c() {
+    			iframe = element("iframe");
+    			attr(iframe, "title", "Preview");
+    			if (!src_url_equal(iframe.src, iframe_src_value = /*modal_url*/ ctx[2])) attr(iframe, "src", iframe_src_value);
+    			set_style(iframe, "width", "100%");
+    			set_style(iframe, "height", "80vh");
+    		},
+    		m(target, anchor) {
+    			insert(target, iframe, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty & /*modal_url*/ 4 && !src_url_equal(iframe.src, iframe_src_value = /*modal_url*/ ctx[2])) {
+    				attr(iframe, "src", iframe_src_value);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(iframe);
+    		}
+    	};
+    }
+
+    // (118:16) {#each $types as type}
     function create_each_block_2(ctx) {
     	let th;
-    	let t_value = /*type*/ ctx[15].name + "";
+    	let t_value = /*type*/ ctx[21].name + "";
     	let t;
 
     	return {
@@ -1997,7 +2438,7 @@ var summaryengine_review = (function () {
     			append(th, t);
     		},
     		p(ctx, dirty) {
-    			if (dirty & /*$types*/ 4 && t_value !== (t_value = /*type*/ ctx[15].name + "")) set_data(t, t_value);
+    			if (dirty & /*$types*/ 16 && t_value !== (t_value = /*type*/ ctx[21].name + "")) set_data(t, t_value);
     		},
     		d(detaching) {
     			if (detaching) detach(th);
@@ -2005,82 +2446,38 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (122:28) {#if (type.custom_action)}
-    function create_if_block_2(ctx) {
-    	let html_tag;
-    	let raw_value = /*type*/ ctx[15].custom_action.replace("[post_url]", /*post*/ ctx[12].permalink).replace("[summary_encoded]", encodeURIComponent(/*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "")).replace("[summary]", /*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "") + "";
-    	let html_anchor;
-
-    	return {
-    		c() {
-    			html_tag = new HtmlTag(false);
-    			html_anchor = empty();
-    			html_tag.a = html_anchor;
-    		},
-    		m(target, anchor) {
-    			html_tag.m(raw_value, target, anchor);
-    			insert(target, html_anchor, anchor);
-    		},
-    		p(ctx, dirty) {
-    			if (dirty & /*$types, $posts*/ 6 && raw_value !== (raw_value = /*type*/ ctx[15].custom_action.replace("[post_url]", /*post*/ ctx[12].permalink).replace("[summary_encoded]", encodeURIComponent(/*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "")).replace("[summary]", /*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]?.summary || "") + "")) html_tag.p(raw_value);
-    		},
-    		d(detaching) {
-    			if (detaching) detach(html_anchor);
-    			if (detaching) html_tag.d();
-    		}
-    	};
-    }
-
-    // (119:20) {#each $types as type}
+    // (135:20) {#each $types as type}
     function create_each_block_1(ctx) {
     	let td;
     	let summarise;
-    	let t;
     	let current;
 
     	summarise = new Summarise({
     			props: {
-    				type_id: /*type*/ ctx[15].ID,
-    				post_id: /*post*/ ctx[12].id,
-    				summary: /*post*/ ctx[12].summaries[/*type*/ ctx[15].slug]
+    				type_id: /*type*/ ctx[21].ID,
+    				post: /*post*/ ctx[18],
+    				summary: /*post*/ ctx[18].summaries[/*type*/ ctx[21].slug],
+    				custom_action: /*type*/ ctx[21].custom_action
     			}
     		});
-
-    	let if_block = /*type*/ ctx[15].custom_action && create_if_block_2(ctx);
 
     	return {
     		c() {
     			td = element("td");
     			create_component(summarise.$$.fragment);
-    			t = space();
-    			if (if_block) if_block.c();
     		},
     		m(target, anchor) {
     			insert(target, td, anchor);
     			mount_component(summarise, td, null);
-    			append(td, t);
-    			if (if_block) if_block.m(td, null);
     			current = true;
     		},
     		p(ctx, dirty) {
     			const summarise_changes = {};
-    			if (dirty & /*$types*/ 4) summarise_changes.type_id = /*type*/ ctx[15].ID;
-    			if (dirty & /*$posts*/ 2) summarise_changes.post_id = /*post*/ ctx[12].id;
-    			if (dirty & /*$posts, $types*/ 6) summarise_changes.summary = /*post*/ ctx[12].summaries[/*type*/ ctx[15].slug];
+    			if (dirty & /*$types*/ 16) summarise_changes.type_id = /*type*/ ctx[21].ID;
+    			if (dirty & /*$posts*/ 8) summarise_changes.post = /*post*/ ctx[18];
+    			if (dirty & /*$posts, $types*/ 24) summarise_changes.summary = /*post*/ ctx[18].summaries[/*type*/ ctx[21].slug];
+    			if (dirty & /*$types*/ 16) summarise_changes.custom_action = /*type*/ ctx[21].custom_action;
     			summarise.$set(summarise_changes);
-
-    			if (/*type*/ ctx[15].custom_action) {
-    				if (if_block) {
-    					if_block.p(ctx, dirty);
-    				} else {
-    					if_block = create_if_block_2(ctx);
-    					if_block.c();
-    					if_block.m(td, null);
-    				}
-    			} else if (if_block) {
-    				if_block.d(1);
-    				if_block = null;
-    			}
     		},
     		i(local) {
     			if (current) return;
@@ -2094,12 +2491,11 @@ var summaryengine_review = (function () {
     		d(detaching) {
     			if (detaching) detach(td);
     			destroy_component(summarise);
-    			if (if_block) if_block.d();
     		}
     	};
     }
 
-    // (128:24) {#if !checkSummariesSet(post)}
+    // (141:24) {#if !checkSummariesSet(post)}
     function create_if_block(ctx) {
     	let if_block_anchor;
 
@@ -2140,14 +2536,14 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (131:28) {:else}
+    // (144:28) {:else}
     function create_else_block(ctx) {
     	let button;
     	let mounted;
     	let dispose;
 
-    	function click_handler() {
-    		return /*click_handler*/ ctx[7](/*post*/ ctx[12]);
+    	function click_handler_1() {
+    		return /*click_handler_1*/ ctx[13](/*post*/ ctx[18]);
     	}
 
     	return {
@@ -2160,7 +2556,7 @@ var summaryengine_review = (function () {
     			insert(target, button, anchor);
 
     			if (!mounted) {
-    				dispose = listen(button, "click", click_handler);
+    				dispose = listen(button, "click", click_handler_1);
     				mounted = true;
     			}
     		},
@@ -2175,7 +2571,7 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (129:28) {#if (summarising_all)}
+    // (142:28) {#if (summarising_all)}
     function create_if_block_1(ctx) {
     	let button;
 
@@ -2196,29 +2592,42 @@ var summaryengine_review = (function () {
     	};
     }
 
-    // (114:12) {#each $posts as post}
+    // (125:12) {#each $posts as post}
     function create_each_block(ctx) {
     	let tr;
     	let td0;
-    	let a;
-    	let t0_value = (/*post*/ ctx[12].post_title || "Untitled") + "";
-    	let t0;
-    	let a_href_value;
+    	let span1;
     	let t1;
-    	let td1;
-    	let t2_value = /*post*/ ctx[12].post_date + "";
+    	let a;
+    	let t2_value = (/*post*/ ctx[18].post_title || "Untitled") + "";
     	let t2;
+    	let a_href_value;
     	let t3;
-    	let td2;
-    	let t4_value = /*post*/ ctx[12].post_author + "";
+    	let td1;
+    	let t4_value = /*post*/ ctx[18].post_date + "";
     	let t4;
     	let t5;
+    	let td2;
+    	let t6_value = /*post*/ ctx[18].post_author + "";
     	let t6;
-    	let td3;
-    	let show_if = !checkSummariesSet(/*post*/ ctx[12]);
     	let t7;
+    	let t8;
+    	let td3;
+    	let show_if = !checkSummariesSet(/*post*/ ctx[18]);
+    	let t9;
     	let current;
-    	let each_value_1 = /*$types*/ ctx[2];
+    	let mounted;
+    	let dispose;
+
+    	function click_handler() {
+    		return /*click_handler*/ ctx[11](/*post*/ ctx[18]);
+    	}
+
+    	function keydown_handler() {
+    		return /*keydown_handler*/ ctx[12](/*post*/ ctx[18]);
+    	}
+
+    	let each_value_1 = /*$types*/ ctx[4];
     	let each_blocks = [];
 
     	for (let i = 0; i < each_value_1.length; i += 1) {
@@ -2235,61 +2644,78 @@ var summaryengine_review = (function () {
     		c() {
     			tr = element("tr");
     			td0 = element("td");
-    			a = element("a");
-    			t0 = text(t0_value);
+    			span1 = element("span");
+    			span1.innerHTML = `<span class="screen-reader-text">View Post</span>`;
     			t1 = space();
-    			td1 = element("td");
+    			a = element("a");
     			t2 = text(t2_value);
     			t3 = space();
-    			td2 = element("td");
+    			td1 = element("td");
     			t4 = text(t4_value);
     			t5 = space();
+    			td2 = element("td");
+    			t6 = text(t6_value);
+    			t7 = space();
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
     				each_blocks[i].c();
     			}
 
-    			t6 = space();
+    			t8 = space();
     			td3 = element("td");
     			if (if_block) if_block.c();
-    			t7 = space();
-    			attr(a, "href", a_href_value = "/wp-admin/post.php?post=" + /*post*/ ctx[12].id + "&action=edit");
+    			t9 = space();
+    			attr(span1, "class", "dashicons dashicons-welcome-view-site");
+    			set_style(span1, "cursor", "pointer");
+    			attr(a, "href", a_href_value = "/wp-admin/post.php?post=" + /*post*/ ctx[18].id + "&action=edit");
     		},
     		m(target, anchor) {
     			insert(target, tr, anchor);
     			append(tr, td0);
+    			append(td0, span1);
+    			append(td0, t1);
     			append(td0, a);
-    			append(a, t0);
-    			append(tr, t1);
-    			append(tr, td1);
-    			append(td1, t2);
+    			append(a, t2);
     			append(tr, t3);
-    			append(tr, td2);
-    			append(td2, t4);
+    			append(tr, td1);
+    			append(td1, t4);
     			append(tr, t5);
+    			append(tr, td2);
+    			append(td2, t6);
+    			append(tr, t7);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
     				each_blocks[i].m(tr, null);
     			}
 
-    			append(tr, t6);
+    			append(tr, t8);
     			append(tr, td3);
     			if (if_block) if_block.m(td3, null);
-    			append(tr, t7);
+    			append(tr, t9);
     			current = true;
-    		},
-    		p(ctx, dirty) {
-    			if ((!current || dirty & /*$posts*/ 2) && t0_value !== (t0_value = (/*post*/ ctx[12].post_title || "Untitled") + "")) set_data(t0, t0_value);
 
-    			if (!current || dirty & /*$posts*/ 2 && a_href_value !== (a_href_value = "/wp-admin/post.php?post=" + /*post*/ ctx[12].id + "&action=edit")) {
+    			if (!mounted) {
+    				dispose = [
+    					listen(span1, "click", click_handler),
+    					listen(span1, "keydown", keydown_handler)
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p(new_ctx, dirty) {
+    			ctx = new_ctx;
+    			if ((!current || dirty & /*$posts*/ 8) && t2_value !== (t2_value = (/*post*/ ctx[18].post_title || "Untitled") + "")) set_data(t2, t2_value);
+
+    			if (!current || dirty & /*$posts*/ 8 && a_href_value !== (a_href_value = "/wp-admin/post.php?post=" + /*post*/ ctx[18].id + "&action=edit")) {
     				attr(a, "href", a_href_value);
     			}
 
-    			if ((!current || dirty & /*$posts*/ 2) && t2_value !== (t2_value = /*post*/ ctx[12].post_date + "")) set_data(t2, t2_value);
-    			if ((!current || dirty & /*$posts*/ 2) && t4_value !== (t4_value = /*post*/ ctx[12].post_author + "")) set_data(t4, t4_value);
+    			if ((!current || dirty & /*$posts*/ 8) && t4_value !== (t4_value = /*post*/ ctx[18].post_date + "")) set_data(t4, t4_value);
+    			if ((!current || dirty & /*$posts*/ 8) && t6_value !== (t6_value = /*post*/ ctx[18].post_author + "")) set_data(t6, t6_value);
 
-    			if (dirty & /*$types, $posts, encodeURIComponent*/ 6) {
-    				each_value_1 = /*$types*/ ctx[2];
+    			if (dirty & /*$types, $posts*/ 24) {
+    				each_value_1 = /*$types*/ ctx[4];
     				let i;
 
     				for (i = 0; i < each_value_1.length; i += 1) {
@@ -2302,7 +2728,7 @@ var summaryengine_review = (function () {
     						each_blocks[i] = create_each_block_1(child_ctx);
     						each_blocks[i].c();
     						transition_in(each_blocks[i], 1);
-    						each_blocks[i].m(tr, t6);
+    						each_blocks[i].m(tr, t8);
     					}
     				}
 
@@ -2315,7 +2741,7 @@ var summaryengine_review = (function () {
     				check_outros();
     			}
 
-    			if (dirty & /*$posts*/ 2) show_if = !checkSummariesSet(/*post*/ ctx[12]);
+    			if (dirty & /*$posts*/ 8) show_if = !checkSummariesSet(/*post*/ ctx[18]);
 
     			if (show_if) {
     				if (if_block) {
@@ -2352,52 +2778,56 @@ var summaryengine_review = (function () {
     			if (detaching) detach(tr);
     			destroy_each(each_blocks, detaching);
     			if (if_block) if_block.d();
+    			mounted = false;
+    			run_all(dispose);
     		}
     	};
     }
 
     function create_fragment(ctx) {
+    	let t0;
     	let div5;
     	let div4;
     	let div0;
     	let dates;
-    	let t0;
+    	let t1;
     	let div3;
     	let div1;
     	let search_1;
-    	let t1;
+    	let t2;
     	let div2;
     	let pages;
-    	let t2;
+    	let t3;
     	let table;
     	let thead;
     	let tr;
     	let th0;
-    	let t4;
+    	let t5;
     	let th1;
-    	let t6;
+    	let t7;
     	let th2;
-    	let t8;
     	let t9;
-    	let th3;
     	let t10;
+    	let th3;
+    	let t11;
     	let tbody;
     	let current;
+    	let if_block = /*show_modal*/ ctx[1] && create_if_block_2(ctx);
     	dates = new Dates({});
-    	dates.$on("click", /*reset*/ ctx[6]);
+    	dates.$on("click", /*reset*/ ctx[8]);
     	search_1 = new Search({});
-    	search_1.$on("search", /*reset*/ ctx[6]);
+    	search_1.$on("search", /*reset*/ ctx[8]);
     	pages = new Pages({ props: { per_page } });
-    	pages.$on("click", /*getPosts*/ ctx[4]);
-    	pages.$on("change", /*getPosts*/ ctx[4]);
-    	let each_value_2 = /*$types*/ ctx[2];
+    	pages.$on("click", /*getPosts*/ ctx[6]);
+    	pages.$on("change", /*getPosts*/ ctx[6]);
+    	let each_value_2 = /*$types*/ ctx[4];
     	let each_blocks_1 = [];
 
     	for (let i = 0; i < each_value_2.length; i += 1) {
     		each_blocks_1[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
     	}
 
-    	let each_value = /*$posts*/ ctx[1];
+    	let each_value = /*$posts*/ ctx[3];
     	let each_blocks = [];
 
     	for (let i = 0; i < each_value.length; i += 1) {
@@ -2410,38 +2840,40 @@ var summaryengine_review = (function () {
 
     	return {
     		c() {
+    			if (if_block) if_block.c();
+    			t0 = space();
     			div5 = element("div");
     			div4 = element("div");
     			div0 = element("div");
     			create_component(dates.$$.fragment);
-    			t0 = space();
+    			t1 = space();
     			div3 = element("div");
     			div1 = element("div");
     			create_component(search_1.$$.fragment);
-    			t1 = space();
+    			t2 = space();
     			div2 = element("div");
     			create_component(pages.$$.fragment);
-    			t2 = space();
+    			t3 = space();
     			table = element("table");
     			thead = element("thead");
     			tr = element("tr");
     			th0 = element("th");
     			th0.textContent = "Title";
-    			t4 = space();
+    			t5 = space();
     			th1 = element("th");
     			th1.textContent = "Date";
-    			t6 = space();
+    			t7 = space();
     			th2 = element("th");
     			th2.textContent = "Author";
-    			t8 = space();
+    			t9 = space();
 
     			for (let i = 0; i < each_blocks_1.length; i += 1) {
     				each_blocks_1[i].c();
     			}
 
-    			t9 = space();
-    			th3 = element("th");
     			t10 = space();
+    			th3 = element("th");
+    			t11 = space();
     			tbody = element("tbody");
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
@@ -2461,39 +2893,41 @@ var summaryengine_review = (function () {
     			attr(th1, "class", "summaryengine-col-10px svelte-90dff3");
     			attr(th2, "class", "summaryengine-col-10px svelte-90dff3");
     			attr(table, "class", "wp-list-table widefat fixed striped table-view-list svelte-90dff3");
-    			toggle_class(table, "loading", /*$loading*/ ctx[3]);
+    			toggle_class(table, "loading", /*$loading*/ ctx[5]);
     			attr(div5, "id", "summaryEngineMetaBlock");
     		},
     		m(target, anchor) {
+    			if (if_block) if_block.m(target, anchor);
+    			insert(target, t0, anchor);
     			insert(target, div5, anchor);
     			append(div5, div4);
     			append(div4, div0);
     			mount_component(dates, div0, null);
-    			append(div4, t0);
+    			append(div4, t1);
     			append(div4, div3);
     			append(div3, div1);
     			mount_component(search_1, div1, null);
-    			append(div3, t1);
+    			append(div3, t2);
     			append(div3, div2);
     			mount_component(pages, div2, null);
-    			append(div5, t2);
+    			append(div5, t3);
     			append(div5, table);
     			append(table, thead);
     			append(thead, tr);
     			append(tr, th0);
-    			append(tr, t4);
+    			append(tr, t5);
     			append(tr, th1);
-    			append(tr, t6);
+    			append(tr, t7);
     			append(tr, th2);
-    			append(tr, t8);
+    			append(tr, t9);
 
     			for (let i = 0; i < each_blocks_1.length; i += 1) {
     				each_blocks_1[i].m(tr, null);
     			}
 
-    			append(tr, t9);
+    			append(tr, t10);
     			append(tr, th3);
-    			append(table, t10);
+    			append(table, t11);
     			append(table, tbody);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
@@ -2503,8 +2937,31 @@ var summaryengine_review = (function () {
     			current = true;
     		},
     		p(ctx, [dirty]) {
-    			if (dirty & /*$types*/ 4) {
-    				each_value_2 = /*$types*/ ctx[2];
+    			if (/*show_modal*/ ctx[1]) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+
+    					if (dirty & /*show_modal*/ 2) {
+    						transition_in(if_block, 1);
+    					}
+    				} else {
+    					if_block = create_if_block_2(ctx);
+    					if_block.c();
+    					transition_in(if_block, 1);
+    					if_block.m(t0.parentNode, t0);
+    				}
+    			} else if (if_block) {
+    				group_outros();
+
+    				transition_out(if_block, 1, 1, () => {
+    					if_block = null;
+    				});
+
+    				check_outros();
+    			}
+
+    			if (dirty & /*$types*/ 16) {
+    				each_value_2 = /*$types*/ ctx[4];
     				let i;
 
     				for (i = 0; i < each_value_2.length; i += 1) {
@@ -2515,7 +2972,7 @@ var summaryengine_review = (function () {
     					} else {
     						each_blocks_1[i] = create_each_block_2(child_ctx);
     						each_blocks_1[i].c();
-    						each_blocks_1[i].m(tr, t9);
+    						each_blocks_1[i].m(tr, t10);
     					}
     				}
 
@@ -2526,8 +2983,8 @@ var summaryengine_review = (function () {
     				each_blocks_1.length = each_value_2.length;
     			}
 
-    			if (dirty & /*summarising_all, generateAllSummaries, $posts, checkSummariesSet, $types, encodeURIComponent*/ 39) {
-    				each_value = /*$posts*/ ctx[1];
+    			if (dirty & /*summarising_all, generateAllSummaries, $posts, checkSummariesSet, $types, showIframe*/ 665) {
+    				each_value = /*$posts*/ ctx[3];
     				let i;
 
     				for (i = 0; i < each_value.length; i += 1) {
@@ -2553,12 +3010,13 @@ var summaryengine_review = (function () {
     				check_outros();
     			}
 
-    			if (!current || dirty & /*$loading*/ 8) {
-    				toggle_class(table, "loading", /*$loading*/ ctx[3]);
+    			if (!current || dirty & /*$loading*/ 32) {
+    				toggle_class(table, "loading", /*$loading*/ ctx[5]);
     			}
     		},
     		i(local) {
     			if (current) return;
+    			transition_in(if_block);
     			transition_in(dates.$$.fragment, local);
     			transition_in(search_1.$$.fragment, local);
     			transition_in(pages.$$.fragment, local);
@@ -2570,6 +3028,7 @@ var summaryengine_review = (function () {
     			current = true;
     		},
     		o(local) {
+    			transition_out(if_block);
     			transition_out(dates.$$.fragment, local);
     			transition_out(search_1.$$.fragment, local);
     			transition_out(pages.$$.fragment, local);
@@ -2582,6 +3041,8 @@ var summaryengine_review = (function () {
     			current = false;
     		},
     		d(detaching) {
+    			if (if_block) if_block.d(detaching);
+    			if (detaching) detach(t0);
     			if (detaching) detach(div5);
     			destroy_component(dates);
     			destroy_component(search_1);
@@ -2614,13 +3075,15 @@ var summaryengine_review = (function () {
     	let $loading;
     	let $search;
     	let $selected_date;
-    	component_subscribe($$self, page, $$value => $$invalidate(8, $page = $$value));
-    	component_subscribe($$self, posts, $$value => $$invalidate(1, $posts = $$value));
-    	component_subscribe($$self, types, $$value => $$invalidate(2, $types = $$value));
-    	component_subscribe($$self, loading, $$value => $$invalidate(3, $loading = $$value));
-    	component_subscribe($$self, search, $$value => $$invalidate(9, $search = $$value));
-    	component_subscribe($$self, selected_date, $$value => $$invalidate(10, $selected_date = $$value));
+    	component_subscribe($$self, page, $$value => $$invalidate(14, $page = $$value));
+    	component_subscribe($$self, posts, $$value => $$invalidate(3, $posts = $$value));
+    	component_subscribe($$self, types, $$value => $$invalidate(4, $types = $$value));
+    	component_subscribe($$self, loading, $$value => $$invalidate(5, $loading = $$value));
+    	component_subscribe($$self, search, $$value => $$invalidate(15, $search = $$value));
+    	component_subscribe($$self, selected_date, $$value => $$invalidate(16, $selected_date = $$value));
     	let summarising_all = false;
+    	let show_modal = false;
+    	let modal_url = "";
 
     	async function getPosts() {
     		try {
@@ -2688,17 +3151,31 @@ var summaryengine_review = (function () {
     		await getPosts();
     	}
 
-    	const click_handler = post => generateAllSummaries(post);
+    	function showIframe(url) {
+    		$$invalidate(2, modal_url = url);
+    		$$invalidate(1, show_modal = true);
+    	}
+
+    	const close_handler = () => $$invalidate(1, show_modal = false);
+    	const click_handler = post => showIframe(post.permalink);
+    	const keydown_handler = post => showIframe(post.permalink);
+    	const click_handler_1 = post => generateAllSummaries(post);
 
     	return [
     		summarising_all,
+    		show_modal,
+    		modal_url,
     		$posts,
     		$types,
     		$loading,
     		getPosts,
     		generateAllSummaries,
     		reset,
-    		click_handler
+    		showIframe,
+    		close_handler,
+    		click_handler,
+    		keydown_handler,
+    		click_handler_1
     	];
     }
 
