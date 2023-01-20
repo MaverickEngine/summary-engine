@@ -19,7 +19,7 @@
     </td>
 </tr>
 <tr>
-    <th scope="row">OpenAPI Model</th>
+    <th scope="row">OpenAI Model</th>
     <td>
         <select name="openai_model" bind:value="{settings.openai_model}">
             <option value="text-davinci-003">Text-Davinci-003</option>
