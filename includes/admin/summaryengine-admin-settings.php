@@ -1,11 +1,10 @@
 <?php
-require_once(plugin_dir_path( __FILE__ ) . '../libs/openapi.php');
+require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-openai.php');
 class SummaryEngineAdminSettings {
     private $options = [
         "summaryengine_post_types",
         "summaryengine_openai_apikey",
         "summaryengine_openai_model",
-        "summaryengine_openai_word_limit",
         "summaryengine_cut_at_paragraph",
         "summaryengine_openai_frequency_penalty",
         "summaryengine_openai_max_tokens",
@@ -23,7 +22,6 @@ class SummaryEngineAdminSettings {
         "summaryengine_post_types" => ["post"],
         "summaryengine_openai_apikey" => "",
         "summaryengine_openai_model" => "text-davinci-002",
-        "summaryengine_openai_word_limit" => 750,
         "summaryengine_cut_at_paragraph" => true,
         "summaryengine_openai_frequency_penalty" => 0.5,
         "summaryengine_openai_max_tokens" => 300,
@@ -69,8 +67,8 @@ class SummaryEngineAdminSettings {
             } else {
                 $apikey = get_option('summaryengine_openai_apikey');
             }
-            $openapi = new OpenAPI($apikey);
-            $models = $openapi->list_models();
+            $openai = new SummaryEngineOpenAI($apikey);
+            $models = $openai->list_models();
             if (is_wp_error($models)) {
                 $error = "Could not connect to OpenAI API. Please check your API key.";
                 $models = [];

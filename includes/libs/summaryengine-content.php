@@ -2,6 +2,12 @@
 
 class SummaryEngineContent {
     public static function cut_at_paragraph($content, $wordcount) {
+        if (empty($wordcount)) {
+            $wordcount = 500;
+        }
+        if (empty($content)) {
+            return "";
+        }
         $paragraphs = explode("\n", $content);
         $summary = "";
         $wordcount_remaining = $wordcount;
@@ -18,6 +24,12 @@ class SummaryEngineContent {
     }
 
     public static function cut_at_wordcount($content, $wordcount) {
+        if (empty($wordcount)) {
+            $wordcount = 500;
+        }
+        if (empty($content)) {
+            return "";
+        }
         $words = explode(" ", $content);
         $summary = "";
         $wordcount_remaining = $wordcount;

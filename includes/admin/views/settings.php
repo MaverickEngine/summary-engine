@@ -53,18 +53,6 @@
                 }
                 ?>
                 <tr>
-                    <th scope="row"><?php _e("OpenAI submission word limit", "summaryengine") ?></th>
-                    <td>
-                        <input type="number" name="summaryengine_openai_word_limit" value="<?php echo esc_attr(get_option('summaryengine_openai_word_limit')); ?>" class="regular-text">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row"><?php _e("Cut at paragraph nearest end", "summaryengine") ?></th>
-                    <td>
-                        <input type="checkbox" name="summaryengine_cut_at_paragraph" value="1" <?php checked(1, get_option('summaryengine_cut_at_paragraph')); ?>>
-                    </td>
-                </tr>
-                <tr>
                     <th scope="row"><?php _e("Maximum number of submissions per post", "summaryengine") ?></th>
                     <td>
                         <input type="number" name="summaryengine_max_number_of_submissions_per_post" value="<?php echo esc_attr(get_option('summaryengine_max_number_of_submissions_per_post')); ?>" class="regular-text" min="-1">

@@ -1,6 +1,6 @@
 <?php
 
-require_once(plugin_dir_path( __FILE__ ) . '../libs/openapi.php');
+require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-openai.php');
 require_once(plugin_dir_path( __FILE__ ) . '../db/summaryengine-db.php');
 require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-content.php');
 
@@ -145,9 +145,9 @@ class SummaryEngineAPI {
     }
 
     public function get_models() {
-        $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
-        $openapi = new OpenAPI($apikey);
-        $models = $openapi->list_models();
+        $openai_apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
+        $openai = new SummaryEngineOpenAI($openai_apikey);
+        $models = $openai->list_models();
         return $models;
     }
 
@@ -215,12 +215,17 @@ class SummaryEngineAPI {
                 'openai_top_p' => $type->openai_top_p,
                 'openai_frequency_penalty' => $type->openai_frequency_penalty,
                 'openai_presence_penalty' => $type->openai_presence_penalty,
+                'word_limit' => $type->word_limit,
+                'cut_at_paragraph' => $type->cut_at_paragraph,
             ];
             $user_settings = json_decode($request->get_param('settings'), true);
             if (empty($user_settings)) {
                 $user_settings = [];
             }
             $settings = array_merge($type_settings, $user_settings);
+            if (empty($settings['word_limit'])) {
+                $settings['word_limit'] = 500;
+            }
             // Make sure we still have submissions left
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
@@ -233,50 +238,30 @@ class SummaryEngineAPI {
                     return new WP_Error( 'too_many_submissions', "You have already submitted this post for automated summary a maxiumum number of $max_number_of_submissions_per_post times.", array( 'status' => 400 ) );
                 }
             }
-            $cut_at_paragraph = get_option( "summaryengine_cut_at_paragraph", false );
-            $wordcount = get_option( "summaryengine_openai_word_limit", 750 );
-            if ($cut_at_paragraph) {
-                $content = SummaryEngineContent::cut_at_paragraph($content, $wordcount);
+            if ($settings["cut_at_paragraph"]) {
+                $content = SummaryEngineContent::cut_at_paragraph($content, $settings["word_limit"]);
             } else {
-                $content = SummaryEngineContent::cut_at_wordcount($content, $wordcount);
+                $content = SummaryEngineContent::cut_at_wordcount($content, $settings["word_limit"]);
             }
             if (empty($content)) {
                 return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
             }
-            $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
-            $openapi = new OpenAPI($apikey);
-            $original_prompt =  $settings["openai_prompt"] ?? get_option('summaryengine_openai_prompt');
-            $original_append_prompt = $settings["openai_append_prompt"] ?? get_option('summaryengine_openai_append_prompt');
+            $openai_apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
+            $openai = new SummaryEngineOpenAI($openai_apikey);
+            $prepend_prompt =  $settings["openai_prompt"];
+            $append_prompt = $settings["openai_append_prompt"];
             $params = array(
-                'model' => get_option( 'summaryengine_openai_model'),
-                'frequency_penalty' => floatval(get_option( 'summaryengine_openai_frequency_penalty')),
-                'max_tokens' => floatval(get_option( 'summaryengine_openai_max_tokens')),
-                'presence_penalty' => floatval(get_option( 'summaryengine_openai_presence_penalty')),
-                'temperature' => floatval(get_option( 'summaryengine_openai_temperature')),
-                'top_p' => floatval(get_option( 'summaryengine_openai_top_p')),
-                'prompt' => $original_prompt . "\n\n" . $content . "\n\n" . $original_append_prompt,
+                'model' => $settings["openai_model"],
+                'frequency_penalty' => floatval($settings["openai_frequency_penalty"]),
+                'max_tokens' => intval($settings["openai_max_tokens"]),
+                'presence_penalty' => floatval($settings["openai_presence_penalty"]),
+                'temperature' => floatval($settings["openai_temperature"]),
+                'top_p' => floatval($settings["openai_top_p"]),
+                'prompt' => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt,
             );
-            if (isset($settings["openai_model"])) {
-                $params['model'] = $settings["openai_model"];
-            }
-            if (isset($settings["openai_frequency_penalty"])) {
-                $params['frequency_penalty'] = floatval($settings["openai_frequency_penalty"]);
-            }
-            if (isset($settings["openai_max_tokens"])) {
-                $params['max_tokens'] = intval($settings["openai_max_tokens"]);
-            }
-            if (isset($settings["openai_presence_penalty"])) {
-                $params['presence_penalty'] = floatval($settings["openai_presence_penalty"]);
-            }
-            if (isset($settings["openai_temperature"])) {
-                $params['temperature'] = floatval($settings["openai_temperature"]);
-            }
-            if (isset($settings["openai_top_p"])) {
-                $params['top_p'] = floatval($settings["openai_top_p"]);
-            }
-            $summary = $openapi->summarise($params);
+            $summary = $openai->summarise($params);
             if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
-            $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary);
+            $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $settings, $summary);
             // Set meta data for post
             update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
             update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
@@ -448,7 +433,7 @@ class SummaryEngineAPI {
         $name = $request->get_param('name');
         $slug = $request->get_param('slug');
         $openai_model = $request->get_param('openai_model');
-        $openai_word_limit = $request->get_param('openai_word_limit');
+        $word_limit = $request->get_param('word_limit');
         $cut_at_paragraph = $request->get_param('cut_at_paragraph');
         $openai_frequency_penalty = $request->get_param('openai_frequency_penalty');
         $openai_max_tokens = $request->get_param('openai_max_tokens');
@@ -462,7 +447,7 @@ class SummaryEngineAPI {
             'name' => $name,
             'slug' => $slug,
             'openai_model' => $openai_model,
-            'openai_word_limit' => $openai_word_limit,
+            'word_limit' => $word_limit,
             'cut_at_paragraph' => $cut_at_paragraph,
             'openai_frequency_penalty' => $openai_frequency_penalty,
             'openai_max_tokens' => $openai_max_tokens,

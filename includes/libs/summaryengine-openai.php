@@ -1,6 +1,6 @@
 <?php
 
-class OpenAPI {
+class SummaryEngineOpenAI {
     public function __construct($apikey) {
         $this->apikey = $apikey;
     }

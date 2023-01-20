@@ -4,7 +4,7 @@ export interface IType {
     name: string;
     slug: string;
     openai_model: string;
-    openai_word_limit: number;
+    word_limit: number;
     cut_at_paragraph: Boolean;
     openai_frequency_penalty: number;
     openai_max_tokens: number;
@@ -13,4 +13,5 @@ export interface IType {
     openai_top_p: number;
     openai_prompt: string;
     openai_append_prompt: string;
+    custom_action: string;
 }

@@ -41,22 +41,32 @@ class SummaryEngineAsync {
         if (!empty($summary)) {
             return;
         }
+        $type_settings = [
+            'openai_model' => $type->openai_model,
+            'openai_prompt' => $type->openai_prompt,
+            'openai_append_prompt' => $type->openai_append_prompt,
+            'openai_max_tokens' => $type->openai_max_tokens,
+            'openai_temperature' => $type->openai_temperature,
+            'openai_top_p' => $type->openai_top_p,
+            'openai_frequency_penalty' => $type->openai_frequency_penalty,
+            'openai_presence_penalty' => $type->openai_presence_penalty,
+            'word_limit' => $type->word_limit,
+            'cut_at_paragraph' => $type->cut_at_paragraph,
+        ];
         $post = get_post($post_id);
         $content = $post->post_content;
-        $cut_at_paragraph = get_option( "summaryengine_cut_at_paragraph", false );
-        $wordcount = get_option( "summaryengine_openai_word_limit", 750 );
-        if ($cut_at_paragraph) {
-            $content = SummaryEngineContent::cut_at_paragraph($content, $wordcount);
+        if ($type->cut_at_paragraph) {
+            $content = SummaryEngineContent::cut_at_paragraph($content, $type->word_limit);
         } else {
-            $content = SummaryEngineContent::cut_at_wordcount($content, $wordcount);
+            $content = SummaryEngineContent::cut_at_wordcount($content, $type->word_limit);
         }
         if (empty($content)) {
             return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
         }
         $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
-        $openapi = new OpenAPI($apikey);
-        $original_prompt =  $settings["openai_prompt"] ?? get_option('summaryengine_openai_prompt');
-        $original_append_prompt = $settings["openai_append_prompt"] ?? get_option('summaryengine_openai_append_prompt');
+        $openapi = new SummaryEngineOpenAI($apikey);
+        $original_prompt =  $type->openai_prompt;
+        $original_append_prompt = $type->openai_append_prompt;
         $params = array(
             'model' => $type->openai_model,
             'frequency_penalty' => floatval($type->openai_frequency_penalty),
@@ -68,7 +78,7 @@ class SummaryEngineAsync {
         );
         $summary = $openapi->summarise($params);
         if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
-        $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary);
+        $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $type_settings, $summary);
         // Set meta data for post
         update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
         update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);

@@ -7,11 +7,11 @@
     import type {IType} from '../types/TypeInterface.js';
 
     // Components
-    import SubmissionsLeft from '../components/SubmissionsLeft.svelte';
-    import Navigation from '../components/Navigation.svelte';
-    import GenerateSummary from '../components/GenerateSummary.svelte';
-    import Settings from '../components/Settings.svelte';
-    import Spinner from '../components/Spinner.svelte';
+    import SubmissionsLeft from './SubmissionsLeft.svelte';
+    import Navigation from './Navigation.svelte';
+    import GenerateSummary from './GenerateSummary.svelte';
+    import Settings from './Settings.svelte';
+    import Spinner from './Spinner.svelte';
 
     const post_id = jQuery("#post_ID").val();
     export let type : IType;
@@ -29,6 +29,8 @@
         openai_presence_penalty: 0,
         openai_temperature: 0.6,
         openai_top_p: 1,
+        word_limit: 750,
+        cut_at_paragraph: true,
     };
     let settings_visible = false;
     let editing = false;
@@ -44,6 +46,7 @@
         settings.openai_presence_penalty = summary.presence_penalty;
         settings.openai_temperature = summary.temperature;
         settings.openai_top_p = summary.top_p;
+        settings.word_limit = summary.word_limit;
     }
 
     function setDefaultSettings(type) {
@@ -55,6 +58,7 @@
         settings.openai_presence_penalty = type.openai_presence_penalty;
         settings.openai_temperature = type.openai_temperature;
         settings.openai_top_p = type.openai_top_p;
+        settings.word_limit = type.word_limit;
     }
 
     function calcSubmissionsLeft() {

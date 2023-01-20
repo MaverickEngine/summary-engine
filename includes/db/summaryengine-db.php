@@ -17,9 +17,10 @@ class SummaryEngineDB {
             created_at datetime DEFAULT NOW() NOT NULL,
             name varchar(100) NOT NULL,
             slug varchar(100) NOT NULL,
-            openai_model varchar(100) NOT NULL DEFAULT 'text-curie-001',
-            openai_word_limit int(11) NOT NULL DEFAULT 750,
+            word_limit int(11) NOT NULL DEFAULT 750,
             cut_at_paragraph tinyint(1) NOT NULL DEFAULT 1,
+            custom_action varchar(255) NOT NULL DEFAULT '',
+            openai_model varchar(100) NOT NULL DEFAULT 'text-curie-001',
             openai_frequency_penalty float NOT NULL DEFAULT 0.5,
             openai_max_tokens int(11) NOT NULL DEFAULT 300,
             openai_presence_penalty float NOT NULL DEFAULT 0,
@@ -27,16 +28,18 @@ class SummaryEngineDB {
             openai_top_p float NOT NULL DEFAULT 1,
             openai_prompt varchar(100) NOT NULL DEFAULT 'Summarize in 100 words: ',
             openai_append_prompt varchar(100) NOT NULL DEFAULT '',
-            custom_action varchar(255) NOT NULL DEFAULT '',
+            summaryengine_version varchar(100) NOT NULL DEFAULT 0,
             INDEX created_at (created_at),
             UNIQUE KEY unique_name (name),
-            UNIQUE KEY unique_slug (slug)
+            UNIQUE KEY unique_slug (slug),
+            INDEX summaryengine_version (summaryengine_version)
         ) $charset_collate;";
         dbDelta( $summaryengine_types_sql );
-
         // Insert the default types
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $rows_affected = $wpdb->insert( $summaryengine_types_tablename, array( 'name' => 'Summary', 'slug' => 'summary', 'ID' => 1 ) );
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $wpdb->update( $summaryengine_types_tablename, array( 'summaryengine_version' => SUMMARYENGINE_DB_VERSION ), array( 'summaryengine_version' => 0 ) );
         dbDelta( $rows_affected );
         
         // Create the summaryengine summaries table
@@ -51,13 +54,15 @@ class SummaryEngineDB {
             summary text NOT NULL,
             openai_id varchar(100) NOT NULL,
             openai_model varchar(100) NOT NULL,
-            frequency_penalty float NOT NULL,
-            max_tokens int NOT NULL,
-            presence_penalty float NOT NULL,
-            temperature float NOT NULL,
-            top_p float NOT NULL,
+            word_limit int NOT NULL DEFAULT 750,
+            cut_at_paragraph tinyint(1) NOT NULL DEFAULT 1,
+            openai_frequency_penalty float NOT NULL,
+            openai_max_tokens int NOT NULL,
+            openai_presence_penalty float NOT NULL,
+            openai_temperature float NOT NULL,
+            openai_top_p float NOT NULL,
             prompt varchar(100) NOT NULL,
-            append_prompt varchar(100) NOT NULL,
+            append_prompt varchar(100) NOT NULL DEFAULT '',
             openai_object varchar(100) NOT NULL,
             openai_usage_completion_tokens mediumint(9) NOT NULL,
             openai_usage_prompt_tokens mediumint(9) NOT NULL,
@@ -66,14 +71,21 @@ class SummaryEngineDB {
             edited tinyint(1) NOT NULL DEFAULT 0,
             edited_at datetime DEFAULT NULL,
             edited_by mediumint(9) DEFAULT NULL,
+            summaryengine_version varchar(100) NOT NULL DEFAULT 0,
             INDEX type_id (type_id),
             INDEX post_id (post_id),
             INDEX user_id (user_id),
             INDEX created_at (created_at),
             INDEX post_id_created_at (post_id, created_at),
-            INDEX rating (rating)
+            INDEX rating (rating),
+            INDEX summaryengine_version (summaryengine_version)
         ) $charset_collate;";
         dbDelta( $summaryengine_tests_sql );
+        // Migrate old fields
+        // phpcs:ignore WordPress.DB
+        $wpdb->query("UPDATE $summaryengine_tests_tablename SET openai_frequency_penalty = frequency_penalty, openai_max_tokens = max_tokens, openai_presence_penalty = presence_penalty, openai_temperature = temperature, openai_top_p = top_p WHERE summaryengine_version = 0");
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+        $wpdb->update( $summaryengine_tests_tablename, array( 'summaryengine_version' => SUMMARYENGINE_DB_VERSION ), array( 'summaryengine_version' => 0 ) );
         update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
     }
 
@@ -109,23 +121,25 @@ class SummaryEngineDB {
         return $summary;
     }
 
-    public static function save_summary($post_id, $type_id, $content, $original_prompt, $original_append_prompt, $params, $summary_result) {
+    public static function save_summary($post_id, $type_id, $content, $settings, $summary_result) {
         global $wpdb;
         $data = array(
             'post_id' => $post_id,
             'type_id' => $type_id,
             'user_id' => get_current_user_id(),
             'submitted_text' => $content,
-            'summary' => $original_append_prompt . trim($summary_result['choices'][0]['text']),
+            'summary' => $settings['openai_append_prompt'] . trim($summary_result['choices'][0]['text']),
             'openai_id' => $summary_result['id'],
             'openai_model' => $summary_result['model'],
-            'frequency_penalty' => $params['frequency_penalty'],
-            'max_tokens' => $params['max_tokens'],
-            'presence_penalty' => $params['presence_penalty'],
-            'temperature' => $params['temperature'],
-            'top_p' => $params['top_p'],
-            'prompt' => $original_prompt ?? get_option('summaryengine_openai_prompt'),
-            'append_prompt' => $original_append_prompt ?? get_option('summaryengine_openai_append_prompt'),
+            'word_limit' => $settings['word_limit'],
+            'cut_at_paragraph' => $settings['cut_at_paragraph'],
+            'frequency_penalty' => $settings['openai_frequency_penalty'],
+            'max_tokens' => $settings['openai_max_tokens'],
+            'presence_penalty' => $settings['openai_presence_penalty'],
+            'temperature' => $settings['openai_temperature'],
+            'top_p' => $settings['openai_top_p'],
+            'prompt' => $settings['openai_prompt'],
+            'append_prompt' => $settings['openai_append_prompt'],
             'openai_object' => $summary_result['object'],
             'openai_usage_completion_tokens' => $summary_result['usage']['completion_tokens'],
             'openai_usage_prompt_tokens' => $summary_result['usage']['prompt_tokens'],

@@ -32,6 +32,9 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= v0.8.0 =
+ * Large refactor
+ 
 = v0.7.1 = 
  * Redesign of the in-post summary generation
  * "Reject" automatically generates new summary in in-post summary generation
