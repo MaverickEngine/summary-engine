@@ -13,7 +13,7 @@ class SummaryEngineOpenAI {
                 'Content-Type' => 'application/json',
             ),
             // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout
-            'timeout' => 30,
+            'timeout' => get_option('summaryengine_openai_timeout', 30),
             'body' => wp_json_encode($params),
         );
         $response = wp_remote_post($url, $args);

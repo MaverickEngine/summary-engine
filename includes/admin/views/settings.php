@@ -59,6 +59,13 @@
                         <p>Set to -1 to allow unlimited submissions per post.</p>
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row"><?php _e("OpenAI Timeout", "summaryengine") ?></th>
+                    <td>
+                        <input type="number" name="summaryengine_openai_timeout" value="<?php echo esc_attr(get_option('summaryengine_openai_timeout')); ?>" class="regular-text" min="10">
+                        <p>Timeout in seconds.</p>
+                    </td>
+                </tr>
             </tbody>
         </table>
         <?php submit_button(); ?>
