@@ -32,10 +32,13 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= v0.11.1 =
+ * Better error handling for OpenAI
+
 = v0.11.0 =
  * Bug fix when using option-set API key
  * Bug fix for error on first Loading
- 
+
 = v0.10.0 =
  * Critical bug fix from lubo-makky - incorrect field name when saving summary
 
