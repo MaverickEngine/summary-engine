@@ -145,7 +145,7 @@ class SummaryEngineAPI {
     }
 
     public function get_models() {
-        $openai_apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
+        $openai_apikey = (defined("OPENAI_KEY") && !empty(OPENAI_KEY)) ? OPENAI_KEY : get_option('summaryengine_openai_apikey');
         $openai = new SummaryEngineOpenAI($openai_apikey);
         $models = $openai->list_models();
         return $models;
