@@ -63,7 +63,7 @@ class SummaryEngineAsync {
         if (empty($content)) {
             return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
         }
-        $apikey = OPENAI_APIKEY ?? get_option('summaryengine_openai_apikey');
+        $apikey = (defined("OPENAI_KEY") && !empty(OPENAI_KEY)) ? OPENAI_KEY : get_option('summaryengine_openai_apikey');
         $openapi = new SummaryEngineOpenAI($apikey);
         $original_prompt =  $type->openai_prompt;
         $original_append_prompt = $type->openai_append_prompt;
