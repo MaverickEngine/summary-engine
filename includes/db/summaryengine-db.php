@@ -81,9 +81,6 @@ class SummaryEngineDB {
             INDEX summaryengine_version (summaryengine_version)
         ) $charset_collate;";
         dbDelta( $summaryengine_tests_sql );
-        // Migrate old fields
-        // phpcs:ignore WordPress.DB
-        $wpdb->query("UPDATE $summaryengine_tests_tablename SET openai_frequency_penalty = frequency_penalty, openai_max_tokens = max_tokens, openai_presence_penalty = presence_penalty, openai_temperature = temperature, openai_top_p = top_p WHERE summaryengine_version = 0");
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery
         $wpdb->update( $summaryengine_tests_tablename, array( 'summaryengine_version' => SUMMARYENGINE_DB_VERSION ), array( 'summaryengine_version' => 0 ) );
         update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
