@@ -267,7 +267,6 @@ class SummaryEngineAPI {
                 'top_p' => floatval($settings["openai_top_p"]),
                 'prompt' => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt,
             );
-            error_log("OpenAI params: " . json_encode($params));
             $summary = $openai->summarise($params);
             if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
             $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $settings, $summary);
