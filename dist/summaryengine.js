@@ -906,8 +906,8 @@ var summaryengine = (function (exports) {
     	let { summaries = [] } = $$props;
     	let { summary_index = 0 } = $$props;
     	let { summary_text = "" } = $$props;
-    	let { settings = {} } = $$props;
-    	let { type = {} } = $$props;
+    	let { settings } = $$props;
+    	let { type } = $$props;
     	let current_summary_index = 0;
 
     	const prev = () => {
@@ -929,14 +929,15 @@ var summaryengine = (function (exports) {
     	};
 
     	const set_settings = () => {
+    		console.log(summaries[summary_index]);
     		$$invalidate(7, settings.openai_model = summaries[summary_index].openai_model, settings);
-    		$$invalidate(7, settings.openai_max_tokens = Number(summaries[summary_index].max_tokens), settings);
-    		$$invalidate(7, settings.openai_temperature = Number(summaries[summary_index].temperature), settings);
-    		$$invalidate(7, settings.openai_frequency_penalty = Number(summaries[summary_index].frequency_penalty), settings);
-    		$$invalidate(7, settings.openai_presence_penalty = Number(summaries[summary_index].presence_penalty), settings);
-    		$$invalidate(7, settings.openai_prompt = summaries[summary_index].prompt, settings);
-    		settigns.openai_append_prompt = summaries[summary_index].append_prompt;
-    		$$invalidate(7, settings.openai_top_p = Number(summaries[summary_index].top_p), settings);
+    		$$invalidate(7, settings.openai_max_tokens = Number(summaries[summary_index].openai_max_tokens), settings);
+    		$$invalidate(7, settings.openai_temperature = Number(summaries[summary_index].openai_temperature), settings);
+    		$$invalidate(7, settings.openai_frequency_penalty = Number(summaries[summary_index].openai_frequency_penalty), settings);
+    		$$invalidate(7, settings.openai_presence_penalty = Number(summaries[summary_index].openai_presence_penalty), settings);
+    		$$invalidate(7, settings.openai_top_p = Number(summaries[summary_index].openai_top_p), settings);
+    		$$invalidate(7, settings.prompt = summaries[summary_index].prompt || "", settings);
+    		$$invalidate(7, settings.append_prompt = summaries[summary_index].append_prompt || "", settings);
     		$$invalidate(7, settings);
     	};
 
@@ -1953,12 +1954,12 @@ var summaryengine = (function (exports) {
     			p6.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.";
     			attr(th0, "scope", "row");
     			attr(input0, "type", "text");
-    			attr(input0, "name", "openai_prompt");
+    			attr(input0, "name", "prompt");
     			attr(input0, "class", "regular-text");
     			input0.required = true;
     			attr(th1, "scope", "row");
     			attr(input1, "type", "text");
-    			attr(input1, "name", "openai_append_prompt");
+    			attr(input1, "name", "append_prompt");
     			attr(input1, "class", "regular-text");
     			input1.required = true;
     			attr(th2, "scope", "row");
@@ -2024,7 +2025,7 @@ var summaryengine = (function (exports) {
     			append(tr0, t1);
     			append(tr0, td0);
     			append(td0, input0);
-    			set_input_value(input0, /*settings*/ ctx[0].openai_prompt);
+    			set_input_value(input0, /*settings*/ ctx[0].prompt);
     			append(td0, t2);
     			append(td0, p0);
     			insert(target, t4, anchor);
@@ -2033,7 +2034,7 @@ var summaryengine = (function (exports) {
     			append(tr1, t6);
     			append(tr1, td1);
     			append(td1, input1);
-    			set_input_value(input1, /*settings*/ ctx[0].openai_append_prompt);
+    			set_input_value(input1, /*settings*/ ctx[0].append_prompt);
     			append(td1, t7);
     			append(td1, p1);
     			insert(target, t9, anchor);
@@ -2126,12 +2127,12 @@ var summaryengine = (function (exports) {
     			}
     		},
     		p(ctx, [dirty]) {
-    			if (dirty & /*settings*/ 1 && input0.value !== /*settings*/ ctx[0].openai_prompt) {
-    				set_input_value(input0, /*settings*/ ctx[0].openai_prompt);
+    			if (dirty & /*settings*/ 1 && input0.value !== /*settings*/ ctx[0].prompt) {
+    				set_input_value(input0, /*settings*/ ctx[0].prompt);
     			}
 
-    			if (dirty & /*settings*/ 1 && input1.value !== /*settings*/ ctx[0].openai_append_prompt) {
-    				set_input_value(input1, /*settings*/ ctx[0].openai_append_prompt);
+    			if (dirty & /*settings*/ 1 && input1.value !== /*settings*/ ctx[0].append_prompt) {
+    				set_input_value(input1, /*settings*/ ctx[0].append_prompt);
     			}
 
     			if (dirty & /*settings*/ 1) {
@@ -2198,12 +2199,12 @@ var summaryengine = (function (exports) {
     	let { settings } = $$props;
 
     	function input0_input_handler() {
-    		settings.openai_prompt = this.value;
+    		settings.prompt = this.value;
     		$$invalidate(0, settings);
     	}
 
     	function input1_input_handler() {
-    		settings.openai_append_prompt = this.value;
+    		settings.append_prompt = this.value;
     		$$invalidate(0, settings);
     	}
 
@@ -2487,7 +2488,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (106:4) {:else}
+    // (108:4) {:else}
     function create_else_block(ctx) {
     	let settings_1;
     	let updating_settings;
@@ -2758,7 +2759,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (104:4) {#if loading}
+    // (106:4) {#if loading}
     function create_if_block(ctx) {
     	let spinner;
     	let current;
@@ -2788,7 +2789,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (117:31) 
+    // (119:31) 
     function create_if_block_3(ctx) {
     	let textarea;
     	let t0;
@@ -2882,7 +2883,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (109:8) {#if editing}
+    // (111:8) {#if editing}
     function create_if_block_1(ctx) {
     	let textarea;
     	let t;
@@ -2949,7 +2950,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (121:16) {#if summaries.length > 1}
+    // (123:16) {#if summaries.length > 1}
     function create_if_block_4(ctx) {
     	let navigation;
     	let updating_summary_text;
@@ -3039,7 +3040,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (114:12) {:else}
+    // (116:12) {:else}
     function create_else_block_1(ctx) {
     	let input;
 
@@ -3062,7 +3063,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (111:12) {#if (!saving)}
+    // (113:12) {#if (!saving)}
     function create_if_block_2(ctx) {
     	let input0;
     	let t;
@@ -3226,8 +3227,8 @@ var summaryengine = (function (exports) {
 
     	let settings = {
     		openai_model: "",
-    		openai_prompt: "",
-    		openai_append_prompt: "",
+    		prompt: "",
+    		append_prompt: "",
     		openai_frequency_penalty: 0.5,
     		openai_max_tokens: 300,
     		openai_presence_penalty: 0,
@@ -3244,26 +3245,28 @@ var summaryengine = (function (exports) {
 
     	function setSummarySettings(summary) {
     		$$invalidate(6, settings.openai_model = summary.openai_model, settings);
-    		$$invalidate(6, settings.openai_prompt = summary.prompt, settings);
-    		$$invalidate(6, settings.openai_append_prompt = summary.append_prompt, settings);
-    		$$invalidate(6, settings.openai_frequency_penalty = summary.frequency_penalty, settings);
-    		$$invalidate(6, settings.openai_max_tokens = summary.max_tokens, settings);
-    		$$invalidate(6, settings.openai_presence_penalty = summary.presence_penalty, settings);
-    		$$invalidate(6, settings.openai_temperature = summary.temperature, settings);
-    		$$invalidate(6, settings.openai_top_p = summary.top_p, settings);
+    		$$invalidate(6, settings.prompt = summary.prompt, settings);
+    		$$invalidate(6, settings.append_prompt = summary.append_prompt, settings);
+    		$$invalidate(6, settings.openai_frequency_penalty = summary.openai_frequency_penalty, settings);
+    		$$invalidate(6, settings.openai_max_tokens = summary.openai_max_tokens, settings);
+    		$$invalidate(6, settings.openai_presence_penalty = summary.openai_presence_penalty, settings);
+    		$$invalidate(6, settings.openai_temperature = summary.openai_temperature, settings);
+    		$$invalidate(6, settings.openai_top_p = summary.openai_top_p, settings);
     		$$invalidate(6, settings.word_limit = summary.word_limit, settings);
+    		$$invalidate(6, settings);
     	}
 
     	function setDefaultSettings(type) {
     		$$invalidate(6, settings.openai_model = type.openai_model, settings);
-    		$$invalidate(6, settings.openai_prompt = type.openai_prompt, settings);
-    		$$invalidate(6, settings.openai_append_prompt = type.openai_append_prompt, settings);
+    		$$invalidate(6, settings.prompt = type.prompt, settings);
+    		$$invalidate(6, settings.append_prompt = type.append_prompt, settings);
     		$$invalidate(6, settings.openai_frequency_penalty = type.openai_frequency_penalty, settings);
     		$$invalidate(6, settings.openai_max_tokens = type.openai_max_tokens, settings);
     		$$invalidate(6, settings.openai_presence_penalty = type.openai_presence_penalty, settings);
     		$$invalidate(6, settings.openai_temperature = type.openai_temperature, settings);
     		$$invalidate(6, settings.openai_top_p = type.openai_top_p, settings);
     		$$invalidate(6, settings.word_limit = type.word_limit, settings);
+    		$$invalidate(6, settings);
     	}
 
     	function calcSubmissionsLeft() {

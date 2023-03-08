@@ -2,3 +2,4 @@ node_modules/*
 vendor/*
 site/*
 .DS_Store
+wordpress-docker-compose

@@ -41,17 +41,17 @@
         }
         try {
             // console.log(models);
-            $types = (await apiGet(`summaryengine/v1/types`)).map(type => {
+            $types = (await apiGet(`summaryengine/v1/types`)).map((type: IType) => {
                 type.ID = Number(type.ID);
-                type.openai_cut_at_paragraph = Number(type.cut_at_paragraph);
+                type.cut_at_paragraph = !!(type.cut_at_paragraph);
                 type.openai_frequency_penalty = Number(type.openai_frequency_penalty);
                 type.openai_max_tokens = Number(type.openai_max_tokens);
                 type.openai_presence_penalty = Number(type.openai_presence_penalty);
                 type.openai_temperature = Number(type.openai_temperature);
                 type.openai_top_p = Number(type.openai_top_p);
                 type.word_limit = Number(type.word_limit);
-                type.openai_prompt = String(type.openai_prompt) || "";
-                type.openai_append_prompt = String(type.openai_append_prompt) || "";
+                type.prompt = String(type.prompt) || "";
+                type.append_prompt = String(type.append_prompt) || "";
                 return type;
             });
             addEmptyType();
@@ -64,9 +64,9 @@
         try {
             saving = true;
             if (!(type.name)) throw "Type name is required";
-            if (!(type.openai_prompt)) throw "Prompt is required";
+            if (!(type.prompt)) throw "Prompt is required";
             if (type.name === "New Type") throw "Please rename the type before saving";
-            type.openai_append_prompt = type.openai_append_prompt || "";
+            type.append_prompt = type.append_prompt || "";
             type.custom_action = type.custom_action || "";
             const result = await apiPost(`summaryengine/v1/type/${type.ID}`, type);
             if (!type.ID) {

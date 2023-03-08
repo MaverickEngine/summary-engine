@@ -22,8 +22,8 @@
     let submissions_left;
     let settings : ISettings = {
         openai_model: "",
-        openai_prompt: "",
-        openai_append_prompt: "",
+        prompt: "",
+        append_prompt: "",
         openai_frequency_penalty: 0.5,
         openai_max_tokens: 300,
         openai_presence_penalty: 0,
@@ -39,26 +39,28 @@
 
     function setSummarySettings(summary) {
         settings.openai_model = summary.openai_model;
-        settings.openai_prompt = summary.prompt;
-        settings.openai_append_prompt = summary.append_prompt;
-        settings.openai_frequency_penalty = summary.frequency_penalty;
-        settings.openai_max_tokens = summary.max_tokens;
-        settings.openai_presence_penalty = summary.presence_penalty;
-        settings.openai_temperature = summary.temperature;
-        settings.openai_top_p = summary.top_p;
+        settings.prompt = summary.prompt;
+        settings.append_prompt = summary.append_prompt;
+        settings.openai_frequency_penalty = summary.openai_frequency_penalty;
+        settings.openai_max_tokens = summary.openai_max_tokens;
+        settings.openai_presence_penalty = summary.openai_presence_penalty;
+        settings.openai_temperature = summary.openai_temperature;
+        settings.openai_top_p = summary.openai_top_p;
         settings.word_limit = summary.word_limit;
+        settings = settings;
     }
 
     function setDefaultSettings(type) {
         settings.openai_model = type.openai_model;
-        settings.openai_prompt = type.openai_prompt;
-        settings.openai_append_prompt = type.openai_append_prompt;
+        settings.prompt = type.prompt;
+        settings.append_prompt = type.append_prompt;
         settings.openai_frequency_penalty = type.openai_frequency_penalty;
         settings.openai_max_tokens = type.openai_max_tokens;
         settings.openai_presence_penalty = type.openai_presence_penalty;
         settings.openai_temperature = type.openai_temperature;
         settings.openai_top_p = type.openai_top_p;
         settings.word_limit = type.word_limit;
+        settings = settings;
     }
 
     function calcSubmissionsLeft() {

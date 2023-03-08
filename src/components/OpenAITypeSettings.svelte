@@ -7,14 +7,14 @@
 <tr>
     <th scope="row">Prepend Prompt</th>
     <td>
-        <input type="text" name="openai_prompt" class="regular-text" bind:value="{settings.openai_prompt}" required>
+        <input type="text" name="prompt" class="regular-text" bind:value="{settings.prompt}" required>
         <p>The instruction to the model on what you'd like to generate, prepended.</p>
     </td>
 </tr>
 <tr>
     <th scope="row">Append Prompt</th>
     <td>
-        <input type="text" name="openai_append_prompt" class="regular-text" bind:value="{settings.openai_append_prompt}" required>
+        <input type="text" name="append_prompt" class="regular-text" bind:value="{settings.append_prompt}" required>
         <p>The instruction to the model on what you'd like to generate, appended.</p>
     </td>
 </tr>

@@ -1,12 +1,14 @@
-<script>
-    // import { summaries, summary_index, summary_text, custom_settings } from '../stores.js';
+<script lang="ts">
+    // Interfaces
+    import type {ISettings} from '../types/SettingsInterface';
+    import type {IType} from '../types/TypeInterface.js';
     import { apiPost } from '../libs/ajax.js';
 
     export let summaries = [];
     export let summary_index = 0;
     export let summary_text = "";
-    export let settings = {};
-    export let type = {};
+    export let settings: ISettings;
+    export let type: IType;
 
     let current_summary_index = 0;
 
@@ -27,14 +29,15 @@
     }
 
     export const set_settings = () => {
+        console.log(summaries[summary_index]);
         settings.openai_model = summaries[summary_index].openai_model;
-        settings.openai_max_tokens = Number(summaries[summary_index].max_tokens);
-        settings.openai_temperature =  Number(summaries[summary_index].temperature);
-        settings.openai_frequency_penalty =  Number(summaries[summary_index].frequency_penalty);
-        settings.openai_presence_penalty =  Number(summaries[summary_index].presence_penalty);
-        settings.openai_prompt = summaries[summary_index].prompt;
-        settigns.openai_append_prompt = summaries[summary_index].append_prompt;
-        settings.openai_top_p =  Number(summaries[summary_index].top_p);
+        settings.openai_max_tokens = Number(summaries[summary_index].openai_max_tokens);
+        settings.openai_temperature =  Number(summaries[summary_index].openai_temperature);
+        settings.openai_frequency_penalty =  Number(summaries[summary_index].openai_frequency_penalty);
+        settings.openai_presence_penalty =  Number(summaries[summary_index].openai_presence_penalty);
+        settings.openai_top_p =  Number(summaries[summary_index].openai_top_p);
+        settings.prompt = summaries[summary_index].prompt || "";
+        settings.append_prompt = summaries[summary_index].append_prompt || "";
         settings = settings;
     }
 

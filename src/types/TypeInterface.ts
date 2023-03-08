@@ -11,7 +11,7 @@ export interface IType {
     openai_presence_penalty: number;
     openai_temperature: number;
     openai_top_p: number;
-    openai_prompt: string;
-    openai_append_prompt: string;
+    prompt: string;
+    append_prompt: string;
     custom_action: string;
 }

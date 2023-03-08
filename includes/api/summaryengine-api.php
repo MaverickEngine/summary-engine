@@ -212,8 +212,8 @@ class SummaryEngineAPI {
             $type = SummaryEngineDB::get_type($type_id);
             $type_settings = [
                 'openai_model' => $type->openai_model,
-                'openai_prompt' => $type->openai_prompt,
-                'openai_append_prompt' => $type->openai_append_prompt,
+                'prompt' => $type->openai_prompt,
+                'append_prompt' => $type->openai_append_prompt,
                 'openai_max_tokens' => $type->openai_max_tokens,
                 'openai_temperature' => $type->openai_temperature,
                 'openai_top_p' => $type->openai_top_p,
@@ -256,8 +256,8 @@ class SummaryEngineAPI {
                 $apikey = get_option('summaryengine_openai_apikey');
             }
             $openai = new SummaryEngineOpenAI($apikey);
-            $prepend_prompt =  $settings["openai_prompt"];
-            $append_prompt = $settings["openai_append_prompt"];
+            $prepend_prompt =  $settings["prompt"];
+            $append_prompt = $settings["append_prompt"];
             $params = array(
                 'model' => $settings["openai_model"],
                 'frequency_penalty' => floatval($settings["openai_frequency_penalty"]),
@@ -267,6 +267,7 @@ class SummaryEngineAPI {
                 'top_p' => floatval($settings["openai_top_p"]),
                 'prompt' => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt,
             );
+            error_log("OpenAI params: " . json_encode($params));
             $summary = $openai->summarise($params);
             if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
             $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $settings, $summary);
@@ -448,8 +449,8 @@ class SummaryEngineAPI {
         $openai_presence_penalty = $request->get_param('openai_presence_penalty');
         $openai_temperature = $request->get_param('openai_temperature');
         $openai_top_p = $request->get_param('openai_top_p');
-        $openai_prompt = $request->get_param('openai_prompt');
-        $openai_append_prompt = $request->get_param('openai_append_prompt');
+        $prompt = $request->get_param('prompt');
+        $append_prompt = $request->get_param('append_prompt');
         $custom_action = $request->get_param('custom_action');
         $data = array(
             'name' => $name,
@@ -462,8 +463,8 @@ class SummaryEngineAPI {
             'openai_presence_penalty' => $openai_presence_penalty,
             'openai_temperature' => $openai_temperature,
             'openai_top_p' => $openai_top_p,
-            'openai_prompt' => $openai_prompt,
-            'openai_append_prompt' => $openai_append_prompt,
+            'prompt' => $prompt,
+            'append_prompt' => $append_prompt,
             'custom_action' => $custom_action,
         );
         $pattern = array(

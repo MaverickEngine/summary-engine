@@ -5,7 +5,7 @@
 * Description: Use machine learning to help editors generate summaries to articles. Brought to you by MavEngine, &lt;em&gt;Powering Media. 
 * Author: MavEngine
 * Author URI: https://mavengine.com
-* Version: 0.11.2
+* Version: 0.11.3
 * License: GPLv2 or later
 * License URI: https://www.gnu.org/licenses/gpl-3.0.html
 * WC requires at least: 5.8.0
@@ -16,9 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const SUMMARYENGINE_SCRIPT_VERSION = "0.11.2";
-const SUMMARYENGINE_PLUGIN_VERSION = "0.11.2";
-const SUMMARYENGINE_DB_VERSION = "0.11.2";
+const SUMMARYENGINE_SCRIPT_VERSION = "0.11.3";
+const SUMMARYENGINE_PLUGIN_VERSION = "0.11.3";
+const SUMMARYENGINE_DB_VERSION = "0.11.3";
 
 // Setup database tables
 function summaryengine_database_setup() {
