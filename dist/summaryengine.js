@@ -1419,7 +1419,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (68:0) {#if (summary_id === 0)}
+    // (90:0) {#if (summary_id === 0)}
     function create_if_block$2(ctx) {
     	let current_block_type_index;
     	let if_block;
@@ -1489,7 +1489,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (73:4) {:else}
+    // (95:4) {:else}
     function create_else_block$1(ctx) {
     	let div1;
     	let div0;
@@ -1532,7 +1532,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (69:4) {#if !loading}
+    // (91:4) {#if !loading}
     function create_if_block_1$1(ctx) {
     	let button;
     	let t;
@@ -1675,7 +1675,7 @@ var summaryengine = (function (exports) {
 
     	const strip_tags = html => {
     		let tmp = document.createElement("div");
-    		tmp.innerHTML = html;
+    		tmp.innerHTML = html.replace(/(<(br[^>]*)>)/ig, '\n').replace(/(<(p[^>]*)>)/ig, '\n').replace(/(<(div[^>]*)>)/ig, '\n').replace(/(<(h[1-6][^>]*)>)/ig, '\n').replace(/(<(li[^>]*)>)/ig, '\n').replace(/(<(ul[^>]*)>)/ig, '\n').replace(/(<(ol[^>]*)>)/ig, '\n').replace(/(<(blockquote[^>]*)>)/ig, '\n').replace(/(<(pre[^>]*)>)/ig, '\n').replace(/(<(hr[^>]*)>)/ig, '\n').replace(/(<(table[^>]*)>)/ig, '\n').replace(/(<(tr[^>]*)>)/ig, '\n').replace(/(<(td[^>]*)>)/ig, '\n').replace(/(<(th[^>]*)>)/ig, '\n').replace(/(<(caption[^>]*)>)/ig, '\n').replace(/(<(dl[^>]*)>)/ig, '\n').replace(/(<(dt[^>]*)>)/ig, '\n').replace(/(<(dd[^>]*)>)/ig, '\n').replace(/(<(address[^>]*)>)/ig, '\n').replace(/(<(section[^>]*)>)/ig, '\n').replace(/(<(article[^>]*)>)/ig, '\n').replace(/(<(aside[^>]*)>)/ig, '\n');
     		return tmp.textContent || tmp.innerText || "";
     	};
 

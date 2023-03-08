@@ -30,7 +30,29 @@
 
     const strip_tags = (html) => {
         let tmp = document.createElement("div");
-        tmp.innerHTML = html;
+        tmp.innerHTML = html
+            .replace(/(<(br[^>]*)>)/ig, '\n')
+            .replace(/(<(p[^>]*)>)/ig, '\n')
+            .replace(/(<(div[^>]*)>)/ig, '\n')
+            .replace(/(<(h[1-6][^>]*)>)/ig, '\n')
+            .replace(/(<(li[^>]*)>)/ig, '\n')
+            .replace(/(<(ul[^>]*)>)/ig, '\n')
+            .replace(/(<(ol[^>]*)>)/ig, '\n')
+            .replace(/(<(blockquote[^>]*)>)/ig, '\n')
+            .replace(/(<(pre[^>]*)>)/ig, '\n')
+            .replace(/(<(hr[^>]*)>)/ig, '\n')
+            .replace(/(<(table[^>]*)>)/ig, '\n')
+            .replace(/(<(tr[^>]*)>)/ig, '\n')
+            .replace(/(<(td[^>]*)>)/ig, '\n')
+            .replace(/(<(th[^>]*)>)/ig, '\n')
+            .replace(/(<(caption[^>]*)>)/ig, '\n')
+            .replace(/(<(dl[^>]*)>)/ig, '\n')
+            .replace(/(<(dt[^>]*)>)/ig, '\n')
+            .replace(/(<(dd[^>]*)>)/ig, '\n')
+            .replace(/(<(address[^>]*)>)/ig, '\n')
+            .replace(/(<(section[^>]*)>)/ig, '\n')
+            .replace(/(<(article[^>]*)>)/ig, '\n')
+            .replace(/(<(aside[^>]*)>)/ig, '\n');
         return tmp.textContent || tmp.innerText || "";
     }
 
