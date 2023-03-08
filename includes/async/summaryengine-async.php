@@ -43,8 +43,8 @@ class SummaryEngineAsync {
         }
         $type_settings = [
             'openai_model' => $type->openai_model,
-            'prompt' => $type->openai_prompt,
-            'append_prompt' => $type->openai_append_prompt,
+            'prompt' => $type->prompt,
+            'append_prompt' => $type->append_prompt,
             'openai_max_tokens' => $type->openai_max_tokens,
             'openai_temperature' => $type->openai_temperature,
             'openai_top_p' => $type->openai_top_p,
