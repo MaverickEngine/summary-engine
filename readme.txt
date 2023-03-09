@@ -32,6 +32,13 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= v0.12.1 =
+ * Make prompt field lenghts 255 instead of 100
+ 
+= v0.12.0 =
+ * Sort out all naming issues
+ * "openai_prompt" and "openai_prompt_append" now unified across system
+
 = v0.11.2 =
  * Bug fix for OPENAI_APIKEY constant
  

@@ -1,6 +1,6 @@
 {
   "name": "summary-engine",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "",
   "main": "rollup.config.js",
   "scripts": {
