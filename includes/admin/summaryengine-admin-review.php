@@ -9,14 +9,14 @@ class SummaryEngineReview {
             'summaryengine',
 			'SummaryEngine Review',
 			'Review',
-			'manage_options',
+			'edit_others_posts',
 			'summaryengine',
 			[ $this, 'summaryengine_review' ]
 		);
     }
 
     public function summaryengine_review() {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('edit_others_posts')) {
             wp_die('You do not have sufficient permissions to access this page.');
         }
         wp_enqueue_script( "summaryengine-review-script", plugin_dir_url(__FILE__) . "../../dist/summaryengine-review.js", ['wp-api',], SUMMARYENGINE_SCRIPT_VERSION, true );

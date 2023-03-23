@@ -32,6 +32,9 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= v0.12.2 = 
+ * Reduce permissions required to use the Preview view
+ 
 = v0.12.1 =
  * Make prompt field lenghts 255 instead of 100
  
