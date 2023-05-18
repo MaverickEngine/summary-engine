@@ -4,37 +4,27 @@ class SummaryEngineAdminSettings {
     private $options = [
         "summaryengine_post_types",
         "summaryengine_openai_apikey",
-        "summaryengine_openai_model",
-        "summaryengine_cut_at_paragraph",
-        "summaryengine_openai_frequency_penalty",
-        "summaryengine_openai_max_tokens",
-        "summaryengine_openai_presence_penalty",
-        "summaryengine_openai_temperature",
-        "summaryengine_openai_top_p",
-        "summaryengine_prompt",
-        "append_prompt",
+        "summaryengine_openai_timeout",
+        "summaryengine_chatgpt_apikey",
+        "summaryengine_chatgpt_timeout",
+        "summaryengine_bard_apikey",
+        "summaryengine_bard_timeout",
         "summaryengine_max_number_of_submissions_per_post",
         "summaryengine_rss_limit",
         "summaryengine_summarise_on_publish",
-        "summaryengine_openai_timeout",
     ];
 
     public $defaults = [
         "summaryengine_post_types" => ["post"],
         "summaryengine_openai_apikey" => "",
-        "summaryengine_openai_model" => "text-davinci-002",
-        "summaryengine_cut_at_paragraph" => true,
-        "summaryengine_openai_frequency_penalty" => 0.5,
-        "summaryengine_openai_max_tokens" => 300,
-        "summaryengine_openai_presence_penalty" => 0,
-        "summaryengine_openai_temperature" => 0.6,
-        "summaryengine_openai_top_p" => 1,
-        "summaryengine_prompt" => "Summarize in 100 words: ",
-        "append_prompt" => "",
+        "summaryengine_openai_timeout" => 30,
+        "summaryengine_chatgpt_apikey" => "",
+        "summaryengine_chatgpt_timeout" => 30,
+        "summaryengine_bard_apikey" => "",
+        "summaryengine_bard_timeout" => 30,
         "summaryengine_max_number_of_submissions_per_post" => 3,
         "summaryengine_rss_limit" => 10,
         "summaryengine_summarise_on_publish" => false,
-        "summaryengine_openai_timeout" => 30,
     ];
     
     public function __construct() {
@@ -58,18 +48,34 @@ class SummaryEngineAdminSettings {
         if (!current_user_can('manage_options')) {
             wp_die('You do not have sufficient permissions to access this page.');
         }
-        // Clear the option of summaryengine_openai_apikey if the constant OPENAI_APIKEY is set
+        // Clear the API keys if the constants are set
         if (defined('OPENAI_APIKEY')) {
             update_option('summaryengine_openai_apikey', '');
+        }
+        if (defined('CHATGPT_APIKEY')) {
+            update_option('summaryengine_chatgpt_apikey', '');
+        }
+        if (defined('BARD_APIKEY')) {
+            update_option('summaryengine_bard_apikey', '');
         }
         // Check that we can connect...
         try {
             if (defined('OPENAI_APIKEY')) {
-                $apikey = OPENAI_APIKEY;
+                $openai_apikey = OPENAI_APIKEY;
             } else {
-                $apikey = get_option('summaryengine_openai_apikey');
+                $openai_apikey = get_option('summaryengine_openai_apikey');
             }
-            $openai = new SummaryEngineOpenAI($apikey);
+            if (defined('CHATGPT_APIKEY')) {
+                $chatgpt_apikey = CHATGPT_APIKEY;
+            } else {
+                $chatgpt_apikey = get_option('summaryengine_chatgpt_apikey');
+            }
+            if (defined('BARD_APIKEY')) {
+                $bard_apikey = BARD_APIKEY;
+            } else {
+                $bard_apikey = get_option('summaryengine_bard_apikey');
+            }
+            $openai = new SummaryEngineOpenAI($openai_apikey);
             $models = $openai->list_models();
             if (is_wp_error($models)) {
                 $error = "Could not connect to OpenAI API. Please check your API key.";
@@ -81,6 +87,8 @@ class SummaryEngineAdminSettings {
             $error = "Could not connect to OpenAI API. Please check your API key.";
             $models = [];
         }
+        // Handle tabs
+        $active_tab = isset( $_GET[ 'tab' ] ) ? $_GET[ 'tab' ] : 'general';
         require_once plugin_dir_path( dirname( __FILE__ ) ).'admin/views/settings.php';
     }
 

@@ -2,8 +2,10 @@ export interface ISettings {
     word_limit: number;
     cut_at_paragraph: boolean;
     prompt: string;
+    openai_method: string;
     append_prompt: string;
     openai_model: string;
+    openai_system: string;
     openai_max_tokens: number;
     openai_temperature: number;
     openai_top_p: number;

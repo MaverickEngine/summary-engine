@@ -1,6 +1,7 @@
 <?php
 
 require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-openai.php');
+require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-chatgpt.php');
 require_once(plugin_dir_path( __FILE__ ) . '../db/summaryengine-db.php');
 require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-content.php');
 
@@ -212,6 +213,8 @@ class SummaryEngineAPI {
             $type = SummaryEngineDB::get_type($type_id);
             $type_settings = [
                 'openai_model' => $type->openai_model,
+                'openai_method' => $type->openai_method,
+                'openai_system' => $type->openai_system,
                 'prompt' => $type->prompt,
                 'append_prompt' => $type->append_prompt,
                 'openai_max_tokens' => $type->openai_max_tokens,
@@ -256,18 +259,34 @@ class SummaryEngineAPI {
                 $apikey = get_option('summaryengine_openai_apikey');
             }
             $openai = new SummaryEngineOpenAI($apikey);
+            $chatgpt = new SummaryEngineChatGPT($apikey);
             $prepend_prompt =  $settings["prompt"];
             $append_prompt = $settings["append_prompt"];
-            $params = array(
-                'model' => $settings["openai_model"],
-                'frequency_penalty' => floatval($settings["openai_frequency_penalty"]),
-                'max_tokens' => intval($settings["openai_max_tokens"]),
-                'presence_penalty' => floatval($settings["openai_presence_penalty"]),
-                'temperature' => floatval($settings["openai_temperature"]),
-                'top_p' => floatval($settings["openai_top_p"]),
-                'prompt' => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt,
-            );
-            $summary = $openai->summarise($params);
+            if ($type->openai_method === "chat") {
+                $messages = array();
+                $messages[] = ["role" => "system", "content" => $type->openai_system ];
+                $messages[] = ["role" => "user", "content" => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt];
+                $params = array(
+                    'model' => $settings["openai_model"],
+                    'max_tokens' => intval($settings["openai_max_tokens"]),
+                    'temperature' => floatval($settings["openai_temperature"]),
+                    'top_p' => floatval($settings["openai_top_p"]),
+                    'messages' => $messages,
+                );
+                $summary = $chatgpt->summarise($params);
+            } else {
+                $params = array(
+                    'model' => $settings["openai_model"],
+                    'frequency_penalty' => floatval($settings["openai_frequency_penalty"]),
+                    'max_tokens' => intval($settings["openai_max_tokens"]),
+                    'presence_penalty' => floatval($settings["openai_presence_penalty"]),
+                    'temperature' => floatval($settings["openai_temperature"]),
+                    'top_p' => floatval($settings["openai_top_p"]),
+                    'prompt' => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt,
+                );
+                $summary = $openai->summarise($params);
+            }
+            
             if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
             $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $settings, $summary);
             // Set meta data for post
@@ -451,6 +470,8 @@ class SummaryEngineAPI {
         $prompt = $request->get_param('prompt');
         $append_prompt = $request->get_param('append_prompt');
         $custom_action = $request->get_param('custom_action');
+        $openai_method = $request->get_param('openai_method');
+        $openai_system = $request->get_param('openai_system');
         $data = array(
             'name' => $name,
             'slug' => $slug,
@@ -465,6 +486,8 @@ class SummaryEngineAPI {
             'prompt' => $prompt,
             'append_prompt' => $append_prompt,
             'custom_action' => $custom_action,
+            'openai_method' => $openai_method,
+            'openai_system' => $openai_system,
         );
         $pattern = array(
             '%s',
@@ -476,6 +499,8 @@ class SummaryEngineAPI {
             '%d',
             '%f',
             '%f',
+            '%s',
+            '%s',
             '%s',
             '%s',
             '%s',

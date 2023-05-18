@@ -3,7 +3,9 @@ export interface IType {
     created_at?: Date;
     name: string;
     slug: string;
+    openai_method: string;
     openai_model: string;
+    openai_system: string;
     word_limit: number;
     cut_at_paragraph: Boolean;
     openai_frequency_penalty: number;

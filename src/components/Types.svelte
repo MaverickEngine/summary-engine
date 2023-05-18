@@ -23,6 +23,8 @@
             name: 'New Type',
             cut_at_paragraph: 1,
             word_limit: 750,
+            openai_method: 'complete',
+            openai_model: 'text-davinci-003',
             openai_frequency_penalty: 0.5,
             openai_max_tokens: 300,
             openai_presence_penalty: 0,
@@ -43,6 +45,7 @@
             // console.log(models);
             $types = (await apiGet(`summaryengine/v1/types`)).map((type: IType) => {
                 type.ID = Number(type.ID);
+                type.openai_method = String(type.openai_method) || "complete";
                 type.cut_at_paragraph = !!(type.cut_at_paragraph);
                 type.openai_frequency_penalty = Number(type.openai_frequency_penalty);
                 type.openai_max_tokens = Number(type.openai_max_tokens);
@@ -54,6 +57,7 @@
                 type.append_prompt = String(type.append_prompt) || "";
                 return type;
             });
+            console.log($types);
             addEmptyType();
         } catch (e) {
             console.error(e);

@@ -19,17 +19,40 @@
     </td>
 </tr>
 <tr>
-    <th scope="row">OpenAI Model</th>
+    <th scope="row">Method</th>
     <td>
-        <select name="openai_model" bind:value="{settings.openai_model}">
-            <option value="text-davinci-003">Text-Davinci-003</option>
-            <option value="text-davinci-002">Text-Davinci-002</option>
-            <option value="text-curie-001">Text-Curie-001</option>
-            <option value="text-babbage-001">Text-Babbage-001</option>
-            <option value="text-ada-001">Text-Ada-001</option>
+        <select name="openai_method" bind:value="{settings.openai_method}">
+            <option value="complete">Complete</option>
+            <option value="chat">Chat</option>
         </select>
     </td>
 </tr>
+<tr>
+    <th scope="row">OpenAI Model</th>
+    <td>
+        <select name="openai_model" bind:value="{settings.openai_model}">
+            {#if settings.openai_method === 'complete'}
+                <option value="text-davinci-003">Text-Davinci-003</option>
+                <option value="text-davinci-002">Text-Davinci-002</option>
+                <option value="text-curie-001">Text-Curie-001</option>
+                <option value="text-babbage-001">Text-Babbage-001</option>
+                <option value="text-ada-001">Text-Ada-001</option>
+            {:else if settings.openai_method === 'chat'}
+                <option value="gpt-4">GPT-4</option>
+                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+            {/if}
+        </select>
+    </td>
+</tr>
+{#if settings.openai_method === 'chat'}
+<tr>
+    <th scope="row">User Description</th>
+    <td>
+        <textarea name="openai_system" class="regular-text" bind:value="{settings.openai_system}"></textarea>
+        <p>Describe the OpenAI assistant, eg. "You are SummaryBot, an experienced news editor and subeditor."</p>
+    </td>
+</tr>
+{/if}
 <tr>
     <th scope="row">Submission word limit</th>
     <td>
