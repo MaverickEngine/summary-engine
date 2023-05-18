@@ -3,7 +3,6 @@ import commonjs from '@rollup/plugin-commonjs';
 // import resolve from '@rollup/plugin-node-resolve';
 // import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
-import scss from 'rollup-plugin-scss'
 import css from 'rollup-plugin-css-only';
 import preprocess from 'svelte-preprocess';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
@@ -63,7 +62,6 @@ if (test) {
 				svelte({
 					preprocess: preprocess(),
 				}),
-				scss(),
 				css({ output: "summaryengine.css" }),
 				nodeResolve({
 					browser: true,
@@ -90,7 +88,6 @@ if (test) {
 				svelte({
 					preprocess: preprocess(),
 				}),
-				scss(),
 				css({ output: "summaryengine-reports.css" }),
 				nodeResolve({
 					browser: true,
@@ -117,7 +114,6 @@ if (test) {
 				svelte({
 					preprocess: preprocess(),
 				}),
-				scss(),
 				css({ output: "summaryengine-review.css" }),
 				nodeResolve({
 					browser: true,
@@ -144,7 +140,6 @@ if (test) {
 				svelte({
 					preprocess: preprocess(),
 				}),
-				scss(),
 				css({ output: "summaryengine-types.css" }),
 				nodeResolve({
 					browser: true,
