@@ -29,7 +29,7 @@ function summaryengine_database_setup() {
 add_action( 'init', 'summaryengine_database_setup', 2 );
 
 function summaryengine_admin_init() {
-    if (!is_admin()) {
+    if (!current_user_can('edit_others_posts')) {
         return;
     }
     require_once(plugin_basename('includes/admin/summaryengine-admin.php' ) );
