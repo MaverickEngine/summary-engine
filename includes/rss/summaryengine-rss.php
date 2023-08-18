@@ -39,7 +39,7 @@ class SummaryEngineRSS {
         }
         $result = new stdClass();
         $result->title = get_the_title( $id );
-        $result->author = get_the_author_meta('display_name', $result->post_author);
+        $result->author = get_the_author_meta('display_name', $post->post_author);
         $result->summary = get_post_meta( $id, 'summaryengine_' . $slug, true );
         $result->categories = $this->get_post_categories( $id, 'section', true );
         $result->url = get_permalink( $id );
