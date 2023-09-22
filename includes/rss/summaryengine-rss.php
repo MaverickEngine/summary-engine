@@ -79,6 +79,8 @@ class SummaryEngineRSS {
         $rating = null;
         if (isset($_GET["rating"])) {
             $rating = intval($_GET["rating"]);
+        } else {
+            $rating = 1;
         }
         $query = array(
             'post_type' => get_option('summaryengine_post_types', array('post')),
