@@ -69,7 +69,6 @@ if (test) {
 				commonjs(),
 				typescript(),
 				json(),
-				!production && serve(),
 				production && terser() && strip()
 			]
 		},
@@ -95,7 +94,6 @@ if (test) {
 				commonjs(),
 				typescript(),
 				json(),
-				!production && serve(),
 				production && terser() && strip()
 			]
 		},
@@ -121,7 +119,6 @@ if (test) {
 				commonjs(),
 				typescript(),
 				json(),
-				!production && serve(),
 				production && terser() && strip()
 			]
 		},
@@ -147,7 +144,6 @@ if (test) {
 				commonjs(),
 				typescript(),
 				json(),
-				!production && serve(),
 				production && terser() && strip()
 			]
 		}

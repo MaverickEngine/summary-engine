@@ -3,6 +3,12 @@ var summaryengine_types = (function (exports) {
 
     function noop() { }
     const identity = x => x;
+    function assign(tar, src) {
+        // @ts-ignore
+        for (const k in src)
+            tar[k] = src[k];
+        return tar;
+    }
     function run(fn) {
         return fn();
     }
@@ -30,6 +36,21 @@ var summaryengine_types = (function (exports) {
     }
     function component_subscribe(component, store, callback) {
         component.$$.on_destroy.push(subscribe(store, callback));
+    }
+    function exclude_internal_props(props) {
+        const result = {};
+        for (const k in props)
+            if (k[0] !== '$')
+                result[k] = props[k];
+        return result;
+    }
+    function compute_rest_props(props, keys) {
+        const rest = {};
+        keys = new Set(keys);
+        for (const k in props)
+            if (!keys.has(k) && k[0] !== '$')
+                rest[k] = props[k];
+        return rest;
     }
     function set_store_value(store, ret, value) {
         store.set(value);
@@ -95,7 +116,9 @@ var summaryengine_types = (function (exports) {
         target.insertBefore(node, anchor || null);
     }
     function detach(node) {
-        node.parentNode.removeChild(node);
+        if (node.parentNode) {
+            node.parentNode.removeChild(node);
+        }
     }
     function destroy_each(iterations, detaching) {
         for (let i = 0; i < iterations.length; i += 1) {
@@ -125,6 +148,29 @@ var summaryengine_types = (function (exports) {
         else if (node.getAttribute(attribute) !== value)
             node.setAttribute(attribute, value);
     }
+    function get_binding_group_value(group, __value, checked) {
+        const value = new Set();
+        for (let i = 0; i < group.length; i += 1) {
+            if (group[i].checked)
+                value.add(group[i].__value);
+        }
+        if (!checked) {
+            value.delete(__value);
+        }
+        return Array.from(value);
+    }
+    function init_binding_group(group) {
+        let _inputs;
+        return {
+            /* push */ p(...inputs) {
+                _inputs = inputs;
+                _inputs.forEach(input => group.push(input));
+            },
+            /* remove */ r() {
+                _inputs.forEach(input => group.splice(group.indexOf(input), 1));
+            }
+        };
+    }
     function to_number(value) {
         return value === '' ? null : +value;
     }
@@ -133,13 +179,14 @@ var summaryengine_types = (function (exports) {
     }
     function set_data(text, data) {
         data = '' + data;
-        if (text.wholeText !== data)
-            text.data = data;
+        if (text.data === data)
+            return;
+        text.data = data;
     }
     function set_input_value(input, value) {
         input.value = value == null ? '' : value;
     }
-    function select_option(select, value) {
+    function select_option(select, value, mounting) {
         for (let i = 0; i < select.options.length; i += 1) {
             const option = select.options[i];
             if (option.__value === value) {
@@ -147,11 +194,22 @@ var summaryengine_types = (function (exports) {
                 return;
             }
         }
-        select.selectedIndex = -1; // no option should be selected
+        if (!mounting || value !== undefined) {
+            select.selectedIndex = -1; // no option should be selected
+        }
+    }
+    function select_options(select, value) {
+        for (let i = 0; i < select.options.length; i += 1) {
+            const option = select.options[i];
+            option.selected = ~value.indexOf(option.__value);
+        }
     }
     function select_value(select) {
-        const selected_option = select.querySelector(':checked') || select.options[0];
+        const selected_option = select.querySelector(':checked');
         return selected_option && selected_option.__value;
+    }
+    function select_multiple_value(select) {
+        return [].map.call(select.querySelectorAll(':checked'), option => option.__value);
     }
     function toggle_class(element, name, toggle) {
         element.classList[toggle ? 'add' : 'remove'](name);
@@ -251,9 +309,9 @@ var summaryengine_types = (function (exports) {
 
     const dirty_components = [];
     const binding_callbacks = [];
-    const render_callbacks = [];
+    let render_callbacks = [];
     const flush_callbacks = [];
-    const resolved_promise = Promise.resolve();
+    const resolved_promise = /* @__PURE__ */ Promise.resolve();
     let update_scheduled = false;
     function schedule_update() {
         if (!update_scheduled) {
@@ -288,15 +346,29 @@ var summaryengine_types = (function (exports) {
     const seen_callbacks = new Set();
     let flushidx = 0; // Do *not* move this inside the flush() function
     function flush() {
+        // Do not reenter flush while dirty components are updated, as this can
+        // result in an infinite loop. Instead, let the inner flush handle it.
+        // Reentrancy is ok afterwards for bindings etc.
+        if (flushidx !== 0) {
+            return;
+        }
         const saved_component = current_component;
         do {
             // first, call beforeUpdate functions
             // and update components
-            while (flushidx < dirty_components.length) {
-                const component = dirty_components[flushidx];
-                flushidx++;
-                set_current_component(component);
-                update(component.$$);
+            try {
+                while (flushidx < dirty_components.length) {
+                    const component = dirty_components[flushidx];
+                    flushidx++;
+                    set_current_component(component);
+                    update(component.$$);
+                }
+            }
+            catch (e) {
+                // reset dirty state to not end up in a deadlocked state and then rethrow
+                dirty_components.length = 0;
+                flushidx = 0;
+                throw e;
             }
             set_current_component(null);
             dirty_components.length = 0;
@@ -332,6 +404,16 @@ var summaryengine_types = (function (exports) {
             $$.fragment && $$.fragment.p($$.ctx, dirty);
             $$.after_update.forEach(add_render_callback);
         }
+    }
+    /**
+     * Useful for example to execute remaining `afterUpdate` callbacks before executing `destroy`.
+     */
+    function flush_render_callbacks(fns) {
+        const filtered = [];
+        const targets = [];
+        render_callbacks.forEach((c) => fns.indexOf(c) === -1 ? filtered.push(c) : targets.push(c));
+        targets.forEach((c) => c());
+        render_callbacks = filtered;
     }
 
     let promise;
@@ -389,7 +471,8 @@ var summaryengine_types = (function (exports) {
     }
     const null_transition = { duration: 0 };
     function create_bidirectional_transition(node, fn, params, intro) {
-        let config = fn(node, params);
+        const options = { direction: 'both' };
+        let config = fn(node, params, options);
         let t = intro ? 0 : 1;
         let running_program = null;
         let pending_program = null;
@@ -479,7 +562,7 @@ var summaryengine_types = (function (exports) {
                 if (is_function(config)) {
                     wait().then(() => {
                         // @ts-ignore
-                        config = config();
+                        config = config(options);
                         go(b);
                     });
                 }
@@ -530,6 +613,7 @@ var summaryengine_types = (function (exports) {
     function destroy_component(component, detaching) {
         const $$ = component.$$;
         if ($$.fragment !== null) {
+            flush_render_callbacks($$.after_update);
             run_all($$.on_destroy);
             $$.fragment && $$.fragment.d(detaching);
             // TODO null out other refs, including component.$$ (but need to
@@ -641,92 +725,132 @@ var summaryengine_types = (function (exports) {
         return f * f * f + 1.0;
     }
 
-    function slide(node, { delay = 0, duration = 400, easing = cubicOut } = {}) {
+    function slide(node, { delay = 0, duration = 400, easing = cubicOut, axis = 'y' } = {}) {
         const style = getComputedStyle(node);
         const opacity = +style.opacity;
-        const height = parseFloat(style.height);
-        const padding_top = parseFloat(style.paddingTop);
-        const padding_bottom = parseFloat(style.paddingBottom);
-        const margin_top = parseFloat(style.marginTop);
-        const margin_bottom = parseFloat(style.marginBottom);
-        const border_top_width = parseFloat(style.borderTopWidth);
-        const border_bottom_width = parseFloat(style.borderBottomWidth);
+        const primary_property = axis === 'y' ? 'height' : 'width';
+        const primary_property_value = parseFloat(style[primary_property]);
+        const secondary_properties = axis === 'y' ? ['top', 'bottom'] : ['left', 'right'];
+        const capitalized_secondary_properties = secondary_properties.map((e) => `${e[0].toUpperCase()}${e.slice(1)}`);
+        const padding_start_value = parseFloat(style[`padding${capitalized_secondary_properties[0]}`]);
+        const padding_end_value = parseFloat(style[`padding${capitalized_secondary_properties[1]}`]);
+        const margin_start_value = parseFloat(style[`margin${capitalized_secondary_properties[0]}`]);
+        const margin_end_value = parseFloat(style[`margin${capitalized_secondary_properties[1]}`]);
+        const border_width_start_value = parseFloat(style[`border${capitalized_secondary_properties[0]}Width`]);
+        const border_width_end_value = parseFloat(style[`border${capitalized_secondary_properties[1]}Width`]);
         return {
             delay,
             duration,
             easing,
             css: t => 'overflow: hidden;' +
                 `opacity: ${Math.min(t * 20, 1) * opacity};` +
-                `height: ${t * height}px;` +
-                `padding-top: ${t * padding_top}px;` +
-                `padding-bottom: ${t * padding_bottom}px;` +
-                `margin-top: ${t * margin_top}px;` +
-                `margin-bottom: ${t * margin_bottom}px;` +
-                `border-top-width: ${t * border_top_width}px;` +
-                `border-bottom-width: ${t * border_bottom_width}px;`
+                `${primary_property}: ${t * primary_property_value}px;` +
+                `padding-${secondary_properties[0]}: ${t * padding_start_value}px;` +
+                `padding-${secondary_properties[1]}: ${t * padding_end_value}px;` +
+                `margin-${secondary_properties[0]}: ${t * margin_start_value}px;` +
+                `margin-${secondary_properties[1]}: ${t * margin_end_value}px;` +
+                `border-${secondary_properties[0]}-width: ${t * border_width_start_value}px;` +
+                `border-${secondary_properties[1]}-width: ${t * border_width_end_value}px;`
         };
     }
 
-    function apiPost(path, data) {
+    var ajax = {};
+
+    Object.defineProperty(ajax, "__esModule", { value: true });
+    ajax.apiPut = apiDelete_1 = ajax.apiDelete = apiGet_1 = ajax.apiGet = apiPost_1 = ajax.apiPost = void 0;
+    function handleError(response) {
+        if (!response.ok) {
+            const status = response.status;
+            const message = response.responseJSON?.message || response.statusText || response.responseText || response;
+            const code = response.responseJSON?.code || response.code || "";
+            return { status, code, message };
+        }
+        return response;
+    }
+    function apiPost(path, data, headers = {}) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
                 data,
                 type: "POST",
+                headers
             })
-            .done(async (response) => {
+                .done(async (response) => {
                 if (response.error) {
                     reject(response);
                 }
                 resolve(response);
             })
-            .fail(async (response) => {
-                reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+                .fail(async (response) => {
+                reject(handleError(response));
             });
         });
     }
-
-    function apiGet(path) {
+    var apiPost_1 = ajax.apiPost = apiPost;
+    function apiGet(path, headers = {}) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
                 type: "GET",
+                headers
             })
-            .done(async (response) => {
+                .done(async (response) => {
                 if (response.error) {
                     reject(response);
                 }
                 resolve(response);
             })
-            .fail(async (response) => {
-                reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+                .fail(async (response) => {
+                reject(handleError(response));
             });
         });
     }
-
-    function apiDelete(path) {
+    var apiGet_1 = ajax.apiGet = apiGet;
+    function apiDelete(path, headers = {}) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
                 type: "DELETE",
+                headers
             })
-            .done(async (response) => {
+                .done(async (response) => {
                 if (response.error) {
                     reject(response);
                 }
                 resolve(response);
             })
-            .fail(async (response) => {
-                reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+                .fail(async (response) => {
+                reject(handleError(response));
             });
         });
     }
+    var apiDelete_1 = ajax.apiDelete = apiDelete;
+    function apiPut(path, data, headers = {}) {
+        return new Promise((resolve, reject) => {
+            wp.apiRequest({
+                path,
+                data,
+                type: "PUT",
+                headers
+            })
+                .done(async (response) => {
+                if (response.error) {
+                    reject(response);
+                }
+                resolve(response);
+            })
+                .fail(async (response) => {
+                reject(handleError(response));
+            });
+        });
+    }
+    ajax.apiPut = apiPut;
 
     const subscriber_queue = [];
     /**
      * Create a `Writable` store that allows both updating and reading by subscription.
      * @param {*=}value initial value
-     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
+     * @param {StartStopNotifier=} start
      */
     function writable(value, start = noop) {
         let stop;
@@ -761,7 +885,7 @@ var summaryengine_types = (function (exports) {
             run(value);
             return () => {
                 subscribers.delete(subscriber);
-                if (subscribers.size === 0) {
+                if (subscribers.size === 0 && stop) {
                     stop();
                     stop = null;
                 }
@@ -783,7 +907,2404 @@ var summaryengine_types = (function (exports) {
             .replace(/\s+/g, separator);
     };
 
-    /* src/components/OpenAITypeSettings.svelte generated by Svelte v3.52.0 */
+    /* node_modules/svelte-wordpress-components/components/svelte-wordpress-form-input.svelte generated by Svelte v3.59.2 */
+
+    function get_each_context_3(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[47] = list[i];
+    	return child_ctx;
+    }
+
+    function get_each_context_2(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[47] = list[i];
+    	return child_ctx;
+    }
+
+    function get_each_context_1$1(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[47] = list[i];
+    	return child_ctx;
+    }
+
+    function get_each_context$1(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[47] = list[i];
+    	return child_ctx;
+    }
+
+    // (41:0) {:else}
+    function create_else_block$1(ctx) {
+    	let tr;
+    	let th;
+    	let label_1;
+    	let t0;
+    	let t1;
+    	let td;
+    	let t2;
+
+    	function select_block_type_1(ctx, dirty) {
+    		if (/*type*/ ctx[6] === "text") return create_if_block_2$2;
+    		if (/*type*/ ctx[6] === "password") return create_if_block_3$1;
+    		if (/*type*/ ctx[6] === "email") return create_if_block_4$1;
+    		if (/*type*/ ctx[6] === "url") return create_if_block_5$1;
+    		if (/*type*/ ctx[6] === "tel") return create_if_block_6$1;
+    		if (/*type*/ ctx[6] === "number") return create_if_block_7;
+    		if (/*type*/ ctx[6] === "range") return create_if_block_8;
+    		if (/*type*/ ctx[6] === "date") return create_if_block_9;
+    		if (/*type*/ ctx[6] === "month") return create_if_block_10;
+    		if (/*type*/ ctx[6] === "week") return create_if_block_11;
+    		if (/*type*/ ctx[6] === "time") return create_if_block_12;
+    		if (/*type*/ ctx[6] === "datetime-local") return create_if_block_13;
+    		if (/*type*/ ctx[6] === "color") return create_if_block_14;
+    		if (/*type*/ ctx[6] === "checkbox") return create_if_block_15;
+    		if (/*type*/ ctx[6] === "radio") return create_if_block_17;
+    		if (/*type*/ ctx[6] === "file") return create_if_block_18;
+    		if (/*type*/ ctx[6] === "submit") return create_if_block_19;
+    		if (/*type*/ ctx[6] === "reset") return create_if_block_20;
+    		if (/*type*/ ctx[6] === "button") return create_if_block_21;
+    		if (/*type*/ ctx[6] === "select") return create_if_block_22;
+    		if (/*type*/ ctx[6] === "textarea") return create_if_block_24;
+    	}
+
+    	let current_block_type = select_block_type_1(ctx);
+    	let if_block0 = current_block_type && current_block_type(ctx);
+    	let if_block1 = /*description*/ ctx[8] && create_if_block_1$2(ctx);
+
+    	return {
+    		c() {
+    			tr = element("tr");
+    			th = element("th");
+    			label_1 = element("label");
+    			t0 = text(/*label*/ ctx[5]);
+    			t1 = space();
+    			td = element("td");
+    			if (if_block0) if_block0.c();
+    			t2 = space();
+    			if (if_block1) if_block1.c();
+    			attr(label_1, "for", /*id*/ ctx[3]);
+    			attr(th, "scope", "row");
+    		},
+    		m(target, anchor) {
+    			insert(target, tr, anchor);
+    			append(tr, th);
+    			append(th, label_1);
+    			append(label_1, t0);
+    			append(tr, t1);
+    			append(tr, td);
+    			if (if_block0) if_block0.m(td, null);
+    			append(td, t2);
+    			if (if_block1) if_block1.m(td, null);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*label*/ 32) set_data(t0, /*label*/ ctx[5]);
+
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(label_1, "for", /*id*/ ctx[3]);
+    			}
+
+    			if (current_block_type === (current_block_type = select_block_type_1(ctx)) && if_block0) {
+    				if_block0.p(ctx, dirty);
+    			} else {
+    				if (if_block0) if_block0.d(1);
+    				if_block0 = current_block_type && current_block_type(ctx);
+
+    				if (if_block0) {
+    					if_block0.c();
+    					if_block0.m(td, t2);
+    				}
+    			}
+
+    			if (/*description*/ ctx[8]) {
+    				if (if_block1) {
+    					if_block1.p(ctx, dirty);
+    				} else {
+    					if_block1 = create_if_block_1$2(ctx);
+    					if_block1.c();
+    					if_block1.m(td, null);
+    				}
+    			} else if (if_block1) {
+    				if_block1.d(1);
+    				if_block1 = null;
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(tr);
+
+    			if (if_block0) {
+    				if_block0.d();
+    			}
+
+    			if (if_block1) if_block1.d();
+    		}
+    	};
+    }
+
+    // (39:0) {#if (type === "hidden")}
+    function create_if_block$2(ctx) {
+    	let input;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "hidden");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler*/ ctx[22]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (109:40) 
+    function create_if_block_24(ctx) {
+    	let textarea;
+    	let textarea_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			textarea = element("textarea");
+    			attr(textarea, "id", /*id*/ ctx[3]);
+    			attr(textarea, "class", textarea_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(textarea, "name", /*name*/ ctx[4]);
+    			textarea.required = /*required*/ ctx[9];
+    			textarea.readOnly = /*readonly*/ ctx[10];
+    			textarea.disabled = /*disabled*/ ctx[11];
+    			attr(textarea, "rows", /*rows*/ ctx[18]);
+    			attr(textarea, "cols", /*cols*/ ctx[19]);
+    			attr(textarea, "wrap", /*wrap*/ ctx[20]);
+    		},
+    		m(target, anchor) {
+    			insert(target, textarea, anchor);
+    			set_input_value(textarea, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(textarea, "input", /*textarea_input_handler*/ ctx[46]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(textarea, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && textarea_class_value !== (textarea_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(textarea, "class", textarea_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(textarea, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				textarea.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				textarea.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				textarea.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*rows*/ 262144) {
+    				attr(textarea, "rows", /*rows*/ ctx[18]);
+    			}
+
+    			if (dirty[0] & /*cols*/ 524288) {
+    				attr(textarea, "cols", /*cols*/ ctx[19]);
+    			}
+
+    			if (dirty[0] & /*wrap*/ 1048576) {
+    				attr(textarea, "wrap", /*wrap*/ ctx[20]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(textarea, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(textarea);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (95:38) 
+    function create_if_block_22(ctx) {
+    	let if_block_anchor;
+
+    	function select_block_type_3(ctx, dirty) {
+    		if (/*multiple*/ ctx[13]) return create_if_block_23;
+    		return create_else_block_2;
+    	}
+
+    	let current_block_type = select_block_type_3(ctx);
+    	let if_block = current_block_type(ctx);
+
+    	return {
+    		c() {
+    			if_block.c();
+    			if_block_anchor = empty();
+    		},
+    		m(target, anchor) {
+    			if_block.m(target, anchor);
+    			insert(target, if_block_anchor, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (current_block_type === (current_block_type = select_block_type_3(ctx)) && if_block) {
+    				if_block.p(ctx, dirty);
+    			} else {
+    				if_block.d(1);
+    				if_block = current_block_type(ctx);
+
+    				if (if_block) {
+    					if_block.c();
+    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				}
+    			}
+    		},
+    		d(detaching) {
+    			if_block.d(detaching);
+    			if (detaching) detach(if_block_anchor);
+    		}
+    	};
+    }
+
+    // (93:38) 
+    function create_if_block_21(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "button");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_15*/ ctx[43]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (91:37) 
+    function create_if_block_20(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "reset");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_14*/ ctx[42]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (89:38) 
+    function create_if_block_19(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "submit");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_13*/ ctx[41]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (87:36) 
+    function create_if_block_18(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "file");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+
+    			if (!mounted) {
+    				dispose = listen(input, "change", /*input_change_handler_3*/ ctx[40]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (82:37) 
+    function create_if_block_17(ctx) {
+    	let each_1_anchor;
+    	let each_value_1 = /*options*/ ctx[12];
+    	let each_blocks = [];
+
+    	for (let i = 0; i < each_value_1.length; i += 1) {
+    		each_blocks[i] = create_each_block_1$1(get_each_context_1$1(ctx, each_value_1, i));
+    	}
+
+    	return {
+    		c() {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			each_1_anchor = empty();
+    		},
+    		m(target, anchor) {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(target, anchor);
+    				}
+    			}
+
+    			insert(target, each_1_anchor, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*name, options, values*/ 4114) {
+    				each_value_1 = /*options*/ ctx[12];
+    				let i;
+
+    				for (i = 0; i < each_value_1.length; i += 1) {
+    					const child_ctx = get_each_context_1$1(ctx, each_value_1, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block_1$1(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+    					}
+    				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value_1.length;
+    			}
+    		},
+    		d(detaching) {
+    			destroy_each(each_blocks, detaching);
+    			if (detaching) detach(each_1_anchor);
+    		}
+    	};
+    }
+
+    // (73:40) 
+    function create_if_block_15(ctx) {
+    	let if_block_anchor;
+
+    	function select_block_type_2(ctx, dirty) {
+    		if (/*multiple*/ ctx[13]) return create_if_block_16;
+    		return create_else_block_1;
+    	}
+
+    	let current_block_type = select_block_type_2(ctx);
+    	let if_block = current_block_type(ctx);
+
+    	return {
+    		c() {
+    			if_block.c();
+    			if_block_anchor = empty();
+    		},
+    		m(target, anchor) {
+    			if_block.m(target, anchor);
+    			insert(target, if_block_anchor, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (current_block_type === (current_block_type = select_block_type_2(ctx)) && if_block) {
+    				if_block.p(ctx, dirty);
+    			} else {
+    				if_block.d(1);
+    				if_block = current_block_type(ctx);
+
+    				if (if_block) {
+    					if_block.c();
+    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				}
+    			}
+    		},
+    		d(detaching) {
+    			if_block.d(detaching);
+    			if (detaching) detach(if_block_anchor);
+    		}
+    	};
+    }
+
+    // (71:37) 
+    function create_if_block_14(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "color");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_12*/ ctx[35]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (69:46) 
+    function create_if_block_13(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "datetime-local");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_11*/ ctx[34]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (67:36) 
+    function create_if_block_12(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "time");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_10*/ ctx[33]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (65:36) 
+    function create_if_block_11(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "week");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_9*/ ctx[32]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (63:37) 
+    function create_if_block_10(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "month");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_8*/ ctx[31]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (61:36) 
+    function create_if_block_9(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "date");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_7*/ ctx[30]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (59:37) 
+    function create_if_block_8(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "range");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    			attr(input, "min", /*min*/ ctx[14]);
+    			attr(input, "max", /*max*/ ctx[15]);
+    			attr(input, "step", /*step*/ ctx[16]);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = [
+    					listen(input, "change", /*input_change_input_handler*/ ctx[29]),
+    					listen(input, "input", /*input_change_input_handler*/ ctx[29])
+    				];
+
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*min*/ 16384) {
+    				attr(input, "min", /*min*/ ctx[14]);
+    			}
+
+    			if (dirty[0] & /*max*/ 32768) {
+    				attr(input, "max", /*max*/ ctx[15]);
+    			}
+
+    			if (dirty[0] & /*step*/ 65536) {
+    				attr(input, "step", /*step*/ ctx[16]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			run_all(dispose);
+    		}
+    	};
+    }
+
+    // (57:38) 
+    function create_if_block_7(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "number");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    			attr(input, "min", /*min*/ ctx[14]);
+    			attr(input, "max", /*max*/ ctx[15]);
+    			attr(input, "step", /*step*/ ctx[16]);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_6*/ ctx[28]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*min*/ 16384) {
+    				attr(input, "min", /*min*/ ctx[14]);
+    			}
+
+    			if (dirty[0] & /*max*/ 32768) {
+    				attr(input, "max", /*max*/ ctx[15]);
+    			}
+
+    			if (dirty[0] & /*step*/ 65536) {
+    				attr(input, "step", /*step*/ ctx[16]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097 && to_number(input.value) !== /*value*/ ctx[0]) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (55:35) 
+    function create_if_block_6$1(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "tel");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    			attr(input, "pattern", /*pattern*/ ctx[17]);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_5*/ ctx[27]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*pattern*/ 131072) {
+    				attr(input, "pattern", /*pattern*/ ctx[17]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (53:35) 
+    function create_if_block_5$1(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "url");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    			attr(input, "pattern", /*pattern*/ ctx[17]);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_4*/ ctx[26]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*pattern*/ 131072) {
+    				attr(input, "pattern", /*pattern*/ ctx[17]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097 && input.value !== /*value*/ ctx[0]) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (51:37) 
+    function create_if_block_4$1(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "email");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    			attr(input, "pattern", /*pattern*/ ctx[17]);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_3*/ ctx[25]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*pattern*/ 131072) {
+    				attr(input, "pattern", /*pattern*/ ctx[17]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097 && input.value !== /*value*/ ctx[0]) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (49:40) 
+    function create_if_block_3$1(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "password");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    			attr(input, "pattern", /*pattern*/ ctx[17]);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_2*/ ctx[24]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*pattern*/ 131072) {
+    				attr(input, "pattern", /*pattern*/ ctx[17]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097 && input.value !== /*value*/ ctx[0]) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (47:8) {#if (type === "text")}
+    function create_if_block_2$2(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "text");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			attr(input, "placeholder", /*placeholder*/ ctx[7]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    			attr(input, "pattern", /*pattern*/ ctx[17]);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			set_input_value(input, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(input, "input", /*input_input_handler_1*/ ctx[23]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*placeholder*/ 128) {
+    				attr(input, "placeholder", /*placeholder*/ ctx[7]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*pattern*/ 131072) {
+    				attr(input, "pattern", /*pattern*/ ctx[17]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097 && input.value !== /*value*/ ctx[0]) {
+    				set_input_value(input, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (102:12) {:else}
+    function create_else_block_2(ctx) {
+    	let select;
+    	let select_class_value;
+    	let mounted;
+    	let dispose;
+    	let each_value_3 = /*options*/ ctx[12];
+    	let each_blocks = [];
+
+    	for (let i = 0; i < each_value_3.length; i += 1) {
+    		each_blocks[i] = create_each_block_3(get_each_context_3(ctx, each_value_3, i));
+    	}
+
+    	return {
+    		c() {
+    			select = element("select");
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			attr(select, "id", /*id*/ ctx[3]);
+    			attr(select, "class", select_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(select, "name", /*name*/ ctx[4]);
+    			if (/*value*/ ctx[0] === void 0) add_render_callback(() => /*select_change_handler_1*/ ctx[45].call(select));
+    		},
+    		m(target, anchor) {
+    			insert(target, select, anchor);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(select, null);
+    				}
+    			}
+
+    			select_option(select, /*value*/ ctx[0], true);
+
+    			if (!mounted) {
+    				dispose = listen(select, "change", /*select_change_handler_1*/ ctx[45]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*options*/ 4096) {
+    				each_value_3 = /*options*/ ctx[12];
+    				let i;
+
+    				for (i = 0; i < each_value_3.length; i += 1) {
+    					const child_ctx = get_each_context_3(ctx, each_value_3, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block_3(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(select, null);
+    					}
+    				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value_3.length;
+    			}
+
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(select, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && select_class_value !== (select_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(select, "class", select_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(select, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				select_option(select, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(select);
+    			destroy_each(each_blocks, detaching);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (96:12) {#if (multiple)}
+    function create_if_block_23(ctx) {
+    	let select;
+    	let select_class_value;
+    	let mounted;
+    	let dispose;
+    	let each_value_2 = /*options*/ ctx[12];
+    	let each_blocks = [];
+
+    	for (let i = 0; i < each_value_2.length; i += 1) {
+    		each_blocks[i] = create_each_block_2(get_each_context_2(ctx, each_value_2, i));
+    	}
+
+    	return {
+    		c() {
+    			select = element("select");
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			attr(select, "id", /*id*/ ctx[3]);
+    			attr(select, "class", select_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(select, "name", /*name*/ ctx[4]);
+    			select.multiple = true;
+    			if (/*value*/ ctx[0] === void 0) add_render_callback(() => /*select_change_handler*/ ctx[44].call(select));
+    		},
+    		m(target, anchor) {
+    			insert(target, select, anchor);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(select, null);
+    				}
+    			}
+
+    			select_options(select, /*value*/ ctx[0]);
+
+    			if (!mounted) {
+    				dispose = listen(select, "change", /*select_change_handler*/ ctx[44]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*options*/ 4096) {
+    				each_value_2 = /*options*/ ctx[12];
+    				let i;
+
+    				for (i = 0; i < each_value_2.length; i += 1) {
+    					const child_ctx = get_each_context_2(ctx, each_value_2, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block_2(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(select, null);
+    					}
+    				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value_2.length;
+    			}
+
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(select, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && select_class_value !== (select_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(select, "class", select_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(select, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*value, options*/ 4097) {
+    				select_options(select, /*value*/ ctx[0]);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(select);
+    			destroy_each(each_blocks, detaching);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (104:16) {#each options as option}
+    function create_each_block_3(ctx) {
+    	let option;
+    	let t_value = /*option*/ ctx[47].label + "";
+    	let t;
+    	let option_value_value;
+
+    	return {
+    		c() {
+    			option = element("option");
+    			t = text(t_value);
+    			option.__value = option_value_value = /*option*/ ctx[47].value;
+    			option.value = option.__value;
+    		},
+    		m(target, anchor) {
+    			insert(target, option, anchor);
+    			append(option, t);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*options*/ 4096 && t_value !== (t_value = /*option*/ ctx[47].label + "")) set_data(t, t_value);
+
+    			if (dirty[0] & /*options*/ 4096 && option_value_value !== (option_value_value = /*option*/ ctx[47].value)) {
+    				option.__value = option_value_value;
+    				option.value = option.__value;
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(option);
+    		}
+    	};
+    }
+
+    // (98:16) {#each options as option}
+    function create_each_block_2(ctx) {
+    	let option;
+    	let t_value = /*option*/ ctx[47].label + "";
+    	let t;
+    	let option_value_value;
+
+    	return {
+    		c() {
+    			option = element("option");
+    			t = text(t_value);
+    			option.__value = option_value_value = /*option*/ ctx[47].value;
+    			option.value = option.__value;
+    		},
+    		m(target, anchor) {
+    			insert(target, option, anchor);
+    			append(option, t);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*options*/ 4096 && t_value !== (t_value = /*option*/ ctx[47].label + "")) set_data(t, t_value);
+
+    			if (dirty[0] & /*options*/ 4096 && option_value_value !== (option_value_value = /*option*/ ctx[47].value)) {
+    				option.__value = option_value_value;
+    				option.value = option.__value;
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(option);
+    		}
+    	};
+    }
+
+    // (83:12) {#each options as option}
+    function create_each_block_1$1(ctx) {
+    	let input;
+    	let input_value_value;
+    	let value_has_changed = false;
+    	let binding_group;
+    	let mounted;
+    	let dispose;
+    	binding_group = init_binding_group(/*$$binding_groups*/ ctx[37][0]);
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "radio");
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.__value = input_value_value = /*option*/ ctx[47].value;
+    			input.value = input.__value;
+    			binding_group.p(input);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			input.checked = input.__value === /*values*/ ctx[1];
+
+    			if (!mounted) {
+    				dispose = listen(input, "change", /*input_change_handler_2*/ ctx[39]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*options*/ 4096 && input_value_value !== (input_value_value = /*option*/ ctx[47].value)) {
+    				input.__value = input_value_value;
+    				input.value = input.__value;
+    				value_has_changed = true;
+    			}
+
+    			if (value_has_changed || dirty[0] & /*values, options*/ 4098) {
+    				input.checked = input.__value === /*values*/ ctx[1];
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			binding_group.r();
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (79:12) {:else}
+    function create_else_block_1(ctx) {
+    	let input;
+    	let input_class_value;
+    	let mounted;
+    	let dispose;
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "checkbox");
+    			attr(input, "id", /*id*/ ctx[3]);
+    			attr(input, "class", input_class_value = /*$$restProps*/ ctx[21].class || '');
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.required = /*required*/ ctx[9];
+    			input.readOnly = /*readonly*/ ctx[10];
+    			input.disabled = /*disabled*/ ctx[11];
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			input.checked = /*checked*/ ctx[2];
+
+    			if (!mounted) {
+    				dispose = listen(input, "change", /*input_change_handler_1*/ ctx[38]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*id*/ 8) {
+    				attr(input, "id", /*id*/ ctx[3]);
+    			}
+
+    			if (dirty[0] & /*$$restProps*/ 2097152 && input_class_value !== (input_class_value = /*$$restProps*/ ctx[21].class || '')) {
+    				attr(input, "class", input_class_value);
+    			}
+
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*required*/ 512) {
+    				input.required = /*required*/ ctx[9];
+    			}
+
+    			if (dirty[0] & /*readonly*/ 1024) {
+    				input.readOnly = /*readonly*/ ctx[10];
+    			}
+
+    			if (dirty[0] & /*disabled*/ 2048) {
+    				input.disabled = /*disabled*/ ctx[11];
+    			}
+
+    			if (dirty[0] & /*checked*/ 4) {
+    				input.checked = /*checked*/ ctx[2];
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (74:12) {#if (multiple)}
+    function create_if_block_16(ctx) {
+    	let each_1_anchor;
+    	let each_value = /*options*/ ctx[12];
+    	let each_blocks = [];
+
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		each_blocks[i] = create_each_block$1(get_each_context$1(ctx, each_value, i));
+    	}
+
+    	return {
+    		c() {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			each_1_anchor = empty();
+    		},
+    		m(target, anchor) {
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(target, anchor);
+    				}
+    			}
+
+    			insert(target, each_1_anchor, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*name, options, values*/ 4114) {
+    				each_value = /*options*/ ctx[12];
+    				let i;
+
+    				for (i = 0; i < each_value.length; i += 1) {
+    					const child_ctx = get_each_context$1(ctx, each_value, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block$1(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(each_1_anchor.parentNode, each_1_anchor);
+    					}
+    				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value.length;
+    			}
+    		},
+    		d(detaching) {
+    			destroy_each(each_blocks, detaching);
+    			if (detaching) detach(each_1_anchor);
+    		}
+    	};
+    }
+
+    // (75:16) {#each options as option}
+    function create_each_block$1(ctx) {
+    	let input;
+    	let input_value_value;
+    	let value_has_changed = false;
+    	let binding_group;
+    	let mounted;
+    	let dispose;
+    	binding_group = init_binding_group(/*$$binding_groups*/ ctx[37][0]);
+
+    	return {
+    		c() {
+    			input = element("input");
+    			attr(input, "type", "checkbox");
+    			attr(input, "name", /*name*/ ctx[4]);
+    			input.__value = input_value_value = /*option*/ ctx[47].value;
+    			input.value = input.__value;
+    			binding_group.p(input);
+    		},
+    		m(target, anchor) {
+    			insert(target, input, anchor);
+    			input.checked = ~(/*values*/ ctx[1] || []).indexOf(input.__value);
+
+    			if (!mounted) {
+    				dispose = listen(input, "change", /*input_change_handler*/ ctx[36]);
+    				mounted = true;
+    			}
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*name*/ 16) {
+    				attr(input, "name", /*name*/ ctx[4]);
+    			}
+
+    			if (dirty[0] & /*options*/ 4096 && input_value_value !== (input_value_value = /*option*/ ctx[47].value)) {
+    				input.__value = input_value_value;
+    				input.value = input.__value;
+    				value_has_changed = true;
+    			}
+
+    			if (value_has_changed || dirty[0] & /*values, options*/ 4098) {
+    				input.checked = ~(/*values*/ ctx[1] || []).indexOf(input.__value);
+    			}
+    		},
+    		d(detaching) {
+    			if (detaching) detach(input);
+    			binding_group.r();
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+    }
+
+    // (112:8) {#if (description)}
+    function create_if_block_1$2(ctx) {
+    	let p;
+    	let t;
+
+    	return {
+    		c() {
+    			p = element("p");
+    			t = text(/*description*/ ctx[8]);
+    			attr(p, "class", "description");
+    		},
+    		m(target, anchor) {
+    			insert(target, p, anchor);
+    			append(p, t);
+    		},
+    		p(ctx, dirty) {
+    			if (dirty[0] & /*description*/ 256) set_data(t, /*description*/ ctx[8]);
+    		},
+    		d(detaching) {
+    			if (detaching) detach(p);
+    		}
+    	};
+    }
+
+    function create_fragment$2(ctx) {
+    	let if_block_anchor;
+
+    	function select_block_type(ctx, dirty) {
+    		if (/*type*/ ctx[6] === "hidden") return create_if_block$2;
+    		return create_else_block$1;
+    	}
+
+    	let current_block_type = select_block_type(ctx);
+    	let if_block = current_block_type(ctx);
+
+    	return {
+    		c() {
+    			if_block.c();
+    			if_block_anchor = empty();
+    		},
+    		m(target, anchor) {
+    			if_block.m(target, anchor);
+    			insert(target, if_block_anchor, anchor);
+    		},
+    		p(ctx, dirty) {
+    			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block) {
+    				if_block.p(ctx, dirty);
+    			} else {
+    				if_block.d(1);
+    				if_block = current_block_type(ctx);
+
+    				if (if_block) {
+    					if_block.c();
+    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				}
+    			}
+    		},
+    		i: noop,
+    		o: noop,
+    		d(detaching) {
+    			if_block.d(detaching);
+    			if (detaching) detach(if_block_anchor);
+    		}
+    	};
+    }
+
+    function parse_date(d) {
+    	const date = new Date(d);
+    	const year = date.getFullYear();
+    	const month = date.getMonth() + 1;
+    	const day = date.getDate();
+    	return `${year}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+    }
+
+    function instance$2($$self, $$props, $$invalidate) {
+    	const omit_props_names = [
+    		"id","name","label","type","value","values","placeholder","description","required","readonly","disabled","options","multiple","checked","min","max","step","pattern","rows","cols","wrap"
+    	];
+
+    	let $$restProps = compute_rest_props($$props, omit_props_names);
+    	let { id = null } = $$props;
+    	let { name = null } = $$props;
+    	let { label = "" } = $$props;
+    	let { type = "text" } = $$props;
+    	let { value = "" } = $$props;
+    	let { values = [] } = $$props;
+    	let { placeholder = "" } = $$props;
+    	let { description = "" } = $$props;
+    	let { required = false } = $$props;
+    	let { readonly = false } = $$props;
+    	let { disabled = false } = $$props;
+    	let { options = [] } = $$props;
+    	let { multiple = false } = $$props;
+    	let { checked = false } = $$props;
+    	let { min = null } = $$props;
+    	let { max = null } = $$props;
+    	let { step = null } = $$props;
+    	let { pattern = null } = $$props;
+    	let { rows = null } = $$props;
+    	let { cols = null } = $$props;
+    	let { wrap = null } = $$props;
+    	const $$binding_groups = [[]];
+
+    	function input_input_handler() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_1() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_2() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_3() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_4() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_5() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_6() {
+    		value = to_number(this.value);
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_change_input_handler() {
+    		value = to_number(this.value);
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_7() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_8() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_9() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_10() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_11() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_12() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_change_handler() {
+    		values = get_binding_group_value($$binding_groups[0], this.__value, this.checked);
+    		$$invalidate(1, values);
+    	}
+
+    	function input_change_handler_1() {
+    		checked = this.checked;
+    		$$invalidate(2, checked);
+    	}
+
+    	function input_change_handler_2() {
+    		values = this.__value;
+    		$$invalidate(1, values);
+    	}
+
+    	function input_change_handler_3() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_13() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_14() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function input_input_handler_15() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function select_change_handler() {
+    		value = select_multiple_value(this);
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function select_change_handler_1() {
+    		value = select_value(this);
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	function textarea_input_handler() {
+    		value = this.value;
+    		($$invalidate(0, value), $$invalidate(6, type));
+    		$$invalidate(12, options);
+    	}
+
+    	$$self.$$set = $$new_props => {
+    		$$props = assign(assign({}, $$props), exclude_internal_props($$new_props));
+    		$$invalidate(21, $$restProps = compute_rest_props($$props, omit_props_names));
+    		if ('id' in $$new_props) $$invalidate(3, id = $$new_props.id);
+    		if ('name' in $$new_props) $$invalidate(4, name = $$new_props.name);
+    		if ('label' in $$new_props) $$invalidate(5, label = $$new_props.label);
+    		if ('type' in $$new_props) $$invalidate(6, type = $$new_props.type);
+    		if ('value' in $$new_props) $$invalidate(0, value = $$new_props.value);
+    		if ('values' in $$new_props) $$invalidate(1, values = $$new_props.values);
+    		if ('placeholder' in $$new_props) $$invalidate(7, placeholder = $$new_props.placeholder);
+    		if ('description' in $$new_props) $$invalidate(8, description = $$new_props.description);
+    		if ('required' in $$new_props) $$invalidate(9, required = $$new_props.required);
+    		if ('readonly' in $$new_props) $$invalidate(10, readonly = $$new_props.readonly);
+    		if ('disabled' in $$new_props) $$invalidate(11, disabled = $$new_props.disabled);
+    		if ('options' in $$new_props) $$invalidate(12, options = $$new_props.options);
+    		if ('multiple' in $$new_props) $$invalidate(13, multiple = $$new_props.multiple);
+    		if ('checked' in $$new_props) $$invalidate(2, checked = $$new_props.checked);
+    		if ('min' in $$new_props) $$invalidate(14, min = $$new_props.min);
+    		if ('max' in $$new_props) $$invalidate(15, max = $$new_props.max);
+    		if ('step' in $$new_props) $$invalidate(16, step = $$new_props.step);
+    		if ('pattern' in $$new_props) $$invalidate(17, pattern = $$new_props.pattern);
+    		if ('rows' in $$new_props) $$invalidate(18, rows = $$new_props.rows);
+    		if ('cols' in $$new_props) $$invalidate(19, cols = $$new_props.cols);
+    		if ('wrap' in $$new_props) $$invalidate(20, wrap = $$new_props.wrap);
+    	};
+
+    	$$self.$$.update = () => {
+    		if ($$self.$$.dirty[0] & /*type, value*/ 65) {
+    			if (type === "date" && value) {
+    				$$invalidate(0, value = parse_date(value));
+    			}
+    		}
+    	};
+
+    	return [
+    		value,
+    		values,
+    		checked,
+    		id,
+    		name,
+    		label,
+    		type,
+    		placeholder,
+    		description,
+    		required,
+    		readonly,
+    		disabled,
+    		options,
+    		multiple,
+    		min,
+    		max,
+    		step,
+    		pattern,
+    		rows,
+    		cols,
+    		wrap,
+    		$$restProps,
+    		input_input_handler,
+    		input_input_handler_1,
+    		input_input_handler_2,
+    		input_input_handler_3,
+    		input_input_handler_4,
+    		input_input_handler_5,
+    		input_input_handler_6,
+    		input_change_input_handler,
+    		input_input_handler_7,
+    		input_input_handler_8,
+    		input_input_handler_9,
+    		input_input_handler_10,
+    		input_input_handler_11,
+    		input_input_handler_12,
+    		input_change_handler,
+    		$$binding_groups,
+    		input_change_handler_1,
+    		input_change_handler_2,
+    		input_change_handler_3,
+    		input_input_handler_13,
+    		input_input_handler_14,
+    		input_input_handler_15,
+    		select_change_handler,
+    		select_change_handler_1,
+    		textarea_input_handler
+    	];
+    }
+
+    class Svelte_wordpress_form_input extends SvelteComponent {
+    	constructor(options) {
+    		super();
+
+    		init(
+    			this,
+    			options,
+    			instance$2,
+    			create_fragment$2,
+    			safe_not_equal,
+    			{
+    				id: 3,
+    				name: 4,
+    				label: 5,
+    				type: 6,
+    				value: 0,
+    				values: 1,
+    				placeholder: 7,
+    				description: 8,
+    				required: 9,
+    				readonly: 10,
+    				disabled: 11,
+    				options: 12,
+    				multiple: 13,
+    				checked: 2,
+    				min: 14,
+    				max: 15,
+    				step: 16,
+    				pattern: 17,
+    				rows: 18,
+    				cols: 19,
+    				wrap: 20
+    			},
+    			null,
+    			[-1, -1]
+    		);
+    	}
+    }
+
+    /* src/components/OpenAITypeSettings.svelte generated by Svelte v3.59.2 */
 
     function create_if_block_2$1(ctx) {
     	let option0;
@@ -811,7 +3332,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (31:12) {#if settings.openai_method === 'complete'}
+    // (20:12) {#if settings.openai_method === 'complete'}
     function create_if_block_1$1(ctx) {
     	let option0;
     	let option1;
@@ -859,146 +3380,153 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (44:0) {#if settings.openai_method === 'chat'}
+    // (33:0) {#if settings.openai_method === 'chat'}
     function create_if_block$1(ctx) {
-    	let tr;
-    	let th;
-    	let t1;
-    	let td;
-    	let textarea;
-    	let t2;
-    	let p;
-    	let mounted;
-    	let dispose;
+    	let forminput;
+    	let updating_value;
+    	let current;
+
+    	function forminput_value_binding(value) {
+    		/*forminput_value_binding*/ ctx[5](value);
+    	}
+
+    	let forminput_props = {
+    		type: "textarea",
+    		label: "User description",
+    		description: "Describe yourself, eg. 'I am a journalist for the Daily Maverick.'",
+    		cols: "40",
+    		rows: "5"
+    	};
+
+    	if (/*settings*/ ctx[0].openai_system !== void 0) {
+    		forminput_props.value = /*settings*/ ctx[0].openai_system;
+    	}
+
+    	forminput = new Svelte_wordpress_form_input({ props: forminput_props });
+    	binding_callbacks.push(() => bind(forminput, 'value', forminput_value_binding));
 
     	return {
     		c() {
-    			tr = element("tr");
-    			th = element("th");
-    			th.textContent = "User Description";
-    			t1 = space();
-    			td = element("td");
-    			textarea = element("textarea");
-    			t2 = space();
-    			p = element("p");
-    			p.textContent = "Describe the OpenAI assistant, eg. \"You are SummaryBot, an experienced news editor and subeditor.\"";
-    			attr(th, "scope", "row");
-    			attr(textarea, "name", "openai_system");
-    			attr(textarea, "class", "regular-text");
+    			create_component(forminput.$$.fragment);
     		},
     		m(target, anchor) {
-    			insert(target, tr, anchor);
-    			append(tr, th);
-    			append(tr, t1);
-    			append(tr, td);
-    			append(td, textarea);
-    			set_input_value(textarea, /*settings*/ ctx[0].openai_system);
-    			append(td, t2);
-    			append(td, p);
-
-    			if (!mounted) {
-    				dispose = listen(textarea, "input", /*textarea_input_handler*/ ctx[5]);
-    				mounted = true;
-    			}
+    			mount_component(forminput, target, anchor);
+    			current = true;
     		},
     		p(ctx, dirty) {
-    			if (dirty & /*settings*/ 1) {
-    				set_input_value(textarea, /*settings*/ ctx[0].openai_system);
+    			const forminput_changes = {};
+
+    			if (!updating_value && dirty & /*settings*/ 1) {
+    				updating_value = true;
+    				forminput_changes.value = /*settings*/ ctx[0].openai_system;
+    				add_flush_callback(() => updating_value = false);
     			}
+
+    			forminput.$set(forminput_changes);
+    		},
+    		i(local) {
+    			if (current) return;
+    			transition_in(forminput.$$.fragment, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(forminput.$$.fragment, local);
+    			current = false;
     		},
     		d(detaching) {
-    			if (detaching) detach(tr);
-    			mounted = false;
-    			dispose();
+    			destroy_component(forminput, detaching);
     		}
     	};
     }
 
     function create_fragment$1(ctx) {
+    	let forminput0;
+    	let updating_value;
+    	let t0;
+    	let forminput1;
+    	let updating_value_1;
+    	let t1;
     	let tr0;
     	let th0;
-    	let t1;
+    	let t3;
     	let td0;
-    	let input0;
-    	let t2;
-    	let p0;
-    	let t4;
-    	let tr1;
-    	let th1;
-    	let t6;
-    	let td1;
-    	let input1;
-    	let t7;
-    	let p1;
-    	let t9;
-    	let tr2;
-    	let th2;
-    	let t11;
-    	let td2;
     	let select0;
     	let option0;
     	let option1;
-    	let t14;
-    	let tr3;
-    	let th3;
-    	let t16;
-    	let td3;
+    	let t6;
+    	let tr1;
+    	let th1;
+    	let t8;
+    	let td1;
     	let select1;
+    	let t9;
+    	let t10;
+    	let forminput2;
+    	let updating_value_2;
+    	let t11;
+    	let tr2;
+    	let th2;
+    	let t13;
+    	let td2;
+    	let input;
+    	let t14;
+    	let forminput3;
+    	let updating_value_3;
+    	let t15;
+    	let forminput4;
+    	let updating_value_4;
+    	let t16;
+    	let forminput5;
+    	let updating_value_5;
     	let t17;
+    	let forminput6;
+    	let updating_value_6;
     	let t18;
-    	let tr4;
-    	let th4;
-    	let t20;
-    	let td4;
-    	let input2;
-    	let t21;
-    	let tr5;
-    	let th5;
-    	let t23;
-    	let td5;
-    	let input3;
-    	let t24;
-    	let tr6;
-    	let th6;
-    	let t26;
-    	let td6;
-    	let input4;
-    	let t27;
-    	let p2;
-    	let t29;
-    	let tr7;
-    	let th7;
-    	let t31;
-    	let td7;
-    	let input5;
-    	let t32;
-    	let p3;
-    	let t34;
-    	let tr8;
-    	let th8;
-    	let t36;
-    	let td8;
-    	let input6;
-    	let t37;
-    	let p4;
-    	let t39;
-    	let tr9;
-    	let th9;
-    	let t41;
-    	let td9;
-    	let input7;
-    	let t42;
-    	let p5;
-    	let t44;
-    	let tr10;
-    	let th10;
-    	let t46;
-    	let td10;
-    	let input8;
-    	let t47;
-    	let p6;
+    	let forminput7;
+    	let updating_value_7;
+    	let current;
     	let mounted;
     	let dispose;
+
+    	function forminput0_value_binding(value) {
+    		/*forminput0_value_binding*/ ctx[1](value);
+    	}
+
+    	let forminput0_props = {
+    		label: "Prepend prompt",
+    		type: "textarea",
+    		description: "The instruction to the model on what you'd like to generate, prepended.",
+    		required: true,
+    		cols: "40",
+    		rows: "5"
+    	};
+
+    	if (/*settings*/ ctx[0].prompt !== void 0) {
+    		forminput0_props.value = /*settings*/ ctx[0].prompt;
+    	}
+
+    	forminput0 = new Svelte_wordpress_form_input({ props: forminput0_props });
+    	binding_callbacks.push(() => bind(forminput0, 'value', forminput0_value_binding));
+
+    	function forminput1_value_binding(value) {
+    		/*forminput1_value_binding*/ ctx[2](value);
+    	}
+
+    	let forminput1_props = {
+    		label: "Append prompt",
+    		type: "textarea",
+    		description: "The instruction to the model on what you'd like to generate, appended.",
+    		required: true,
+    		cols: "40",
+    		rows: "5"
+    	};
+
+    	if (/*settings*/ ctx[0].append_prompt !== void 0) {
+    		forminput1_props.value = /*settings*/ ctx[0].append_prompt;
+    	}
+
+    	forminput1 = new Svelte_wordpress_form_input({ props: forminput1_props });
+    	binding_callbacks.push(() => bind(forminput1, 'value', forminput1_value_binding));
 
     	function select_block_type(ctx, dirty) {
     		if (/*settings*/ ctx[0].openai_method === 'complete') return create_if_block_1$1;
@@ -1009,299 +3537,255 @@ var summaryengine_types = (function (exports) {
     	let if_block0 = current_block_type && current_block_type(ctx);
     	let if_block1 = /*settings*/ ctx[0].openai_method === 'chat' && create_if_block$1(ctx);
 
+    	function forminput2_value_binding(value) {
+    		/*forminput2_value_binding*/ ctx[6](value);
+    	}
+
+    	let forminput2_props = {
+    		type: "number",
+    		label: "Submission word limit",
+    		min: "0"
+    	};
+
+    	if (/*settings*/ ctx[0].word_limit !== void 0) {
+    		forminput2_props.value = /*settings*/ ctx[0].word_limit;
+    	}
+
+    	forminput2 = new Svelte_wordpress_form_input({ props: forminput2_props });
+    	binding_callbacks.push(() => bind(forminput2, 'value', forminput2_value_binding));
+
+    	function forminput3_value_binding(value) {
+    		/*forminput3_value_binding*/ ctx[8](value);
+    	}
+
+    	let forminput3_props = {
+    		type: "number",
+    		label: "Max tokens",
+    		min: "0",
+    		max: "2048",
+    		step: "1",
+    		description: "The maximum number of tokens to generate in the completion."
+    	};
+
+    	if (/*settings*/ ctx[0].openai_max_tokens !== void 0) {
+    		forminput3_props.value = /*settings*/ ctx[0].openai_max_tokens;
+    	}
+
+    	forminput3 = new Svelte_wordpress_form_input({ props: forminput3_props });
+    	binding_callbacks.push(() => bind(forminput3, 'value', forminput3_value_binding));
+
+    	function forminput4_value_binding(value) {
+    		/*forminput4_value_binding*/ ctx[9](value);
+    	}
+
+    	let forminput4_props = {
+    		type: "number",
+    		label: "Temperature",
+    		min: "0",
+    		max: "1",
+    		step: "0.1",
+    		description: "What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. We generally recommend altering this or top_p but not both."
+    	};
+
+    	if (/*settings*/ ctx[0].openai_temperature !== void 0) {
+    		forminput4_props.value = /*settings*/ ctx[0].openai_temperature;
+    	}
+
+    	forminput4 = new Svelte_wordpress_form_input({ props: forminput4_props });
+    	binding_callbacks.push(() => bind(forminput4, 'value', forminput4_value_binding));
+
+    	function forminput5_value_binding(value) {
+    		/*forminput5_value_binding*/ ctx[10](value);
+    	}
+
+    	let forminput5_props = {
+    		type: "number",
+    		label: "Top-P",
+    		min: "0",
+    		max: "1",
+    		step: "0.1",
+    		description: "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both."
+    	};
+
+    	if (/*settings*/ ctx[0].openai_top_p !== void 0) {
+    		forminput5_props.value = /*settings*/ ctx[0].openai_top_p;
+    	}
+
+    	forminput5 = new Svelte_wordpress_form_input({ props: forminput5_props });
+    	binding_callbacks.push(() => bind(forminput5, 'value', forminput5_value_binding));
+
+    	function forminput6_value_binding(value) {
+    		/*forminput6_value_binding*/ ctx[11](value);
+    	}
+
+    	let forminput6_props = {
+    		label: "Presence penalty",
+    		type: "number",
+    		min: "-2",
+    		max: "2",
+    		step: "0.1",
+    		description: "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics."
+    	};
+
+    	if (/*settings*/ ctx[0].openai_presence_penalty !== void 0) {
+    		forminput6_props.value = /*settings*/ ctx[0].openai_presence_penalty;
+    	}
+
+    	forminput6 = new Svelte_wordpress_form_input({ props: forminput6_props });
+    	binding_callbacks.push(() => bind(forminput6, 'value', forminput6_value_binding));
+
+    	function forminput7_value_binding(value) {
+    		/*forminput7_value_binding*/ ctx[12](value);
+    	}
+
+    	let forminput7_props = {
+    		label: "Frequency penalty",
+    		type: "number",
+    		min: "-2",
+    		max: "2",
+    		step: "0.1",
+    		description: "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim."
+    	};
+
+    	if (/*settings*/ ctx[0].openai_frequency_penalty !== void 0) {
+    		forminput7_props.value = /*settings*/ ctx[0].openai_frequency_penalty;
+    	}
+
+    	forminput7 = new Svelte_wordpress_form_input({ props: forminput7_props });
+    	binding_callbacks.push(() => bind(forminput7, 'value', forminput7_value_binding));
+
     	return {
     		c() {
+    			create_component(forminput0.$$.fragment);
+    			t0 = space();
+    			create_component(forminput1.$$.fragment);
+    			t1 = space();
     			tr0 = element("tr");
     			th0 = element("th");
-    			th0.textContent = "Prepend Prompt";
-    			t1 = space();
+    			th0.textContent = "Method";
+    			t3 = space();
     			td0 = element("td");
-    			input0 = element("input");
-    			t2 = space();
-    			p0 = element("p");
-    			p0.textContent = "The instruction to the model on what you'd like to generate, prepended.";
-    			t4 = space();
-    			tr1 = element("tr");
-    			th1 = element("th");
-    			th1.textContent = "Append Prompt";
-    			t6 = space();
-    			td1 = element("td");
-    			input1 = element("input");
-    			t7 = space();
-    			p1 = element("p");
-    			p1.textContent = "The instruction to the model on what you'd like to generate, appended.";
-    			t9 = space();
-    			tr2 = element("tr");
-    			th2 = element("th");
-    			th2.textContent = "Method";
-    			t11 = space();
-    			td2 = element("td");
     			select0 = element("select");
     			option0 = element("option");
     			option0.textContent = "Complete";
     			option1 = element("option");
     			option1.textContent = "Chat";
-    			t14 = space();
-    			tr3 = element("tr");
-    			th3 = element("th");
-    			th3.textContent = "OpenAI Model";
-    			t16 = space();
-    			td3 = element("td");
+    			t6 = space();
+    			tr1 = element("tr");
+    			th1 = element("th");
+    			th1.textContent = "OpenAI model";
+    			t8 = space();
+    			td1 = element("td");
     			select1 = element("select");
     			if (if_block0) if_block0.c();
-    			t17 = space();
+    			t9 = space();
     			if (if_block1) if_block1.c();
+    			t10 = space();
+    			create_component(forminput2.$$.fragment);
+    			t11 = space();
+    			tr2 = element("tr");
+    			th2 = element("th");
+    			th2.textContent = "Cut at paragraph nearest end?";
+    			t13 = space();
+    			td2 = element("td");
+    			input = element("input");
+    			t14 = space();
+    			create_component(forminput3.$$.fragment);
+    			t15 = space();
+    			create_component(forminput4.$$.fragment);
+    			t16 = space();
+    			create_component(forminput5.$$.fragment);
+    			t17 = space();
+    			create_component(forminput6.$$.fragment);
     			t18 = space();
-    			tr4 = element("tr");
-    			th4 = element("th");
-    			th4.textContent = "Submission word limit";
-    			t20 = space();
-    			td4 = element("td");
-    			input2 = element("input");
-    			t21 = space();
-    			tr5 = element("tr");
-    			th5 = element("th");
-    			th5.textContent = "Cut at paragraph nearest end?";
-    			t23 = space();
-    			td5 = element("td");
-    			input3 = element("input");
-    			t24 = space();
-    			tr6 = element("tr");
-    			th6 = element("th");
-    			th6.textContent = "Max tokens";
-    			t26 = space();
-    			td6 = element("td");
-    			input4 = element("input");
-    			t27 = space();
-    			p2 = element("p");
-    			p2.textContent = "The maximum number of tokens to generate in the completion.";
-    			t29 = space();
-    			tr7 = element("tr");
-    			th7 = element("th");
-    			th7.textContent = "Temperature";
-    			t31 = space();
-    			td7 = element("td");
-    			input5 = element("input");
-    			t32 = space();
-    			p3 = element("p");
-    			p3.textContent = "What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. We generally recommend altering this or top_p but not both.";
-    			t34 = space();
-    			tr8 = element("tr");
-    			th8 = element("th");
-    			th8.textContent = "Top-P";
-    			t36 = space();
-    			td8 = element("td");
-    			input6 = element("input");
-    			t37 = space();
-    			p4 = element("p");
-    			p4.textContent = "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both.";
-    			t39 = space();
-    			tr9 = element("tr");
-    			th9 = element("th");
-    			th9.textContent = "Presence penalty";
-    			t41 = space();
-    			td9 = element("td");
-    			input7 = element("input");
-    			t42 = space();
-    			p5 = element("p");
-    			p5.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.";
-    			t44 = space();
-    			tr10 = element("tr");
-    			th10 = element("th");
-    			th10.textContent = "Frequency penalty";
-    			t46 = space();
-    			td10 = element("td");
-    			input8 = element("input");
-    			t47 = space();
-    			p6 = element("p");
-    			p6.textContent = "Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.";
+    			create_component(forminput7.$$.fragment);
     			attr(th0, "scope", "row");
-    			attr(input0, "type", "text");
-    			attr(input0, "name", "prompt");
-    			attr(input0, "class", "regular-text");
-    			input0.required = true;
-    			attr(th1, "scope", "row");
-    			attr(input1, "type", "text");
-    			attr(input1, "name", "append_prompt");
-    			attr(input1, "class", "regular-text");
-    			input1.required = true;
-    			attr(th2, "scope", "row");
     			option0.__value = "complete";
     			option0.value = option0.__value;
     			option1.__value = "chat";
     			option1.value = option1.__value;
     			attr(select0, "name", "openai_method");
     			if (/*settings*/ ctx[0].openai_method === void 0) add_render_callback(() => /*select0_change_handler*/ ctx[3].call(select0));
-    			attr(th3, "scope", "row");
+    			attr(th1, "scope", "row");
     			attr(select1, "name", "openai_model");
     			if (/*settings*/ ctx[0].openai_model === void 0) add_render_callback(() => /*select1_change_handler*/ ctx[4].call(select1));
-    			attr(th4, "scope", "row");
-    			attr(input2, "type", "number");
-    			attr(input2, "name", "word_limit");
-    			attr(input2, "class", "regular-text");
-    			attr(input2, "min", "0");
-    			attr(th5, "scope", "row");
-    			attr(input3, "type", "checkbox");
-    			attr(input3, "name", "cut_at_paragraph");
-    			attr(th6, "scope", "row");
-    			attr(input4, "type", "number");
-    			attr(input4, "name", "openai_max_tokens");
-    			attr(input4, "class", "regular-text");
-    			attr(input4, "min", "0");
-    			attr(input4, "max", "2048");
-    			attr(input4, "step", "1");
-    			attr(th7, "scope", "row");
-    			attr(input5, "type", "number");
-    			attr(input5, "name", "openai_temperature");
-    			attr(input5, "class", "regular-text");
-    			attr(input5, "min", "0");
-    			attr(input5, "max", "1");
-    			attr(input5, "step", "0.1");
-    			attr(th8, "scope", "row");
-    			attr(input6, "type", "number");
-    			attr(input6, "name", "openai_top_p");
-    			attr(input6, "class", "regular-text");
-    			attr(input6, "min", "0");
-    			attr(input6, "max", "1");
-    			attr(input6, "step", "0.1");
-    			attr(th9, "scope", "row");
-    			attr(input7, "type", "number");
-    			attr(input7, "name", "openai_presence_penalty");
-    			attr(input7, "class", "regular-text");
-    			attr(input7, "min", "-2");
-    			attr(input7, "max", "2");
-    			attr(input7, "step", "0.1");
-    			attr(th10, "scope", "row");
-    			attr(input8, "type", "number");
-    			attr(input8, "name", "openai_frequency_penalty");
-    			attr(input8, "class", "regular-text");
-    			attr(input8, "min", "-2");
-    			attr(input8, "max", "2");
-    			attr(input8, "step", "0.1");
+    			attr(th2, "scope", "row");
+    			attr(input, "type", "checkbox");
+    			attr(input, "name", "cut_at_paragraph");
     		},
     		m(target, anchor) {
+    			mount_component(forminput0, target, anchor);
+    			insert(target, t0, anchor);
+    			mount_component(forminput1, target, anchor);
+    			insert(target, t1, anchor);
     			insert(target, tr0, anchor);
     			append(tr0, th0);
-    			append(tr0, t1);
+    			append(tr0, t3);
     			append(tr0, td0);
-    			append(td0, input0);
-    			set_input_value(input0, /*settings*/ ctx[0].prompt);
-    			append(td0, t2);
-    			append(td0, p0);
-    			insert(target, t4, anchor);
-    			insert(target, tr1, anchor);
-    			append(tr1, th1);
-    			append(tr1, t6);
-    			append(tr1, td1);
-    			append(td1, input1);
-    			set_input_value(input1, /*settings*/ ctx[0].append_prompt);
-    			append(td1, t7);
-    			append(td1, p1);
-    			insert(target, t9, anchor);
-    			insert(target, tr2, anchor);
-    			append(tr2, th2);
-    			append(tr2, t11);
-    			append(tr2, td2);
-    			append(td2, select0);
+    			append(td0, select0);
     			append(select0, option0);
     			append(select0, option1);
-    			select_option(select0, /*settings*/ ctx[0].openai_method);
-    			insert(target, t14, anchor);
-    			insert(target, tr3, anchor);
-    			append(tr3, th3);
-    			append(tr3, t16);
-    			append(tr3, td3);
-    			append(td3, select1);
+    			select_option(select0, /*settings*/ ctx[0].openai_method, true);
+    			insert(target, t6, anchor);
+    			insert(target, tr1, anchor);
+    			append(tr1, th1);
+    			append(tr1, t8);
+    			append(tr1, td1);
+    			append(td1, select1);
     			if (if_block0) if_block0.m(select1, null);
-    			select_option(select1, /*settings*/ ctx[0].openai_model);
-    			insert(target, t17, anchor);
+    			select_option(select1, /*settings*/ ctx[0].openai_model, true);
+    			insert(target, t9, anchor);
     			if (if_block1) if_block1.m(target, anchor);
+    			insert(target, t10, anchor);
+    			mount_component(forminput2, target, anchor);
+    			insert(target, t11, anchor);
+    			insert(target, tr2, anchor);
+    			append(tr2, th2);
+    			append(tr2, t13);
+    			append(tr2, td2);
+    			append(td2, input);
+    			input.checked = /*settings*/ ctx[0].cut_at_paragraph;
+    			insert(target, t14, anchor);
+    			mount_component(forminput3, target, anchor);
+    			insert(target, t15, anchor);
+    			mount_component(forminput4, target, anchor);
+    			insert(target, t16, anchor);
+    			mount_component(forminput5, target, anchor);
+    			insert(target, t17, anchor);
+    			mount_component(forminput6, target, anchor);
     			insert(target, t18, anchor);
-    			insert(target, tr4, anchor);
-    			append(tr4, th4);
-    			append(tr4, t20);
-    			append(tr4, td4);
-    			append(td4, input2);
-    			set_input_value(input2, /*settings*/ ctx[0].word_limit);
-    			insert(target, t21, anchor);
-    			insert(target, tr5, anchor);
-    			append(tr5, th5);
-    			append(tr5, t23);
-    			append(tr5, td5);
-    			append(td5, input3);
-    			input3.checked = /*settings*/ ctx[0].cut_at_paragraph;
-    			insert(target, t24, anchor);
-    			insert(target, tr6, anchor);
-    			append(tr6, th6);
-    			append(tr6, t26);
-    			append(tr6, td6);
-    			append(td6, input4);
-    			set_input_value(input4, /*settings*/ ctx[0].openai_max_tokens);
-    			append(td6, t27);
-    			append(td6, p2);
-    			insert(target, t29, anchor);
-    			insert(target, tr7, anchor);
-    			append(tr7, th7);
-    			append(tr7, t31);
-    			append(tr7, td7);
-    			append(td7, input5);
-    			set_input_value(input5, /*settings*/ ctx[0].openai_temperature);
-    			append(td7, t32);
-    			append(td7, p3);
-    			insert(target, t34, anchor);
-    			insert(target, tr8, anchor);
-    			append(tr8, th8);
-    			append(tr8, t36);
-    			append(tr8, td8);
-    			append(td8, input6);
-    			set_input_value(input6, /*settings*/ ctx[0].openai_top_p);
-    			append(td8, t37);
-    			append(td8, p4);
-    			insert(target, t39, anchor);
-    			insert(target, tr9, anchor);
-    			append(tr9, th9);
-    			append(tr9, t41);
-    			append(tr9, td9);
-    			append(td9, input7);
-    			set_input_value(input7, /*settings*/ ctx[0].openai_presence_penalty);
-    			append(td9, t42);
-    			append(td9, p5);
-    			insert(target, t44, anchor);
-    			insert(target, tr10, anchor);
-    			append(tr10, th10);
-    			append(tr10, t46);
-    			append(tr10, td10);
-    			append(td10, input8);
-    			set_input_value(input8, /*settings*/ ctx[0].openai_frequency_penalty);
-    			append(td10, t47);
-    			append(td10, p6);
+    			mount_component(forminput7, target, anchor);
+    			current = true;
 
     			if (!mounted) {
     				dispose = [
-    					listen(input0, "input", /*input0_input_handler*/ ctx[1]),
-    					listen(input1, "input", /*input1_input_handler*/ ctx[2]),
     					listen(select0, "change", /*select0_change_handler*/ ctx[3]),
     					listen(select1, "change", /*select1_change_handler*/ ctx[4]),
-    					listen(input2, "input", /*input2_input_handler*/ ctx[6]),
-    					listen(input3, "change", /*input3_change_handler*/ ctx[7]),
-    					listen(input4, "input", /*input4_input_handler*/ ctx[8]),
-    					listen(input5, "input", /*input5_input_handler*/ ctx[9]),
-    					listen(input6, "input", /*input6_input_handler*/ ctx[10]),
-    					listen(input7, "input", /*input7_input_handler*/ ctx[11]),
-    					listen(input8, "input", /*input8_input_handler*/ ctx[12])
+    					listen(input, "change", /*input_change_handler*/ ctx[7])
     				];
 
     				mounted = true;
     			}
     		},
     		p(ctx, [dirty]) {
-    			if (dirty & /*settings*/ 1 && input0.value !== /*settings*/ ctx[0].prompt) {
-    				set_input_value(input0, /*settings*/ ctx[0].prompt);
+    			const forminput0_changes = {};
+
+    			if (!updating_value && dirty & /*settings*/ 1) {
+    				updating_value = true;
+    				forminput0_changes.value = /*settings*/ ctx[0].prompt;
+    				add_flush_callback(() => updating_value = false);
     			}
 
-    			if (dirty & /*settings*/ 1 && input1.value !== /*settings*/ ctx[0].append_prompt) {
-    				set_input_value(input1, /*settings*/ ctx[0].append_prompt);
+    			forminput0.$set(forminput0_changes);
+    			const forminput1_changes = {};
+
+    			if (!updating_value_1 && dirty & /*settings*/ 1) {
+    				updating_value_1 = true;
+    				forminput1_changes.value = /*settings*/ ctx[0].append_prompt;
+    				add_flush_callback(() => updating_value_1 = false);
     			}
+
+    			forminput1.$set(forminput1_changes);
 
     			if (dirty & /*settings*/ 1) {
     				select_option(select0, /*settings*/ ctx[0].openai_method);
@@ -1324,75 +3808,140 @@ var summaryengine_types = (function (exports) {
     			if (/*settings*/ ctx[0].openai_method === 'chat') {
     				if (if_block1) {
     					if_block1.p(ctx, dirty);
+
+    					if (dirty & /*settings*/ 1) {
+    						transition_in(if_block1, 1);
+    					}
     				} else {
     					if_block1 = create_if_block$1(ctx);
     					if_block1.c();
-    					if_block1.m(t18.parentNode, t18);
+    					transition_in(if_block1, 1);
+    					if_block1.m(t10.parentNode, t10);
     				}
     			} else if (if_block1) {
-    				if_block1.d(1);
-    				if_block1 = null;
+    				group_outros();
+
+    				transition_out(if_block1, 1, 1, () => {
+    					if_block1 = null;
+    				});
+
+    				check_outros();
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input2.value) !== /*settings*/ ctx[0].word_limit) {
-    				set_input_value(input2, /*settings*/ ctx[0].word_limit);
+    			const forminput2_changes = {};
+
+    			if (!updating_value_2 && dirty & /*settings*/ 1) {
+    				updating_value_2 = true;
+    				forminput2_changes.value = /*settings*/ ctx[0].word_limit;
+    				add_flush_callback(() => updating_value_2 = false);
     			}
+
+    			forminput2.$set(forminput2_changes);
 
     			if (dirty & /*settings*/ 1) {
-    				input3.checked = /*settings*/ ctx[0].cut_at_paragraph;
+    				input.checked = /*settings*/ ctx[0].cut_at_paragraph;
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input4.value) !== /*settings*/ ctx[0].openai_max_tokens) {
-    				set_input_value(input4, /*settings*/ ctx[0].openai_max_tokens);
+    			const forminput3_changes = {};
+
+    			if (!updating_value_3 && dirty & /*settings*/ 1) {
+    				updating_value_3 = true;
+    				forminput3_changes.value = /*settings*/ ctx[0].openai_max_tokens;
+    				add_flush_callback(() => updating_value_3 = false);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input5.value) !== /*settings*/ ctx[0].openai_temperature) {
-    				set_input_value(input5, /*settings*/ ctx[0].openai_temperature);
+    			forminput3.$set(forminput3_changes);
+    			const forminput4_changes = {};
+
+    			if (!updating_value_4 && dirty & /*settings*/ 1) {
+    				updating_value_4 = true;
+    				forminput4_changes.value = /*settings*/ ctx[0].openai_temperature;
+    				add_flush_callback(() => updating_value_4 = false);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input6.value) !== /*settings*/ ctx[0].openai_top_p) {
-    				set_input_value(input6, /*settings*/ ctx[0].openai_top_p);
+    			forminput4.$set(forminput4_changes);
+    			const forminput5_changes = {};
+
+    			if (!updating_value_5 && dirty & /*settings*/ 1) {
+    				updating_value_5 = true;
+    				forminput5_changes.value = /*settings*/ ctx[0].openai_top_p;
+    				add_flush_callback(() => updating_value_5 = false);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input7.value) !== /*settings*/ ctx[0].openai_presence_penalty) {
-    				set_input_value(input7, /*settings*/ ctx[0].openai_presence_penalty);
+    			forminput5.$set(forminput5_changes);
+    			const forminput6_changes = {};
+
+    			if (!updating_value_6 && dirty & /*settings*/ 1) {
+    				updating_value_6 = true;
+    				forminput6_changes.value = /*settings*/ ctx[0].openai_presence_penalty;
+    				add_flush_callback(() => updating_value_6 = false);
     			}
 
-    			if (dirty & /*settings*/ 1 && to_number(input8.value) !== /*settings*/ ctx[0].openai_frequency_penalty) {
-    				set_input_value(input8, /*settings*/ ctx[0].openai_frequency_penalty);
+    			forminput6.$set(forminput6_changes);
+    			const forminput7_changes = {};
+
+    			if (!updating_value_7 && dirty & /*settings*/ 1) {
+    				updating_value_7 = true;
+    				forminput7_changes.value = /*settings*/ ctx[0].openai_frequency_penalty;
+    				add_flush_callback(() => updating_value_7 = false);
     			}
+
+    			forminput7.$set(forminput7_changes);
     		},
-    		i: noop,
-    		o: noop,
+    		i(local) {
+    			if (current) return;
+    			transition_in(forminput0.$$.fragment, local);
+    			transition_in(forminput1.$$.fragment, local);
+    			transition_in(if_block1);
+    			transition_in(forminput2.$$.fragment, local);
+    			transition_in(forminput3.$$.fragment, local);
+    			transition_in(forminput4.$$.fragment, local);
+    			transition_in(forminput5.$$.fragment, local);
+    			transition_in(forminput6.$$.fragment, local);
+    			transition_in(forminput7.$$.fragment, local);
+    			current = true;
+    		},
+    		o(local) {
+    			transition_out(forminput0.$$.fragment, local);
+    			transition_out(forminput1.$$.fragment, local);
+    			transition_out(if_block1);
+    			transition_out(forminput2.$$.fragment, local);
+    			transition_out(forminput3.$$.fragment, local);
+    			transition_out(forminput4.$$.fragment, local);
+    			transition_out(forminput5.$$.fragment, local);
+    			transition_out(forminput6.$$.fragment, local);
+    			transition_out(forminput7.$$.fragment, local);
+    			current = false;
+    		},
     		d(detaching) {
+    			destroy_component(forminput0, detaching);
+    			if (detaching) detach(t0);
+    			destroy_component(forminput1, detaching);
+    			if (detaching) detach(t1);
     			if (detaching) detach(tr0);
-    			if (detaching) detach(t4);
+    			if (detaching) detach(t6);
     			if (detaching) detach(tr1);
-    			if (detaching) detach(t9);
-    			if (detaching) detach(tr2);
-    			if (detaching) detach(t14);
-    			if (detaching) detach(tr3);
 
     			if (if_block0) {
     				if_block0.d();
     			}
 
-    			if (detaching) detach(t17);
+    			if (detaching) detach(t9);
     			if (if_block1) if_block1.d(detaching);
+    			if (detaching) detach(t10);
+    			destroy_component(forminput2, detaching);
+    			if (detaching) detach(t11);
+    			if (detaching) detach(tr2);
+    			if (detaching) detach(t14);
+    			destroy_component(forminput3, detaching);
+    			if (detaching) detach(t15);
+    			destroy_component(forminput4, detaching);
+    			if (detaching) detach(t16);
+    			destroy_component(forminput5, detaching);
+    			if (detaching) detach(t17);
+    			destroy_component(forminput6, detaching);
     			if (detaching) detach(t18);
-    			if (detaching) detach(tr4);
-    			if (detaching) detach(t21);
-    			if (detaching) detach(tr5);
-    			if (detaching) detach(t24);
-    			if (detaching) detach(tr6);
-    			if (detaching) detach(t29);
-    			if (detaching) detach(tr7);
-    			if (detaching) detach(t34);
-    			if (detaching) detach(tr8);
-    			if (detaching) detach(t39);
-    			if (detaching) detach(tr9);
-    			if (detaching) detach(t44);
-    			if (detaching) detach(tr10);
+    			destroy_component(forminput7, detaching);
     			mounted = false;
     			run_all(dispose);
     		}
@@ -1402,14 +3951,18 @@ var summaryengine_types = (function (exports) {
     function instance$1($$self, $$props, $$invalidate) {
     	let { settings } = $$props;
 
-    	function input0_input_handler() {
-    		settings.prompt = this.value;
-    		$$invalidate(0, settings);
+    	function forminput0_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.prompt, value)) {
+    			settings.prompt = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
-    	function input1_input_handler() {
-    		settings.append_prompt = this.value;
-    		$$invalidate(0, settings);
+    	function forminput1_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.append_prompt, value)) {
+    			settings.append_prompt = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
     	function select0_change_handler() {
@@ -1422,44 +3975,58 @@ var summaryengine_types = (function (exports) {
     		$$invalidate(0, settings);
     	}
 
-    	function textarea_input_handler() {
-    		settings.openai_system = this.value;
-    		$$invalidate(0, settings);
+    	function forminput_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.openai_system, value)) {
+    			settings.openai_system = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
-    	function input2_input_handler() {
-    		settings.word_limit = to_number(this.value);
-    		$$invalidate(0, settings);
+    	function forminput2_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.word_limit, value)) {
+    			settings.word_limit = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
-    	function input3_change_handler() {
+    	function input_change_handler() {
     		settings.cut_at_paragraph = this.checked;
     		$$invalidate(0, settings);
     	}
 
-    	function input4_input_handler() {
-    		settings.openai_max_tokens = to_number(this.value);
-    		$$invalidate(0, settings);
+    	function forminput3_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.openai_max_tokens, value)) {
+    			settings.openai_max_tokens = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
-    	function input5_input_handler() {
-    		settings.openai_temperature = to_number(this.value);
-    		$$invalidate(0, settings);
+    	function forminput4_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.openai_temperature, value)) {
+    			settings.openai_temperature = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
-    	function input6_input_handler() {
-    		settings.openai_top_p = to_number(this.value);
-    		$$invalidate(0, settings);
+    	function forminput5_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.openai_top_p, value)) {
+    			settings.openai_top_p = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
-    	function input7_input_handler() {
-    		settings.openai_presence_penalty = to_number(this.value);
-    		$$invalidate(0, settings);
+    	function forminput6_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.openai_presence_penalty, value)) {
+    			settings.openai_presence_penalty = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
-    	function input8_input_handler() {
-    		settings.openai_frequency_penalty = to_number(this.value);
-    		$$invalidate(0, settings);
+    	function forminput7_value_binding(value) {
+    		if ($$self.$$.not_equal(settings.openai_frequency_penalty, value)) {
+    			settings.openai_frequency_penalty = value;
+    			$$invalidate(0, settings);
+    		}
     	}
 
     	$$self.$$set = $$props => {
@@ -1468,18 +4035,18 @@ var summaryengine_types = (function (exports) {
 
     	return [
     		settings,
-    		input0_input_handler,
-    		input1_input_handler,
+    		forminput0_value_binding,
+    		forminput1_value_binding,
     		select0_change_handler,
     		select1_change_handler,
-    		textarea_input_handler,
-    		input2_input_handler,
-    		input3_change_handler,
-    		input4_input_handler,
-    		input5_input_handler,
-    		input6_input_handler,
-    		input7_input_handler,
-    		input8_input_handler
+    		forminput_value_binding,
+    		forminput2_value_binding,
+    		input_change_handler,
+    		forminput3_value_binding,
+    		forminput4_value_binding,
+    		forminput5_value_binding,
+    		forminput6_value_binding,
+    		forminput7_value_binding
     	];
     }
 
@@ -1490,7 +4057,7 @@ var summaryengine_types = (function (exports) {
     	}
     }
 
-    /* src/components/Types.svelte generated by Svelte v3.52.0 */
+    /* src/components/Types.svelte generated by Svelte v3.59.2 */
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
@@ -1507,7 +4074,7 @@ var summaryengine_types = (function (exports) {
     	return child_ctx;
     }
 
-    // (115:0) {#if has_error}
+    // (112:0) {#if has_error}
     function create_if_block_6(ctx) {
     	let div;
     	let p;
@@ -1534,7 +4101,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (122:4) {#each $types as type, i}
+    // (119:4) {#each $types as type, i}
     function create_each_block_1(ctx) {
     	let a;
     	let t_value = /*type*/ ctx[21].name + "";
@@ -1584,7 +4151,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (128:4) {#if tab === i}
+    // (125:4) {#if tab === i}
     function create_if_block(ctx) {
     	let div;
     	let h2;
@@ -1909,7 +4476,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (131:12) {#if (saved)}
+    // (128:12) {#if (saved)}
     function create_if_block_5(ctx) {
     	let div;
     	let p;
@@ -1941,6 +4508,7 @@ var summaryengine_types = (function (exports) {
     			if (current) return;
 
     			add_render_callback(() => {
+    				if (!current) return;
     				if (!div_transition) div_transition = create_bidirectional_transition(div, slide, {}, true);
     				div_transition.run(1);
     			});
@@ -1959,7 +4527,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (159:8) {:else}
+    // (156:8) {:else}
     function create_else_block(ctx) {
     	let input;
 
@@ -1983,7 +4551,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (157:8) {#if !saving}
+    // (154:8) {#if !saving}
     function create_if_block_4(ctx) {
     	let input;
     	let mounted;
@@ -2021,7 +4589,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (162:8) {#if (Number(type.ID) !== 1) && (!deleting)}
+    // (159:8) {#if (Number(type.ID) !== 1) && (!deleting)}
     function create_if_block_3(ctx) {
     	let input;
     	let mounted;
@@ -2053,7 +4621,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (165:8) {#if (deleting)}
+    // (162:8) {#if (deleting)}
     function create_if_block_2(ctx) {
     	let input;
 
@@ -2076,7 +4644,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (168:8) {#if pending_delete}
+    // (165:8) {#if pending_delete}
     function create_if_block_1(ctx) {
     	let p;
     	let t1;
@@ -2140,7 +4708,7 @@ var summaryengine_types = (function (exports) {
     	};
     }
 
-    // (127:0) {#each $types as type, i}
+    // (124:0) {#each $types as type, i}
     function create_each_block(ctx) {
     	let if_block_anchor;
     	let current;
@@ -2246,13 +4814,17 @@ var summaryengine_types = (function (exports) {
     			insert(target, nav, anchor);
 
     			for (let i = 0; i < each_blocks_1.length; i += 1) {
-    				each_blocks_1[i].m(nav, null);
+    				if (each_blocks_1[i]) {
+    					each_blocks_1[i].m(nav, null);
+    				}
     			}
 
     			insert(target, t1, anchor);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(target, anchor);
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(target, anchor);
+    				}
     			}
 
     			insert(target, each1_anchor, anchor);
@@ -2383,7 +4955,7 @@ var summaryengine_types = (function (exports) {
 
     	onMount(async () => {
     		try {
-    			models = await apiGet(`summaryengine/v1/models`);
+    			models = await apiGet_1(`summaryengine/v1/models`);
     		} catch(e) {
     			$$invalidate(6, has_error = true);
     			$$invalidate(7, error_message = "Unable to connect to OpenAI API. Please check your API key and try again.");
@@ -2393,7 +4965,7 @@ var summaryengine_types = (function (exports) {
     			// console.log(models);
     			set_store_value(
     				types,
-    				$types = (await apiGet(`summaryengine/v1/types`)).map(type => {
+    				$types = (await apiGet_1(`summaryengine/v1/types`)).map(type => {
     					type.ID = Number(type.ID);
     					type.openai_method = String(type.openai_method) || "complete";
     					type.cut_at_paragraph = !!type.cut_at_paragraph;
@@ -2425,7 +4997,7 @@ var summaryengine_types = (function (exports) {
     			if (type.name === "New Type") throw "Please rename the type before saving";
     			type.append_prompt = type.append_prompt || "";
     			type.custom_action = type.custom_action || "";
-    			const result = await apiPost(`summaryengine/v1/type/${type.ID}`, type);
+    			const result = await apiPost_1(`summaryengine/v1/type/${type.ID}`, type);
 
     			if (!type.ID) {
     				type.ID = Number(result.id);
@@ -2454,17 +5026,10 @@ var summaryengine_types = (function (exports) {
     		try {
     			$$invalidate(4, pending_delete = false);
     			$$invalidate(5, deleting = true);
-
-    			// if (confirm("Are you sure you want to delete this type?")) {
-    			await apiDelete(`summaryengine/v1/type/${type.ID}`);
-
+    			await apiDelete_1(`summaryengine/v1/type/${type.ID}`);
     			set_store_value(types, $types = $types.filter(t => t.ID !== type.ID), $types);
     			$$invalidate(1, tab = 0);
-
-    			// alert("Type deleted");
-    			// }
     			$$invalidate(5, deleting = false);
-
     			window.scrollTo(0, 0);
     		} catch(e) {
     			alert(e);

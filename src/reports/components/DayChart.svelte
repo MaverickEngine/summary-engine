@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { apiGet } from '../../libs/ajax.js';
+    import { apiGet } from 'wp-ajax';
     import { Bar } from 'svelte-chartjs';
     import 'chartjs-adapter-date-fns';
     import { enUS } from 'date-fns/locale'; 

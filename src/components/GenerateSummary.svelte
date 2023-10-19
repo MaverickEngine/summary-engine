@@ -1,5 +1,7 @@
 <script>
-    import { apiPost } from '../libs/ajax.js';
+    // DEPRECATED
+     
+    import { apiPost } from 'wp-ajax';
     import Spinner from './Spinner.svelte';
     import Rate from './Rate.svelte';
 
@@ -64,14 +66,15 @@
         }
         try {
             loading = true;
-            const response = await apiPost("summaryengine/v1/summarise",
+            const response = (await apiPost("summaryengine/v1/summarise",
                 {
                     content: content,
                     post_id: jQuery("#post_ID").val(),
                     settings: JSON.stringify(settings),
                     type_id: type.ID,
                 }
-            );
+            )).result;
+            console.log(response);
             summary_id = response.ID;
             summaries.unshift(response);
             summary_index = 0;

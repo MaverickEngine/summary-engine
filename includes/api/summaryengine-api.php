@@ -11,6 +11,25 @@ class SummaryEngineAPI {
         $this->table_name = $wpdb->prefix . 'summaryengine_summaries';
         add_action( 'rest_api_init', array( $this, 'register_api_routes' ) );
     }
+
+    private function get_mid_by_key( $post_id, $meta_key ) {
+        global $wpdb;
+        $mid = $wpdb->get_var( $wpdb->prepare("SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s", $post_id, $meta_key) );
+        if( $mid != '' )
+        return (int) $mid;
+        return false;
+    }
+
+    private function get_mids($post_id, $slug) {
+        $summaryengine_mid = $this->get_mid_by_key($post_id, 'summaryengine_' . $slug);
+        $summaryengine_id_mid = $this->get_mid_by_key($post_id, 'summaryengine_' . $slug . '_id');
+        $summaryengine_rating_mid = $this->get_mid_by_key($post_id, 'summaryengine_' . $slug . '_rating');
+        return array(
+            'summaryengine_mid' => $summaryengine_mid,
+            'summaryengine_id_mid' => $summaryengine_id_mid,
+            'summaryengine_rating_mid' => $summaryengine_rating_mid,
+        );
+    }
     
     public function register_api_routes() {
         register_rest_route('summaryengine/v1', '/models', array(
@@ -293,7 +312,8 @@ class SummaryEngineAPI {
             update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
             update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
             update_post_meta($post_id, 'summaryengine_' . $type->slug . '_rating', 0);
-            return $result;
+            $mids = $this->get_mids($post_id, $type->slug);
+            return Array("result" => $result, "mids" => $mids);
         } catch (Exception $e) {
             return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content: ' . $e->getMessage(), 'summaryengine' ), array( 'status' => 500 ) );
         }
@@ -327,7 +347,8 @@ class SummaryEngineAPI {
             return new WP_Error( 'summaryengine_api_error', __( 'Error rating summary', 'summaryengine' ), array( 'status' => 500 ) );
         }
         update_post_meta($summary->post_id, 'summaryengine_' . $type->slug . '_rating', $rating);
-        return array("success" => true);
+        $mids = $this->get_mids($summary->post_id, $type->slug);
+        return array("success" => true, "mids" => $mids);
     }
 
     public function post_summary(WP_REST_Request $request) {
@@ -347,7 +368,8 @@ class SummaryEngineAPI {
         }
         update_post_meta($post_id, 'summaryengine_' . $type->slug, sanitize_text_field(trim($summary)));
         update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', intval($summary_id));
-        return array("success" => true);
+        $mids = $this->get_mids($post_id, $type->slug);
+        return array("success" => true, "mids" => $mids);
     }
 
     // Edit existing summary
@@ -380,7 +402,8 @@ class SummaryEngineAPI {
         $summary = SummaryEngineDB::get_summary($summary_id);
         $type = SummaryEngineDB::get_type($summary->type_id);
         update_post_meta($summary->post_id, 'summaryengine_' . $type->slug, $summary->summary);
-        return array("success" => true);
+        $mids = $this->get_mids($summary->post_id, $type->slug);
+        return array("success" => true, "mids" => $mids);
     }
 
     public function get_post_summary(WP_REST_Request $request) {
@@ -395,9 +418,13 @@ class SummaryEngineAPI {
         }
         $summary = get_post_meta($post_id, 'summaryengine_' . $type->slug, true);
         $summary_id = get_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', true);
+        $summary_rating = get_post_meta($post_id, 'summaryengine_' . $type->slug . '_rating', true);
+        $mids = $this->get_mids($post_id, $type->slug);
         return array(
             "summary" => $summary,
             "summary_id" => $summary_id,
+            "summary_rating" => $summary_rating,
+            "mids" => $mids,
         );
     }
 

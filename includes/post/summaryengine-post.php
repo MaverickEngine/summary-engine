@@ -8,7 +8,7 @@ class SummaryEnginePost {
 
     public function summary_meta_block() {
         if (is_array(get_option('summaryengine_post_types', [])) && in_array(get_post_type(), get_option('summaryengine_post_types', []))) {
-            add_meta_box('summaryengine-meta-box', __('Summary', 'summaryengine'), [ $this, 'summary_meta_block_view' ], get_post_type(), "normal", "high");
+            add_meta_box('summaryengine-meta-box', __('SummaryEngine', 'summaryengine'), [ $this, 'summary_meta_block_view' ], get_post_type(), "normal", "high");
         }
     }
 

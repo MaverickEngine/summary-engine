@@ -1,6 +1,6 @@
 <script>
 import { onMount } from 'svelte';
-import { apiGet } from '../libs/ajax.js';
+import { apiGet } from 'wp-ajax';
 import DayChart from "./components/DayChart.svelte";
 import PieChart from "./components/PieChart.svelte";
 

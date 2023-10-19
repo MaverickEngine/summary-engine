@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { slide } from 'svelte/transition';
-    import { apiGet, apiPost, apiDelete } from '../libs/ajax.js';
+    import { apiGet, apiPost, apiDelete } from 'wp-ajax';
     import { types } from '../stores/types.js';
     import "../libs/slugify.js";
     import OpenAiTypeSettings from './OpenAITypeSettings.svelte';
@@ -95,12 +95,9 @@
         try {
             pending_delete = false;
             deleting = true;
-            // if (confirm("Are you sure you want to delete this type?")) {
-                await apiDelete(`summaryengine/v1/type/${type.ID}`);
-                $types = $types.filter(t => t.ID !== type.ID);
-                tab = 0;
-                // alert("Type deleted");
-            // }
+            await apiDelete(`summaryengine/v1/type/${type.ID}`);
+            $types = $types.filter(t => t.ID !== type.ID);
+            tab = 0;
             deleting = false;
             window.scrollTo(0, 0);
         } catch (e) {

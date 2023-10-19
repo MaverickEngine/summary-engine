@@ -1,10 +1,10 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { apiGet } from './libs/ajax.js';
+    import { apiGet } from 'wp-ajax';
 
     import type { IType } from './types/TypeInterface.js';
 
-    import PostReview from './components/PostReview.svelte';
+    import Summary from './components/Summary.svelte';
 
     let types: IType[] = [];
 
@@ -18,20 +18,13 @@
 </script>
 
 {#each types as type}
-    <div class="summaryengine-postreview">
-        <PostReview type={type} />
+    <div class="summaryengine-summary">
+        <Summary type={type} />
     </div>
 {/each}
-<div class="summaryengine-link">
-    <a href="/wp-admin/admin.php?page=summaryengine">Quickly generate and review summaries for multiple articles here</a>
-</div>
 
 <style>
-    .summaryengine-link {
-        margin: 20px 0;        
-    }
-
-    .summaryengine-postreview {
+    .summaryengine-summary {
         padding-bottom: 20px;
         border-bottom: 1px solid #ccc;
     }

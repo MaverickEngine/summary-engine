@@ -1,5 +1,5 @@
 <script>
-    import { apiPost, apiPut } from '../../libs/ajax.js';
+    import { apiPost, apiPut } from 'wp-ajax';
     import { onMount } from 'svelte';
     export let summary;
     export let type_id;

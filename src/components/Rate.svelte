@@ -1,6 +1,8 @@
 <script>
+    // DEPRECATED!
+    
     // import { summaries, summary_id, summary_index } from '../stores.js';
-    import { apiPost } from '../libs/ajax.js';
+    import { apiPost } from 'wp-ajax';
     import { createEventDispatcher } from 'svelte';
     const dispatch = createEventDispatcher();
 

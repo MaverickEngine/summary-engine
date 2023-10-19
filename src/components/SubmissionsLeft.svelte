@@ -1,4 +1,6 @@
 <script>
+    // DEPRECATED!
+    
     export let submissions_left;
 </script>
 

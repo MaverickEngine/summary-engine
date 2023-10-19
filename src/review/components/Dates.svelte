@@ -1,5 +1,5 @@
 <script>
-    import { apiGet } from '../../libs/ajax.js';
+    import { apiGet } from 'wp-ajax';
     import { onMount } from 'svelte';
     import { selected_date } from '../stores.js';
     

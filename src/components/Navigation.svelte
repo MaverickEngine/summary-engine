@@ -1,8 +1,10 @@
 <script lang="ts">
+    // DEPRECATED!
+    
     // Interfaces
     import type {ISettings} from '../types/SettingsInterface';
     import type {IType} from '../types/TypeInterface.js';
-    import { apiPost } from '../libs/ajax.js';
+    import { apiPost } from 'wp-ajax';
 
     export let summaries = [];
     export let summary_index = 0;
@@ -29,7 +31,6 @@
     }
 
     export const set_settings = () => {
-        console.log(summaries[summary_index]);
         settings.openai_model = summaries[summary_index].openai_model;
         settings.openai_max_tokens = Number(summaries[summary_index].openai_max_tokens);
         settings.openai_temperature =  Number(summaries[summary_index].openai_temperature);

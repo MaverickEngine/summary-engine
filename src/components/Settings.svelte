@@ -1,4 +1,6 @@
 <script lang="ts">
+    // DEPRECATED!
+    
     import type {ISettings} from '../types/SettingsInterface';
     import OpenAiTypeSettings from './OpenAITypeSettings.svelte';
     import { slide } from 'svelte/transition';

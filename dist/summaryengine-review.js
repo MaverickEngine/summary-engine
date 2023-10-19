@@ -101,7 +101,9 @@ var summaryengine_review = (function () {
         target.insertBefore(node, anchor || null);
     }
     function detach(node) {
-        node.parentNode.removeChild(node);
+        if (node.parentNode) {
+            node.parentNode.removeChild(node);
+        }
     }
     function destroy_each(iterations, detaching) {
         for (let i = 0; i < iterations.length; i += 1) {
@@ -149,21 +151,22 @@ var summaryengine_review = (function () {
     }
     function set_data(text, data) {
         data = '' + data;
-        if (text.wholeText !== data)
-            text.data = data;
+        if (text.data === data)
+            return;
+        text.data = data;
     }
     function set_input_value(input, value) {
         input.value = value == null ? '' : value;
     }
     function set_style(node, key, value, important) {
-        if (value === null) {
+        if (value == null) {
             node.style.removeProperty(key);
         }
         else {
             node.style.setProperty(key, value, important ? 'important' : '');
         }
     }
-    function select_option(select, value) {
+    function select_option(select, value, mounting) {
         for (let i = 0; i < select.options.length; i += 1) {
             const option = select.options[i];
             if (option.__value === value) {
@@ -171,10 +174,12 @@ var summaryengine_review = (function () {
                 return;
             }
         }
-        select.selectedIndex = -1; // no option should be selected
+        if (!mounting || value !== undefined) {
+            select.selectedIndex = -1; // no option should be selected
+        }
     }
     function select_value(select) {
-        const selected_option = select.querySelector(':checked') || select.options[0];
+        const selected_option = select.querySelector(':checked');
         return selected_option && selected_option.__value;
     }
     function toggle_class(element, name, toggle) {
@@ -198,16 +203,17 @@ var summaryengine_review = (function () {
             if (!this.e) {
                 if (this.is_svg)
                     this.e = svg_element(target.nodeName);
+                /** #7364  target for <template> may be provided as #document-fragment(11) */
                 else
-                    this.e = element(target.nodeName);
-                this.t = target;
+                    this.e = element((target.nodeType === 11 ? 'TEMPLATE' : target.nodeName));
+                this.t = target.tagName !== 'TEMPLATE' ? target : target.content;
                 this.c(html);
             }
             this.i(anchor);
         }
         h(html) {
             this.e.innerHTML = html;
-            this.n = Array.from(this.e.childNodes);
+            this.n = Array.from(this.e.nodeName === 'TEMPLATE' ? this.e.content.childNodes : this.e.childNodes);
         }
         i(anchor) {
             for (let i = 0; i < this.n.length; i += 1) {
@@ -297,9 +303,9 @@ var summaryengine_review = (function () {
 
     const dirty_components = [];
     const binding_callbacks = [];
-    const render_callbacks = [];
+    let render_callbacks = [];
     const flush_callbacks = [];
-    const resolved_promise = Promise.resolve();
+    const resolved_promise = /* @__PURE__ */ Promise.resolve();
     let update_scheduled = false;
     function schedule_update() {
         if (!update_scheduled) {
@@ -331,15 +337,29 @@ var summaryengine_review = (function () {
     const seen_callbacks = new Set();
     let flushidx = 0; // Do *not* move this inside the flush() function
     function flush() {
+        // Do not reenter flush while dirty components are updated, as this can
+        // result in an infinite loop. Instead, let the inner flush handle it.
+        // Reentrancy is ok afterwards for bindings etc.
+        if (flushidx !== 0) {
+            return;
+        }
         const saved_component = current_component;
         do {
             // first, call beforeUpdate functions
             // and update components
-            while (flushidx < dirty_components.length) {
-                const component = dirty_components[flushidx];
-                flushidx++;
-                set_current_component(component);
-                update(component.$$);
+            try {
+                while (flushidx < dirty_components.length) {
+                    const component = dirty_components[flushidx];
+                    flushidx++;
+                    set_current_component(component);
+                    update(component.$$);
+                }
+            }
+            catch (e) {
+                // reset dirty state to not end up in a deadlocked state and then rethrow
+                dirty_components.length = 0;
+                flushidx = 0;
+                throw e;
             }
             set_current_component(null);
             dirty_components.length = 0;
@@ -375,6 +395,16 @@ var summaryengine_review = (function () {
             $$.fragment && $$.fragment.p($$.ctx, dirty);
             $$.after_update.forEach(add_render_callback);
         }
+    }
+    /**
+     * Useful for example to execute remaining `afterUpdate` callbacks before executing `destroy`.
+     */
+    function flush_render_callbacks(fns) {
+        const filtered = [];
+        const targets = [];
+        render_callbacks.forEach((c) => fns.indexOf(c) === -1 ? filtered.push(c) : targets.push(c));
+        targets.forEach((c) => c());
+        render_callbacks = filtered;
     }
     const outroing = new Set();
     let outros;
@@ -445,6 +475,7 @@ var summaryengine_review = (function () {
     function destroy_component(component, detaching) {
         const $$ = component.$$;
         if ($$.fragment !== null) {
+            flush_render_callbacks($$.after_update);
             run_all($$.on_destroy);
             $$.fragment && $$.fragment.d(detaching);
             // TODO null out other refs, including component.$$ (but need to
@@ -555,7 +586,7 @@ var summaryengine_review = (function () {
     /**
      * Create a `Writable` store that allows both updating and reading by subscription.
      * @param {*=}value initial value
-     * @param {StartStopNotifier=}start start and stop notifications for subscriptions
+     * @param {StartStopNotifier=} start
      */
     function writable(value, start = noop) {
         let stop;
@@ -590,7 +621,7 @@ var summaryengine_review = (function () {
             run(value);
             return () => {
                 subscribers.delete(subscriber);
-                if (subscribers.size === 0) {
+                if (subscribers.size === 0 && stop) {
                     stop();
                     stop = null;
                 }
@@ -607,63 +638,99 @@ var summaryengine_review = (function () {
     const loading = writable(false);
     const search = writable("");
 
-    function apiPost(path, data) {
+    var ajax = {};
+
+    Object.defineProperty(ajax, "__esModule", { value: true });
+    var apiPut_1 = ajax.apiPut = ajax.apiDelete = apiGet_1 = ajax.apiGet = apiPost_1 = ajax.apiPost = void 0;
+    function handleError(response) {
+        if (!response.ok) {
+            const status = response.status;
+            const message = response.responseJSON?.message || response.statusText || response.responseText || response;
+            const code = response.responseJSON?.code || response.code || "";
+            return { status, code, message };
+        }
+        return response;
+    }
+    function apiPost(path, data, headers = {}) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
                 data,
                 type: "POST",
+                headers
             })
-            .done(async (response) => {
+                .done(async (response) => {
                 if (response.error) {
                     reject(response);
                 }
                 resolve(response);
             })
-            .fail(async (response) => {
-                reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+                .fail(async (response) => {
+                reject(handleError(response));
             });
         });
     }
-
-    function apiGet(path) {
+    var apiPost_1 = ajax.apiPost = apiPost;
+    function apiGet(path, headers = {}) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
                 type: "GET",
+                headers
             })
-            .done(async (response) => {
+                .done(async (response) => {
                 if (response.error) {
                     reject(response);
                 }
                 resolve(response);
             })
-            .fail(async (response) => {
-                reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+                .fail(async (response) => {
+                reject(handleError(response));
             });
         });
     }
-
-    function apiPut(path, data) {
+    var apiGet_1 = ajax.apiGet = apiGet;
+    function apiDelete(path, headers = {}) {
+        return new Promise((resolve, reject) => {
+            wp.apiRequest({
+                path,
+                type: "DELETE",
+                headers
+            })
+                .done(async (response) => {
+                if (response.error) {
+                    reject(response);
+                }
+                resolve(response);
+            })
+                .fail(async (response) => {
+                reject(handleError(response));
+            });
+        });
+    }
+    ajax.apiDelete = apiDelete;
+    function apiPut(path, data, headers = {}) {
         return new Promise((resolve, reject) => {
             wp.apiRequest({
                 path,
                 data,
                 type: "PUT",
+                headers
             })
-            .done(async (response) => {
+                .done(async (response) => {
                 if (response.error) {
                     reject(response);
                 }
                 resolve(response);
             })
-            .fail(async (response) => {
-                reject(response.responseJSON?.message || response.statusText || response.responseText || response);
+                .fail(async (response) => {
+                reject(handleError(response));
             });
         });
     }
+    apiPut_1 = ajax.apiPut = apiPut;
 
-    /* src/review/components/Summarise.svelte generated by Svelte v3.52.0 */
+    /* src/review/components/Summarise.svelte generated by Svelte v3.59.2 */
 
     function create_else_block_3(ctx) {
     	let input;
@@ -1365,7 +1432,7 @@ var summaryengine_review = (function () {
     	async function summarise() {
     		try {
     			$$invalidate(0, summary.summarising = true, summary);
-    			const result = await apiPost(`/summaryengine/v1/summarise`, { type_id, post_id: post.id });
+    			const result = await apiPost_1(`/summaryengine/v1/summarise`, { type_id, post_id: post.id });
     			if (!result?.summary) throw "No summary returned";
     			$$invalidate(0, summary.summary = result.summary, summary);
     			$$invalidate(0, summary.summary_id = result.ID, summary);
@@ -1384,7 +1451,7 @@ var summaryengine_review = (function () {
     	async function approve() {
     		try {
     			$$invalidate(6, approving = true);
-    			await apiPost(`/summaryengine/v1/rate/${summary.summary_id}`, { rating: 1 });
+    			await apiPost_1(`/summaryengine/v1/rate/${summary.summary_id}`, { rating: 1 });
     			$$invalidate(0, summary.summary_details.rating = 1, summary);
     			$$invalidate(6, approving = false);
     			$$invalidate(7, approved = true);
@@ -1399,7 +1466,7 @@ var summaryengine_review = (function () {
     	async function disapprove() {
     		try {
     			$$invalidate(5, disapproving = true);
-    			await apiPost(`/summaryengine/v1/rate/${summary.summary_id}`, { rating: -1 });
+    			await apiPost_1(`/summaryengine/v1/rate/${summary.summary_id}`, { rating: -1 });
     			await summarise();
     			$$invalidate(5, disapproving = false);
     			$$invalidate(0, summary.summary_details.rating = 0, summary);
@@ -1414,7 +1481,7 @@ var summaryengine_review = (function () {
     	async function save() {
     		try {
     			$$invalidate(9, saving = true);
-    			await apiPut(`/summaryengine/v1/summary/${summary.summary_id}`, { summary: summary.summary });
+    			await apiPut_1(`/summaryengine/v1/summary/${summary.summary_id}`, { summary: summary.summary });
     			$$invalidate(4, editing = false);
     			$$invalidate(9, saving = false);
     		} catch(err) {
@@ -1479,7 +1546,7 @@ var summaryengine_review = (function () {
     	}
     }
 
-    /* src/review/components/Dates.svelte generated by Svelte v3.52.0 */
+    /* src/review/components/Dates.svelte generated by Svelte v3.59.2 */
 
     function get_each_context$1(ctx, list, i) {
     	const child_ctx = ctx.slice();
@@ -1574,10 +1641,12 @@ var summaryengine_review = (function () {
     			append(select, option);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(select, null);
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(select, null);
+    				}
     			}
 
-    			select_option(select, /*$selected_date*/ ctx[1]);
+    			select_option(select, /*$selected_date*/ ctx[1], true);
     			append(div, t3);
     			append(div, input);
 
@@ -1651,7 +1720,7 @@ var summaryengine_review = (function () {
 
     	onMount(async () => {
     		try {
-    			const result = await apiGet(`/summaryengine/v1/post_months`);
+    			const result = await apiGet_1(`/summaryengine/v1/post_months`);
     			$$invalidate(0, months = result);
 
     			$$invalidate(0, months = months.map(month => {
@@ -1683,7 +1752,7 @@ var summaryengine_review = (function () {
     	}
     }
 
-    /* src/review/components/Pages.svelte generated by Svelte v3.52.0 */
+    /* src/review/components/Pages.svelte generated by Svelte v3.59.2 */
 
     function create_fragment$3(ctx) {
     	let div;
@@ -2010,7 +2079,7 @@ var summaryengine_review = (function () {
     	}
     }
 
-    /* src/review/components/Search.svelte generated by Svelte v3.52.0 */
+    /* src/review/components/Search.svelte generated by Svelte v3.59.2 */
 
     function create_fragment$2(ctx) {
     	let form;
@@ -2061,7 +2130,7 @@ var summaryengine_review = (function () {
     			}
     		},
     		p(ctx, [dirty]) {
-    			if (dirty & /*$search*/ 1) {
+    			if (dirty & /*$search*/ 1 && input0.value !== /*$search*/ ctx[0]) {
     				set_input_value(input0, /*$search*/ ctx[0]);
     			}
     		},
@@ -2096,7 +2165,7 @@ var summaryengine_review = (function () {
     	}
     }
 
-    /* src/review/components/Modal.svelte generated by Svelte v3.52.0 */
+    /* src/review/components/Modal.svelte generated by Svelte v3.59.2 */
     const get_buttons_slot_changes = dirty => ({});
     const get_buttons_slot_context = ctx => ({});
     const get_header_slot_changes = dirty => ({});
@@ -2329,7 +2398,7 @@ var summaryengine_review = (function () {
     	}
     }
 
-    /* src/review/Review.svelte generated by Svelte v3.52.0 */
+    /* src/review/Review.svelte generated by Svelte v3.59.2 */
 
     function get_each_context(ctx, list, i) {
     	const child_ctx = ctx.slice();
@@ -2685,7 +2754,9 @@ var summaryengine_review = (function () {
     			append(tr, t7);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(tr, null);
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(tr, null);
+    				}
     			}
 
     			append(tr, t8);
@@ -2922,7 +2993,9 @@ var summaryengine_review = (function () {
     			append(tr, t9);
 
     			for (let i = 0; i < each_blocks_1.length; i += 1) {
-    				each_blocks_1[i].m(tr, null);
+    				if (each_blocks_1[i]) {
+    					each_blocks_1[i].m(tr, null);
+    				}
     			}
 
     			append(tr, t10);
@@ -2931,7 +3004,9 @@ var summaryengine_review = (function () {
     			append(table, tbody);
 
     			for (let i = 0; i < each_blocks.length; i += 1) {
-    				each_blocks[i].m(tbody, null);
+    				if (each_blocks[i]) {
+    					each_blocks[i].m(tbody, null);
+    				}
     			}
 
     			current = true;
@@ -3088,7 +3163,7 @@ var summaryengine_review = (function () {
     	async function getPosts() {
     		try {
     			set_store_value(loading, $loading = true, $loading);
-    			const result = await apiGet(`/summaryengine/v1/posts?date=${$selected_date}&size=${per_page}&page=${$page}&search=${$search}`);
+    			const result = await apiGet_1(`/summaryengine/v1/posts?date=${$selected_date}&size=${per_page}&page=${$page}&search=${$search}`);
     			posts.set(result.posts);
     			post_count.set(result.count);
     			set_store_value(loading, $loading = false, $loading);
@@ -3100,7 +3175,7 @@ var summaryengine_review = (function () {
     	}
 
     	async function getTypes() {
-    		set_store_value(types, $types = await apiGet(`/summaryengine/v1/types`), $types);
+    		set_store_value(types, $types = await apiGet_1(`/summaryengine/v1/types`), $types);
     	}
 
     	async function generateAllSummaries(post) {
@@ -3115,7 +3190,7 @@ var summaryengine_review = (function () {
     				if (summary.summary) continue;
     				summary.summarising = true;
     				posts.set($posts);
-    				const result = await apiPost(`/summaryengine/v1/summarise`, { type_id: type.ID, post_id: post.id });
+    				const result = await apiPost_1(`/summaryengine/v1/summarise`, { type_id: type.ID, post_id: post.id });
     				if (!result?.summary) throw "No summary returned";
     				post.summaries[type.slug].summary = result.summary;
     				post.summaries[type.slug].summary_id = result.ID;

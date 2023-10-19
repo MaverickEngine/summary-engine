@@ -5,7 +5,7 @@
     import Dates from "./components/Dates.svelte";
     import Pages from "./components/Pages.svelte";
     import Search from "./components/Search.svelte";
-    import { apiGet, apiPost } from '../libs/ajax.js';
+    import { apiGet, apiPost } from 'wp-ajax';
     import Modal from './components/Modal.svelte';
 
     let per_page = 10;
