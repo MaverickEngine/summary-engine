@@ -5,10 +5,7 @@ class SummaryEngineAdminSettings {
         "summaryengine_post_types",
         "summaryengine_openai_apikey",
         "summaryengine_openai_timeout",
-        "summaryengine_chatgpt_apikey",
         "summaryengine_chatgpt_timeout",
-        "summaryengine_bard_apikey",
-        "summaryengine_bard_timeout",
         "summaryengine_max_number_of_submissions_per_post",
         "summaryengine_rss_limit",
         "summaryengine_summarise_on_publish",
@@ -18,11 +15,8 @@ class SummaryEngineAdminSettings {
         "summaryengine_post_types" => ["post"],
         "summaryengine_openai_apikey" => "",
         "summaryengine_openai_timeout" => 30,
-        "summaryengine_chatgpt_apikey" => "",
         "summaryengine_chatgpt_timeout" => 30,
-        "summaryengine_bard_apikey" => "",
-        "summaryengine_bard_timeout" => 30,
-        "summaryengine_max_number_of_submissions_per_post" => 3,
+        "summaryengine_max_number_of_submissions_per_post" => -1,
         "summaryengine_rss_limit" => 10,
         "summaryengine_summarise_on_publish" => false,
     ];
@@ -52,7 +46,7 @@ class SummaryEngineAdminSettings {
         if (defined('OPENAI_APIKEY')) {
             update_option('summaryengine_openai_apikey', '');
         }
-        if (defined('CHATGPT_APIKEY')) {
+        if (defined('OPENAI_APIKEY')) {
             update_option('summaryengine_chatgpt_apikey', '');
         }
         if (defined('BARD_APIKEY')) {
@@ -65,8 +59,8 @@ class SummaryEngineAdminSettings {
             } else {
                 $openai_apikey = get_option('summaryengine_openai_apikey');
             }
-            if (defined('CHATGPT_APIKEY')) {
-                $chatgpt_apikey = CHATGPT_APIKEY;
+            if (defined('OPENAI_APIKEY')) {
+                $chatgpt_apikey = OPENAI_APIKEY;
             } else {
                 $chatgpt_apikey = get_option('summaryengine_chatgpt_apikey');
             }

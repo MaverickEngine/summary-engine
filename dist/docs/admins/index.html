@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Jason Norwood-Young" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>For Administrators - SummaryEngine</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "For Administrators";
+        var mkdocs_page_input_path = "admins.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> SummaryEngine
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../editors/">For Editors</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">For Administrators</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#openai-api-key">OpenAI API Key</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#summaryengine-settings">SummaryEngine Settings</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#summaryengine-summary-types">SummaryEngine Summary Types</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../developers/">For Developers</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../rss/">RSS Feed</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../custom-actions/">Custom Actions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../types/">Types</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">SummaryEngine</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+      <li>For Administrators</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="summaryengine-for-wordpress-administrators">SummaryEngine For Wordpress Administrators</h1>
+<p>SummaryEngine is a Wordpress plugin that uses machine learning to help editors generate summaries to articles. It would typically be used in a newsroom, but can be used in other contexts too.</p>
+<p>It uses the "human-in-the-loop" approach, where the editor is responsible for quality control, and can choose to accept, reject or edit the summary.</p>
+<p>SummaryEngine uses OpenAI's Open-GPT machine learning models, so you will need an API key to use it. You can get one <a href="https://beta.openai.com/">here</a>.</p>
+<h2 id="installation">Installation</h2>
+<ol>
+<li>Download the plugin from <a href="https://github.com/MaverickEngine/summary-engine-deploy/archive/refs/heads/main.zip">Github</a></li>
+<li>Upload the plugin to your Wordpress site</li>
+<li>Unzip the plugin</li>
+<li>Activate the plugin</li>
+</ol>
+<h2 id="configuration">Configuration</h2>
+<h3 id="openai-api-key">OpenAI API Key</h3>
+<p>You can set the API Key in the Wordpress admin panel, under SummaryEngine &gt; Settings. However, we recommend setting the API Key in the Wordpress config file, <code>wp-config.php</code> (or <code>vip-config.php</code> if you're a Wordpress VIP member).</p>
+<p>To do this, add the following line to your config file:</p>
+<pre><code class="language-php">define( 'OPENAI_APIKEY', 'sk-RandomKey' );
+</code></pre>
+<h3 id="summaryengine-settings">SummaryEngine Settings</h3>
+<p>You can set the following settings in the Wordpress admin panel, under SummaryEngine &gt; Settings:</p>
+<ul>
+<li><strong>Post Types</strong> - The post types that will have the SummaryEngine metabox.</li>
+<li><strong>Generate summaries when posts are published?</strong> - Whether to automatically generate summaries when posts are published. These summaries will be unapproved.</li>
+<li><strong>RSS post limit</strong> - The maximum number of posts to include in the SummaryEngine RSS feeds (per page). See <a href="#rss-feeds">RSS Feeds</a> for more information.</li>
+<li><strong>Maximum number of submissions per post</strong> - The maximum number of submissions that can be generated for each post for each type of summary. Set to -1 for unlimited. Keep in mind that each sumission carries a cost.</li>
+</ul>
+<h2 id="summaryengine-summary-types">SummaryEngine Summary Types</h2>
+<p>You can create, delete and manage different types of summaries in the Wordpress admin panel, under SummaryEngine &gt; Types.</p>
+<p>Click the "New Type" tab to create a new type. </p>
+<p>Types have the following fields:</p>
+<ul>
+<li><strong>Name</strong> - The name of the type. This is used to identify the type in the admin panel, and is also used in the RSS feed.</li>
+<li><strong>Slug</strong> - The slug of the type. This will be used in as the post metadata key. It is automatically generated from the name.</li>
+<li><strong>Prepend Prompt</strong> - This is typically the instruction you want to send to the model, such as "Write a summary of this article". It will be prepended to the article text that we submit to GPT-3.</li>
+<li><strong>Append Prompt</strong> - This is typically an example of the format we want returned, and important to note that it will be appended to the result. For instance, you might want to add a bullet point (<code>-</code>) to the end of the prompt, so that the model knows to return a bullet-pointed list. Usually you will leave this blank.
+OpenAI Model</li>
+<li><strong>OpenAI Model</strong> - The OpenAI model to use. You can choose from Text-Davinci-001, Text-Davinci-002, Text-Davinci-003, Text-Curie-001, Text-Babbage-001 or Text-Ada-001. There are cost implications with choosing a better model, and it might not always perform as well as one of the other options. See <a href="https://beta.openai.com/docs/models">OpenAI's documentation</a> for more information.</li>
+<li><strong>Submission word limit</strong> - The maximum number of words to allow in a submission. Very long articles could either become very expensive, or the model might not be able to generate a summary. For some cases, you might get better results by exposing less of the article, which can bring in unimportant points, provided your article is written in the pyramid style. We recommend between 500 and 750 words, although for Tweets, you can go down to 250 or so.</li>
+<li><strong>Cut at paragraph nearest end?</strong> - Whether to cut the article at the nearest paragraph to the word limit. This is useful if you want to avoid cutting a sentence in half. If you don't want to cut at the nearest paragraph, the article will be cut at the word limit.</li>
+<li><strong>Max Tokens</strong> - This is the maximum number of tokens that OpenAI will use, but be aware that it includes both the submitted text as well as the result. A low number can result in the response being truncated. Make sure your number is high enough to allow for the submitted text, and the result. See <a href="https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them">What are tokens and how to count them?</a> for more information.</li>
+<li><strong>Temperature</strong> - What sampling temperature to use. Higher values means the model will take more risks. Try 0.9 for more creative applications, and 0 (argmax sampling) for ones with a well-defined answer. We generally recommend altering this or top_p but not both.</li>
+<li><strong>Top P</strong> - What top_p to use. An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both.</li>
+<li><strong>Presence Penalty</strong> - Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.</li>
+<li><strong>Frequency Penalty</strong> - Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.</li>
+<li><strong>Custom action</strong> - Call a custom action based on the summary and post, eg. post to Twitter. Use [post_url] and [summary], and [summary_encoded] as variables. See <a href="../custom-actions/">Custom Actions</a> for more information.</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../editors/" class="btn btn-neutral float-left" title="For Editors"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../developers/" class="btn btn-neutral float-right" title="For Developers">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Daily Maverick</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../editors/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../developers/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

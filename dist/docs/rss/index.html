@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Jason Norwood-Young" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>RSS Feed - SummaryEngine</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "RSS Feed";
+        var mkdocs_page_input_path = "rss.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> SummaryEngine
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../editors/">For Editors</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../admins/">For Administrators</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../developers/">For Developers</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">RSS Feed</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#available-rss-feeds">Available RSS Feeds</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#rss-feed-parameters">RSS Feed Parameters</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#example-rss-feed">Example RSS Feed</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../custom-actions/">Custom Actions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../types/">Types</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">SummaryEngine</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+      <li>RSS Feed</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="summaryengine-rss-feeds">SummaryEngine RSS Feeds</h1>
+<p>SummaryEngine can generate RSS feeds for your site, using the summaries you have generated. This can be useful for generating a newsletter, or for syndicating your content to other sites.</p>
+<h2 id="available-rss-feeds">Available RSS Feeds</h2>
+<p>The default SummaryEngine RSS feed will be available at: <code>/feed/summaryengine</code></p>
+<p>If your website is "https://example.com", then the RSS feed will be available at: "https://example.com/feed/summaryengine"</p>
+<p>This feed will give you the latest <strong>approved</strong> summaries for your site, of the type "summary", in reverse chronological order. </p>
+<p><strong><em>Note: Only summaries that have been approved by an editor will be included in the RSS feed.</em></strong></p>
+<h3 id="rss-feed-parameters">RSS Feed Parameters</h3>
+<p>You can add the following parameters to customise the RSS feed:</p>
+<ul>
+<li><strong>type</strong> - The slug of the summary type you want to get</li>
+<li><strong>limit</strong> - The number of summaries per page</li>
+<li><strong>page</strong> - The page number</li>
+<li><strong>rating</strong> - Only show summaries with this rating. (-1 = rejected, 0 = unapproved, 1 = approved)</li>
+</ul>
+<h2 id="example-rss-feed">Example RSS Feed</h2>
+<p>The following example will give you the latest 10 unapproved summaries of type "newsletter", in reverse chronological order starting at the second page:</p>
+<p><code>https://example.com/feed/summaryengine?type=newsletter&amp;limit=10&amp;page=2&amp;rating=0</code></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../developers/" class="btn btn-neutral float-left" title="For Developers"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../custom-actions/" class="btn btn-neutral float-right" title="Custom Actions">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Daily Maverick</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../developers/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../custom-actions/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

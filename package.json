@@ -1,10 +1,11 @@
 {
   "name": "summary-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "rollup.config.js",
   "scripts": {
     "build": "rollup -c",
+    "docs": "mkdocs build -d dist/docs",
     "dev": "rollup -c -w",
     "start": "sirv public --no-clear",
     "test": "jest"

@@ -1,9 +1,9 @@
 # Summary Engine
 
-Use machine learning to help editors generate summaries to articles. A MavEngine Wordpress plugin.
+Use artificial intelligence to help editors generate summaries to articles. A MavEngine Wordpress plugin.
 
 ## Features
-- Generate summaries for posts using GPT-3
+- Generate summaries for posts using OpenAI ChatGPT-3 or ChatGPT-4
 - Create summaries for different purposes (e.g. newsletter, social media, etc.)
 - An approval system allows you to just show the summaries that you're happy with
 - Summaries are stored as post meta, so you can use them in your theme

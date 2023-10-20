@@ -65,16 +65,6 @@ export async function generate_summary(type) {
         console.log(data);
         const response = (await apiPost("summaryengine/v1/summarise", data)).result;
         return response;
-        // console.log(response);
-        // summary_id = response.ID;
-        // summaries.unshift(response);
-        // summary_index = 0;
-        // summaries = summaries;
-        // summary_text = response.summary.trim();
-        // loading = false;
-        // submissions_left--;
-        // console.log({ summary_id, summaries, summary_index, summary_text, submissions_left });
-        return;
     } catch (err) {
         if (err.message) throw err.message;
         throw err;

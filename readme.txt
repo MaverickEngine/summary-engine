@@ -32,6 +32,18 @@ SummaryEngine is a Wordpress plugin that uses machine learning to help editors g
 
 == Changelog ==
 
+= v1.0.1=
+ * Forward and Back now only in browser scope
+ * Documentation under dist/docs
+ 
+= v1.0.0 =
+ * Stable release
+ * Redesign of SummaryEngine in posts
+ * Refactor of code to bring most stuff into Summary (previously PostSummary)
+ * Fix major bug in posts where summaries were being overwritten by WP custom fields
+ * CHATGPT_APIKEY no longer required - we use the OpenAI API key
+ * Remove experimental Bard support
+
 = v0.12.2 = 
  * Reduce permissions required to use the Preview view
  

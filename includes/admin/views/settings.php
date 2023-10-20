@@ -14,7 +14,6 @@
             <a href="?page=summaryengine-settings&tab=general" class="nav-tab <?php echo $active_tab == 'general' ? 'nav-tab-active' : ''; ?>"><?php _e( 'General', 'summaryengine' ); ?></a>
             <a href="?page=summaryengine-settings&tab=openai" class="nav-tab <?php echo $active_tab == 'openai' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Open AI', 'summaryengine' ); ?></a>
             <a href="?page=summaryengine-settings&tab=chatgpt" class="nav-tab <?php echo $active_tab == 'chatgpt' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Chat GPT', 'summaryengine' ); ?></a>
-            <a href="?page=summaryengine-settings&tab=bard" class="nav-tab <?php echo $active_tab == 'bard' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Bard', 'summaryengine' ); ?></a>
         </nav>
         <div class="tab-content">
             <?php if ($active_tab == 'general') { ?>
@@ -89,50 +88,10 @@
                 <h2><?php _e( 'Chat GPT', 'chatgpt' ); ?></h2>
                 <table class="form-table">
                     <tbody>
-                        <?php
-                        if (!defined('CHATGPT_APIKEY')) {
-                        ?>
-                        <tr>
-                            <th scope="row"><?php _e("Chat GPT API Key", "summaryengine") ?></th>
-                            <td>
-                                <input type="password" name="summaryengine_chatgpt_apikey" value="<?php echo esc_attr(get_option('summaryengine_chatgpt_apikey')); ?>" class="regular-text">
-                                <p>For better security, set this in your wp-config.php, vip-config.php or Docker .env file using the constant <code>CHATGPT_APIKEY</code>.<br /> Eg. <code>define("CHATGPT_APIKEY", "sk-my-key");</code></p>
-                            </td>
-                        </tr>
-                        <?php
-                        }
-                        ?>
                         <tr>
                             <th scope="row"><?php _e("Chat GPT Timeout", "summaryengine") ?></th>
                             <td>
                                 <input type="number" name="summaryengine_chatgpt_timeout" value="<?php echo esc_attr(get_option('summaryengine_chatgpt_timeout')); ?>" class="regular-text" min="10">
-                                <p>Timeout in seconds.</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <?php submit_button(); ?>
-            <?php } else if ($active_tab == 'bard') { ?>
-                <h2><?php _e( 'Bard', 'bard' ); ?></h2>
-                <table class="form-table">
-                    <tbody>
-                        <?php
-                        if (!defined('BARD_APIKEY')) {
-                        ?>
-                        <tr>
-                            <th scope="row"><?php _e("Bard API Key", "summaryengine") ?></th>
-                            <td>
-                                <input type="password" name="summaryengine_bard_apikey" value="<?php echo esc_attr(get_option('summaryengine_bard_apikey')); ?>" class="regular-text">
-                                <p>For better security, set this in your wp-config.php, vip-config.php or Docker .env file using the constant <code>BARD_APIKEY</code>.<br /> Eg. <code>define("BARD_APIKEY", "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");</code></p>
-                            </td>
-                        </tr>
-                        <?php
-                        }
-                        ?>
-                        <tr>
-                            <th scope="row"><?php _e("Bard Timeout", "summaryengine") ?></th>
-                            <td>
-                                <input type="number" name="summaryengine_bard_timeout" value="<?php echo esc_attr(get_option('summaryengine_bard_timeout')); ?>" class="regular-text" min="10">
                                 <p>Timeout in seconds.</p>
                             </td>
                         </tr>

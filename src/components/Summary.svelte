@@ -18,6 +18,7 @@
     let saving = false;
     let loading = true;
     let approved = false;
+    let history: Array<ISimpleSummary> = [];
 
     async function updateMetadata() {
         try {
@@ -65,6 +66,10 @@
             summary = _parse_summary(await apiGet(`summaryengine/v1/summary/${post_id}?type_id=${type.ID}`));
             approved = Number(summary.summary_rating) === 1;
             loading = false;
+            if (summary?.summary) {
+                history.push(summary);
+            }
+            history = history;
         } catch (e) {
             console.error(e);
             alert("An error occured: " + e);
@@ -72,9 +77,8 @@
         }
     });
 
-    async function doApprove() {
-        console.log("Approve");
-        summary.summary_rating = 1;
+    async function saveCurrent() {
+        console.log("Save current");
         try {
             saving = true;
             await apiPut(`/summaryengine/v1/summary/${summary.summary_id}`, summary);
@@ -87,79 +91,112 @@
         }
     }
 
-    async function doReject() {
-        console.log("Reject");
+    async function generate() {
         try {
             saving = true;
-            await apiPut(`/summaryengine/v1/summary/${summary.summary_id}`, { summary_rating: -1 });
             const response: ISummary = await generate_summary(type);
+            if (!response) return;
             summary = _parse_summary({
                 summary: response.summary,
                 summary_id: response.ID,
                 summary_rating: 0
             });
             updateMetadata();
+            history.push(summary);
+            history = history;
         } catch(err) {
             console.error(err);
             alert("An error occured: " + err);
         } finally {
             saving = false;
         }
+    }
+
+    async function doApprove() {
+        console.log("Approve");
+        summary.summary_rating = 1;
+        await saveCurrent();
+    }
+
+    async function doReject() {
+        console.log("Reject");
+        summary.summary_rating = -1;
+        await saveCurrent();
+        await generate();
     }
 
     async function doGenerate() {
         console.log("Generate");
-        try {
-            saving = true;
-            const response: ISummary = await generate_summary(type);
-            summary = _parse_summary({
-                summary: response.summary,
-                summary_id: response.ID,
-                summary_rating: 0
-            });
-            updateMetadata();
-        } catch(err) {
-            console.error(err);
-            alert("An error occured: " + err);
-        } finally {
-            saving = false;
-        }
+        await generate();
     }
 
-    function doUnapprove() {
+    async function doUnapprove() {
         console.log("Unapprove");
         summary.summary_rating = 0;
-        updateMetadata();
+        await saveCurrent();
     }
 
-    function doSave() {
+    async function doSave() {
         console.log("Save");
         editing = false;
-        updateMetadata();
+        await saveCurrent();
+    }
+
+    async function doBack() {
+        console.log("Back");
+        editing = false;
+        // Move last item in history to first item in history
+        history.unshift(history.pop());
+        summary = history[history.length - 1];
+        await saveCurrent();
+    }
+
+    async function doForward() {
+        console.log("Forward");
+        editing = false;
+        // Move first item in history to last item in history
+        history.push(history.shift());
+        summary = history[history.length - 1];
+        await saveCurrent();
     }
 
     $: updateMetadata();
 </script>
 <div id="summaryEngineMetaBlock">
+    {#if loading || saving}
+        <div class="summaryengine-overlay">
+            <Spinner />
+        </div>
+    {/if}
     <div class="summaryengine-header">
         <h4>{type.name}</h4>
+        {#if (history.length > 1) && (summary.summary_rating !== 1)}
+            <div class="summaryengine-history">
+                <div on:click={doBack} on:keypress={doBack} class="dashicons dashicons-arrow-left-alt"></div>
+                {#if history.length > 2}
+                <div on:click={doForward} on:keypress={doForward} class="dashicons dashicons-arrow-right-alt"></div>
+                {/if}
+            </div>
+        {/if}
     </div>
-    {#if loading || saving}
+    {#if loading}
             <Spinner />
     {:else}
         <label class="screen-reader-text" for="summary">Summary</label>
-        
-        {#if summary.summary_rating === 1 && !editing}
+        <!-- Approved -->
+        {#if summary.summary_rating === 1 && !editing} 
             <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" value={summary.summary} readonly></textarea>
             <div class="summaryengine-nav">
                 <Button on:click={() => editing = true}>Edit</Button>
                 <Button type="link" on:click={doUnapprove} warning={true}>Unapprove</Button>
             </div>
+        <!-- Approved, Editing -->
         {:else if summary.summary_rating === 1 && editing}
             <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" bind:value={summary.summary}></textarea>
             <div class="summaryengine-nav">
                 <Button on:click={doSave}>Save</Button>
             </div>
+        <!-- Unapproved -->
         {:else if (summary.summary)}
             <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" bind:value={summary.summary}></textarea>
             <div class="summaryengine-nav">
@@ -167,32 +204,11 @@
                 <Button on:click={doReject} warning={true}>Reject</Button>
             </div>
         {:else}
+        <!-- Starting State -->
         <div class="summaryengine-nav">
             <Button type="link" on:click={doGenerate} primary={true}>Generate</Button>
         </div>
         {/if}
-        <!-- {#if editing}
-            <textarea cols="40" class="summaryengine-summarise__summary-textarea" bind:value={summary_text} />
-            {#if (!saving)}
-                <input class="summaryengine-button button" type="button" name="save" value="Save" on:click={save} />
-                <input class="summaryengine-button button" type="button" name="cancel" value="Cancel" on:click={() => editing = false} />
-            {:else}
-                <input class="summaryengine-button button" type="button" name="save" value="Saving..." disabled />
-            {/if}
-        {:else if (summary_id)}
-            <textarea rows="1" cols="40" id="summaryEngineSummary" class="summaryengine-textarea" value={summary_text} readonly></textarea>
-            <div class="summaryengine-nav">
-                <input class="summaryengine-button button" type="button" name="edit" value="Edit" on:click={() => editing = true} />
-                {#if !approved && summaries.length > 1}
-                    <Navigation summaries={summaries} type={type} bind:summary_text={summary_text} bind:summary_index={summary_index} bind:settings={settings} />
-                {/if}
-            </div>
-        {/if}
-        <div id="summaryEngineMetaBlockSummariseButtonContainer">
-            <GenerateSummary type={type} bind:summary_text={summary_text} bind:summary_id={summary_id} bind:summary_index={summary_index} bind:submissions_left={submissions_left} bind:summaries={summaries} settings={settings} />
-            <SubmissionsLeft bind:submissions_left={submissions_left} />
-            
-        </div> -->
     {/if}
 </div>
 
@@ -216,18 +232,29 @@
         align-items: center;
     }
 
-    /* #summaryEngineMetaBlockSummariseButtonContainer {
+    .summaryengine-history {
         display: flex;
         flex-direction: row;
-        margin-top: 10px;
-    }  
-
-    .summaryengine-settings-button {
-        height: 20px;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .summaryengine-summarise__summary-textarea {
+    .summaryengine-history div {
+        cursor: pointer;
+    }
+
+    .summaryengine-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
-        height: 8em;
-    } */
+        height: 100%;
+        opacity: .6;
+        background-color: #fff;
+        z-index: 100;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
 </style>

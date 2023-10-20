@@ -5,7 +5,6 @@
     import { types } from '../stores/types.js';
     import "../libs/slugify.js";
     import OpenAiTypeSettings from './OpenAITypeSettings.svelte';
-    import type {ISettings} from '../types/SettingsInterface';
     import type {IType} from '../types/TypeInterface.js';
 
     let tab = 0;

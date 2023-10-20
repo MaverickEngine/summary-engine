@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Jason Norwood-Young" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>For Editors - SummaryEngine</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "For Editors";
+        var mkdocs_page_input_path = "editors.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> SummaryEngine
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="./">For Editors</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#automatic-summary-generation">Automatic Summary Generation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#manual-summary-generation">Manual Summary Generation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#bulk-summary-generation">Bulk Summary Generation</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../admins/">For Administrators</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../developers/">For Developers</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../rss/">RSS Feed</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../custom-actions/">Custom Actions</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../types/">Types</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">SummaryEngine</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+      <li>For Editors</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="summaryengine-for-editors">SummaryEngine For Editors</h1>
+<p>SummaryEngine uses machine learning to help editors generate summaries to articles. It would typically be used in a newsroom, but can be used in other contexts too. </p>
+<p>It uses the "human-in-the-loop" approach, where the editor is responsible for quality control, and can choose to accept, reject or edit the summary.</p>
+<p>Multiple summaries can be generated for each article, serving different purposes. For instance, you might generate a bullet-point summary for the start of the article, a longer summary for use in a newsletter, and a Twitter summary.</p>
+<p>SummaryEngine uses OpenAI's Open-GPT machine learning models, so you will need an API key to use it. You can get one <a href="https://beta.openai.com/">here</a>.</p>
+<p>There are three ways of generating summaries. The first is the automatic summary generation, which can occure automatically when you publish a post. The second is the manual summary generation, which you can do from the post edit screen. The third is the bulk summary generation, which you can do from the SummaryEngine Review page.</p>
+<h2 id="automatic-summary-generation">Automatic Summary Generation</h2>
+<p>When you publish a post, SummaryEngine will automatically generate a summary for it, provided the feature is enabled and that you haven't already generated a summary for the post. The summary should still be approved by an editor before it is shown to the public, typically in the Review Page.</p>
+<h2 id="manual-summary-generation">Manual Summary Generation</h2>
+<p>You can generate a summary for a post from the post edit screen. All that is required is that there is some text in the post body. You can then choose the summary type, and click "Generate Summary". The summary will be generated, and you can then approve or reject it. If you reject it, a new summary will be automatically generated for you (provided you have sufficient summaries remaining).</p>
+<p>This view has additional functionality compared to the Review Page. </p>
+<ul>
+<li>You can revert back to a previous Summary and select it instead. </li>
+<li>You can edit the summary before approving it.</li>
+</ul>
+<h2 id="bulk-summary-generation">Bulk Summary Generation</h2>
+<p>You can generate summaries for multiple posts at once from the SummaryEngine Review page. This is useful if you have a lot of posts that need summaries, or if you want to generate summaries for a specific type of post.</p>
+<p>To access it, go to <strong><em>SummaryEngine &gt; Review</em></strong>.</p>
+<p>This screen will let you quickly approve, reject or edit summaries. You can also generate new summaries for posts that don't have one.</p>
+<p>Unapproved summaries are shown in yellow. Rejected summaries are shown in red. Approved summaries do not have a background colour. </p>
+<p>To generate a single summary, click "Summarise" next to the post. To generate summaries for multiple summary types, click "Summarise All".</p>
+<p>To approve a summary, simply mouseover the summary to expand it, and click the "Approve" button. To reject a summary, click the "Reject" button. A new summary will automatically be generated. To edit a summary, click the "Edit" button. To generate a new summary, click the "Generate" button.</p>
+<p>To preview an article, click the icon of the eye next to the article's title. To edit the article, click the article's title.</p>
+<p>You can search or filter the posts by date.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../admins/" class="btn btn-neutral float-right" title="For Administrators">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+      <p>Daily Maverick</p>
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../admins/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme_extra.js" defer></script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

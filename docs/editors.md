@@ -22,7 +22,6 @@ This view has additional functionality compared to the Review Page.
 
 - You can revert back to a previous Summary and select it instead. 
 - You can edit the summary before approving it.
-- You can fine-tune the settings for the summary. See [SummaryEngine Summary Types](admins.md#summaryengine-summary-types) for more information.
 
 ## Bulk Summary Generation
 
