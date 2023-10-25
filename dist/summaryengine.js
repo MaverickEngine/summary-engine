@@ -947,7 +947,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (161:8) {#if (history.length > 1) && (summary.summary_rating !== 1)}
+    // (162:8) {#if (history.length > 1) && (summary.summary_rating !== 1)}
     function create_if_block_4(ctx) {
     	let div1;
     	let div0;
@@ -1003,7 +1003,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (164:16) {#if history.length > 2}
+    // (165:16) {#if history.length > 2}
     function create_if_block_5(ctx) {
     	let div;
     	let mounted;
@@ -1035,7 +1035,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (172:4) {:else}
+    // (173:4) {:else}
     function create_else_block(ctx) {
     	let label;
     	let t1;
@@ -1118,7 +1118,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (170:4) {#if loading}
+    // (171:4) {#if loading}
     function create_if_block(ctx) {
     	let spinner;
     	let current;
@@ -1148,7 +1148,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (194:8) {:else}
+    // (195:8) {:else}
     function create_else_block_1(ctx) {
     	let div;
     	let button;
@@ -1201,7 +1201,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (188:36) 
+    // (189:36) 
     function create_if_block_3(ctx) {
     	let textarea;
     	let t0;
@@ -1304,7 +1304,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (182:58) 
+    // (183:58) 
     function create_if_block_2(ctx) {
     	let textarea;
     	let t;
@@ -1381,7 +1381,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (175:8) {#if summary.summary_rating === 1 && !editing}
+    // (176:8) {#if summary.summary_rating === 1 && !editing}
     function create_if_block_1(ctx) {
     	let textarea;
     	let textarea_value_value;
@@ -1478,7 +1478,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (197:12) <Button type="link" on:click={doGenerate} primary={true}>
+    // (198:12) <Button type="link" on:click={doGenerate} primary={true}>
     function create_default_slot_5(ctx) {
     	let t;
 
@@ -1495,7 +1495,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (191:16) <Button on:click={doApprove}>
+    // (192:16) <Button on:click={doApprove}>
     function create_default_slot_4(ctx) {
     	let t;
 
@@ -1512,7 +1512,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (192:16) <Button on:click={doReject} warning={true}>
+    // (193:16) <Button on:click={doReject} warning={true}>
     function create_default_slot_3(ctx) {
     	let t;
 
@@ -1529,7 +1529,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (185:16) <Button on:click={doSave}>
+    // (186:16) <Button on:click={doSave}>
     function create_default_slot_2(ctx) {
     	let t;
 
@@ -1546,7 +1546,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (178:16) <Button on:click={() => editing = true}>
+    // (179:16) <Button on:click={() => editing = true}>
     function create_default_slot_1(ctx) {
     	let t;
 
@@ -1563,7 +1563,7 @@ var summaryengine = (function (exports) {
     	};
     }
 
-    // (179:16) <Button type="link" on:click={doUnapprove} warning={true}>
+    // (180:16) <Button type="link" on:click={doUnapprove} warning={true}>
     function create_default_slot(ctx) {
     	let t;
 
@@ -1841,7 +1841,8 @@ var summaryengine = (function (exports) {
     		await generate();
     	}
 
-    	async function doGenerate() {
+    	async function doGenerate(e) {
+    		e.preventDefault();
     		console.log("Generate");
     		await generate();
     	}

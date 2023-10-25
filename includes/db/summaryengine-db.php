@@ -22,13 +22,16 @@ class SummaryEngineDB {
         }
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         $charset_collate = $wpdb->get_charset_collate();
-
-        $summaryengine_types_tablename = $wpdb->prefix . "summaryengine_types";
-        // Check if column "openai_prompt" exists in table "summaryengine_types" and if so rename it to "prompt"
-        $this->rename_column($summaryengine_types_tablename, 'openai_prompt', 'prompt');
-        
-        // Check if column "openai_append_prompt" exists in table "summaryengine_types" and if so rename it to "append_prompt"
-        $this->rename_column($summaryengine_types_tablename, 'openai_append_prompt', 'append_prompt');
+        try {
+            $summaryengine_types_tablename = $wpdb->prefix . "summaryengine_types";
+            // Check if column "openai_prompt" exists in table "summaryengine_types" and if so rename it to "prompt"
+            $this->rename_column($summaryengine_types_tablename, 'openai_prompt', 'prompt');
+            
+            // Check if column "openai_append_prompt" exists in table "summaryengine_types" and if so rename it to "append_prompt"
+            $this->rename_column($summaryengine_types_tablename, 'openai_append_prompt', 'append_prompt');
+        } catch(Exception $e) {
+            // Do nothing
+        }
 
         // Create the summaryengine types table
         $summaryengine_types_sql = "CREATE TABLE $summaryengine_types_tablename (
@@ -56,12 +59,16 @@ class SummaryEngineDB {
             INDEX summaryengine_version (summaryengine_version)
         ) $charset_collate;";
         dbDelta( $summaryengine_types_sql );
-        // Insert the default types
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $rows_affected = $wpdb->insert( $summaryengine_types_tablename, array( 'name' => 'Summary', 'slug' => 'summary', 'ID' => 1 ) );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $wpdb->update( $summaryengine_types_tablename, array( 'summaryengine_version' => SUMMARYENGINE_DB_VERSION ), array( 'summaryengine_version' => 0 ) );
-        dbDelta( $rows_affected );
+        try {
+            // Insert the default types
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $rows_affected = $wpdb->insert( $summaryengine_types_tablename, array( 'name' => 'Summary', 'slug' => 'summary', 'ID' => 1 ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $wpdb->update( $summaryengine_types_tablename, array( 'summaryengine_version' => SUMMARYENGINE_DB_VERSION ), array( 'summaryengine_version' => 0 ) );
+            dbDelta( $rows_affected );
+        } catch(Exception $e) {
+            // Do nothing
+        }
         
         // Create the summaryengine summaries table
         $summaryengine_tests_tablename = $wpdb->prefix . "summaryengine_summaries";
@@ -102,8 +109,12 @@ class SummaryEngineDB {
             INDEX summaryengine_version (summaryengine_version)
         ) $charset_collate;";
         dbDelta( $summaryengine_tests_sql );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-        $wpdb->update( $summaryengine_tests_tablename, array( 'summaryengine_version' => SUMMARYENGINE_DB_VERSION ), array( 'summaryengine_version' => 0 ) );
+        try {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+            $wpdb->update( $summaryengine_tests_tablename, array( 'summaryengine_version' => SUMMARYENGINE_DB_VERSION ), array( 'summaryengine_version' => 0 ) );
+        } catch(Exception $e) {
+            // Do nothing
+        }
         update_option( "summaryengine_db_version", SUMMARYENGINE_DB_VERSION );
     }
 

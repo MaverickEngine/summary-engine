@@ -125,7 +125,8 @@
         await generate();
     }
 
-    async function doGenerate() {
+    async function doGenerate(e) {
+        e.preventDefault();
         console.log("Generate");
         await generate();
     }
