@@ -1,11 +1,11 @@
 <?php
 /**
-* Plugin Name: SummaryEngine
+* Plugin Name: SummaryEngine Dev
 * Plugin URI: https://github.com/MaverickEngine/summary-engine
 * Description: Use machine learning to help editors generate summaries to articles. Brought to you by MavEngine, &lt;em&gt;Powering Media. 
 * Author: MavEngine
 * Author URI: https://mavengine.com
-* Version: 1.0.3
+* Version: 1.1.3-dev
 * License: GPLv2 or later
 * License URI: https://www.gnu.org/licenses/gpl-3.0.html
 * WC requires at least: 5.8.0
@@ -16,9 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const SUMMARYENGINE_SCRIPT_VERSION = "1.0.3";
-const SUMMARYENGINE_PLUGIN_VERSION = "1.0.3";
-const SUMMARYENGINE_DB_VERSION = "1.0.3";
+const SUMMARYENGINE_SCRIPT_VERSION = "1.1.3";
+const SUMMARYENGINE_PLUGIN_VERSION = "1.1.3";
+const SUMMARYENGINE_DB_VERSION = "1.1.3";
 
 // Setup database tables
 function summaryengine_database_setup() {
