@@ -2,7 +2,7 @@ import svelte from 'rollup-plugin-svelte';
 import commonjs from '@rollup/plugin-commonjs';
 // import resolve from '@rollup/plugin-node-resolve';
 // import livereload from 'rollup-plugin-livereload';
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import css from 'rollup-plugin-css-only';
 import preprocess from 'svelte-preprocess';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
@@ -13,28 +13,6 @@ import typescript from '@rollup/plugin-typescript';
 const production = !process.env.ROLLUP_WATCH;
 const test = process.env.NODE_ENV === 'test';
 
-function serve() {
-	let server;
-
-	function toExit() {
-		if (server) server.kill(0);
-	}
-
-	return {
-		writeBundle() {
-			if (server) return;
-			server = require('child_process').spawn('npm', ['run', 'start', '--', '--dev'], {
-				stdio: ['ignore', 'inherit', 'inherit'],
-				shell: true
-			});
-
-			process.on('SIGTERM', toExit);
-			process.on('exit', toExit);
-		}
-	};
-}
-
-const pkg = require('./package.json');
 let config;
 if (test) {
 	config = {
@@ -55,14 +33,14 @@ if (test) {
 					sourcemap: true,
 					format: 'iife',
 					name: "summaryengine",
-					file: "dist/summaryengine.js"
+					file: production ? "dist/summaryengine.min.js" : "dist/summaryengine.js"
 				},
 			],
 			plugins: [
 				svelte({
 					preprocess: preprocess(),
 				}),
-				css({ output: "summaryengine.css" }),
+				css({ output: production ? "summaryengine.min.css" : "summaryengine.css" }),
 				nodeResolve({
 					browser: true,
 				}),
@@ -80,14 +58,14 @@ if (test) {
 					sourcemap: true,
 					format: 'iife',
 					name: "summaryengine_admin",
-					file: "dist/summaryengine-reports.js"
+					file: production ? "dist/summaryengine-reports.min.js" : "dist/summaryengine-reports.js"
 				},
 			],
 			plugins: [
 				svelte({
 					preprocess: preprocess(),
 				}),
-				css({ output: "summaryengine-reports.css" }),
+				css({ output: production ? "summaryengine-reports.min.css" : "summaryengine-reports.css" }),
 				nodeResolve({
 					browser: true,
 				}),
@@ -105,14 +83,14 @@ if (test) {
 					sourcemap: true,
 					format: 'iife',
 					name: "summaryengine_review",
-					file: "dist/summaryengine-review.js"
+					file: production ? "dist/summaryengine-review.min.js" : "dist/summaryengine-review.js"
 				},
 			],
 			plugins: [
 				svelte({
 					preprocess: preprocess(),
 				}),
-				css({ output: "summaryengine-review.css" }),
+				css({ output: production ? "summaryengine-review.min.css" : "summaryengine-review.css" }),
 				nodeResolve({
 					browser: true,
 				}),
@@ -130,14 +108,14 @@ if (test) {
 					sourcemap: true,
 					format: 'iife',
 					name: "summaryengine_types",
-					file: "dist/summaryengine-types.js"
+					file: production ? "dist/summaryengine-types.min.js" : "dist/summaryengine-types.js"
 				},
 			],
 			plugins: [
 				svelte({
 					preprocess: preprocess(),
 				}),
-				css({ output: "summaryengine-types.css" }),
+				css({ output: production ? "summaryengine-types.min.css" : "summaryengine-types.css" }),
 				nodeResolve({
 					browser: true,
 				}),
