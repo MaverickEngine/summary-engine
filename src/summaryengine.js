@@ -1,4 +1,6 @@
 import PostEdit from './PostEdit.svelte'
-export const app = new PostEdit({
+const app = new PostEdit({
     target: document.getElementById('summaryEngineApp'),
-})
+});
+
+export default app;

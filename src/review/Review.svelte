@@ -1,22 +1,32 @@
 <script>
-    import { posts, types, selected_date, page, post_count, loading, search } from './stores.js';
-    import { onMount } from 'svelte';
+    import {
+        posts,
+        types,
+        selected_date,
+        page,
+        post_count,
+        loading,
+        search,
+    } from "./stores.js";
+    import { onMount } from "svelte";
     import Summarise from "./components/Summarise.svelte";
     import Dates from "./components/Dates.svelte";
     import Pages from "./components/Pages.svelte";
     import Search from "./components/Search.svelte";
-    import { apiGet, apiPost } from 'wp-ajax';
-    import Modal from './components/Modal.svelte';
+    import { apiGet, apiPost } from "wp-ajax";
+    import Modal from "./components/Modal.svelte";
 
     let per_page = 10;
     let summarising_all = false;
     let show_modal = false;
     let modal_url = "";
 
-    async function getPosts () {
+    async function getPosts() {
         try {
             $loading = true;
-            const result = await apiGet(`/summaryengine/v1/posts?date=${$selected_date}&size=${per_page}&page=${$page}&search=${$search}`);
+            const result = await apiGet(
+                `/summaryengine/v1/posts?date=${$selected_date}&size=${per_page}&page=${$page}&search=${$search}`,
+            );
             posts.set(result.posts);
             post_count.set(result.count);
             $loading = false;
@@ -27,7 +37,7 @@
         }
     }
 
-    async function getTypes () {
+    async function getTypes() {
         $types = await apiGet(`/summaryengine/v1/types`);
     }
 
@@ -52,7 +62,11 @@
                 if (summary.summary) continue;
                 summary.summarising = true;
                 $posts = $posts;
-                const result = await apiPost(`/summaryengine/v1/summarise`, { type_id: type.ID, post_id: post.id });
+                const result = await apiPost(`/summaryengine/v1/summarise`, {
+                    type_id: type.ID,
+                    post_id: post.id,
+                });
+                console.log(result);
                 if (!result?.summary) throw "No summary returned";
                 post.summaries[type.slug].summary = result.summary;
                 post.summaries[type.slug].summary_id = result.ID;
@@ -90,9 +104,14 @@
         show_modal = true;
     }
 </script>
+
 {#if show_modal}
-    <Modal on:close={() => show_modal = false}>
-        <iframe title="Preview" src="{modal_url}" style="width: 100%; height: 80vh"/>
+    <Modal on:close={() => (show_modal = false)}>
+        <iframe
+            title="Preview"
+            src={modal_url}
+            style="width: 100%; height: 80vh"
+        />
     </Modal>
 {/if}
 <div id="summaryEngineMetaBlock">
@@ -101,15 +120,21 @@
             <Dates on:click={reset} />
         </div>
         <div id="summaryEngineMetaBlockSummariseButtonContainerRight">
-            <div id="summaryEngineSearchContainer" class="summary-engine-margin-bottom-5">
+            <div
+                id="summaryEngineSearchContainer"
+                class="summary-engine-margin-bottom-5"
+            >
                 <Search on:search={reset} />
             </div>
             <div id="summaryEnginePagesContainer">
-                <Pages per_page={per_page} on:click={getPosts} on:change={getPosts} />
+                <Pages {per_page} on:click={getPosts} on:change={getPosts} />
             </div>
         </div>
     </div>
-    <table class="wp-list-table widefat fixed striped table-view-list" class:loading={$loading}>
+    <table
+        class="wp-list-table widefat fixed striped table-view-list"
+        class:loading={$loading}
+    >
         <thead>
             <tr>
                 <th class="summaryengine-col-10px">Title</th>
@@ -125,24 +150,43 @@
             {#each $posts as post}
                 <tr>
                     <td>
-                        <span class="dashicons dashicons-welcome-view-site" on:click={() => showIframe(post.permalink)} on:keydown={() => showIframe(post.permalink)} style="cursor:pointer">
+                        <span
+                            class="dashicons dashicons-welcome-view-site"
+                            on:click={() => showIframe(post.permalink)}
+                            on:keydown={() => showIframe(post.permalink)}
+                            style="cursor:pointer"
+                        >
                             <span class="screen-reader-text">View Post</span>
                         </span>
-                        <a href="/wp-admin/post.php?post={post.id}&action=edit">{post.post_title || "Untitled"}</a>
+                        <a href="/wp-admin/post.php?post={post.id}&action=edit"
+                            >{post.post_title || "Untitled"}</a
+                        >
                     </td>
                     <td>{post.post_date}</td>
                     <td>{post.post_author}</td>
                     {#each $types as type}
                         <td>
-                            <Summarise type_id={type.ID} post={post} summary={post.summaries[type.slug]} custom_action={type.custom_action} />
+                            <Summarise
+                                type_id={type.ID}
+                                {post}
+                                summary={post.summaries[type.slug]}
+                                custom_action={type.custom_action}
+                            />
                         </td>
                     {/each}
                     <td>
                         {#if !checkSummariesSet(post)}
-                            {#if (summarising_all)}
-                                <button class="button summaryengine-summarise-all" disabled="disabled">Summarising...</button>
+                            {#if summarising_all}
+                                <button
+                                    class="button summaryengine-summarise-all"
+                                    disabled="disabled">Summarising...</button
+                                >
                             {:else}
-                                <button class="button summaryengine-summarise-all" on:click={() => generateAllSummaries(post)}>Summarise All</button>
+                                <button
+                                    class="button summaryengine-summarise-all"
+                                    on:click={() => generateAllSummaries(post)}
+                                    >Summarise All</button
+                                >
                             {/if}
                         {/if}
                     </td>

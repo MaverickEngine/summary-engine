@@ -5,6 +5,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
 import css from 'rollup-plugin-css-only';
 import preprocess from 'svelte-preprocess';
+import { sveltePreprocess } from 'svelte-preprocess'
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
 import strip from '@rollup/plugin-strip';
@@ -38,7 +39,7 @@ if (test) {
 			],
 			plugins: [
 				svelte({
-					preprocess: preprocess(),
+					preprocess: sveltePreprocess(),
 				}),
 				css({ output: production ? "summaryengine.min.css" : "summaryengine.css" }),
 				nodeResolve({
@@ -63,7 +64,7 @@ if (test) {
 			],
 			plugins: [
 				svelte({
-					preprocess: preprocess(),
+					preprocess: sveltePreprocess(),
 				}),
 				css({ output: production ? "summaryengine-reports.min.css" : "summaryengine-reports.css" }),
 				nodeResolve({
@@ -88,7 +89,7 @@ if (test) {
 			],
 			plugins: [
 				svelte({
-					preprocess: preprocess(),
+					preprocess: sveltePreprocess(),
 				}),
 				css({ output: production ? "summaryengine-review.min.css" : "summaryengine-review.css" }),
 				nodeResolve({
@@ -113,7 +114,7 @@ if (test) {
 			],
 			plugins: [
 				svelte({
-					preprocess: preprocess(),
+					preprocess: sveltePreprocess(),
 				}),
 				css({ output: production ? "summaryengine-types.min.css" : "summaryengine-types.css" }),
 				nodeResolve({

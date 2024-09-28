@@ -1187,7 +1187,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (120:8) {#if summary.summarising}
+	// (176:34) 
 	function create_if_block_10(ctx) {
 		let input;
 
@@ -1212,7 +1212,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (102:4) {#if summary.summary}
+	// (132:4) {#if summary.summary}
 	function create_if_block_6(ctx) {
 		let t;
 		let if_block1_anchor;
@@ -1277,7 +1277,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (111:8) {:else}
+	// (162:8) {:else}
 	function create_else_block_2(ctx) {
 		let div;
 		let raw_value = /*summary*/ ctx[0].summary?.nl2br() + "";
@@ -1301,7 +1301,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (103:8) {#if editing}
+	// (133:8) {#if editing}
 	function create_if_block_8(ctx) {
 		let textarea;
 		let t;
@@ -1368,7 +1368,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (108:12) {:else}
+	// (153:12) {:else}
 	function create_else_block_1(ctx) {
 		let input;
 
@@ -1393,7 +1393,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (105:12) {#if (!saving)}
+	// (138:12) {#if !saving}
 	function create_if_block_9(ctx) {
 		let input0;
 		let t;
@@ -1443,7 +1443,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (116:8) {#if (custom_action)}
+	// (167:8) {#if custom_action}
 	function create_if_block_7(ctx) {
 		let html_tag;
 		let raw_value = /*custom_action*/ ctx[2].replace("[post_url]", /*post*/ ctx[1].permalink).replace("[summary_encoded]", encodeURIComponent(/*summary*/ ctx[0].summary || "")).replace("[summary]", /*summary*/ ctx[0].summary) + "";
@@ -1471,7 +1471,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (126:4) {#if hovering || just_summarised}
+	// (193:4) {#if hovering || just_summarised}
 	function create_if_block$1(ctx) {
 		let div;
 		let if_block = /*summary*/ ctx[0]?.summary && !/*editing*/ ctx[4] && create_if_block_1$1(ctx);
@@ -1510,7 +1510,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (128:12) {#if summary?.summary && !editing}
+	// (195:12) {#if summary?.summary && !editing}
 	function create_if_block_1$1(ctx) {
 		let t0;
 		let t1;
@@ -1596,7 +1596,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (129:16) {#if (!approved && !disapproving)}
+	// (196:16) {#if !approved && !disapproving}
 	function create_if_block_4(ctx) {
 		let if_block_anchor;
 
@@ -1640,7 +1640,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (132:20) {:else}
+	// (205:20) {:else}
 	function create_else_block$1(ctx) {
 		let input;
 		let mounted;
@@ -1674,7 +1674,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (130:20) {#if approving}
+	// (197:20) {#if approving}
 	function create_if_block_5(ctx) {
 		let input;
 
@@ -1699,7 +1699,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (138:37) 
+	// (223:37) 
 	function create_if_block_3(ctx) {
 		let input;
 		let mounted;
@@ -1733,7 +1733,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (136:16) {#if disapproving}
+	// (215:16) {#if disapproving}
 	function create_if_block_2$1(ctx) {
 		let input;
 
@@ -1781,6 +1781,8 @@ var summaryengine_review = (function () {
 				t = space();
 				if (if_block1) if_block1.c();
 				attr(div, "class", "summaryengine-summarise svelte-vmhuq8");
+				attr(div, "role", "region");
+				attr(div, "aria-label", "Summary");
 				toggle_class(div, "is_hovering", /*hovering*/ ctx[3]);
 				toggle_class(div, "just_summarised", /*just_summarised*/ ctx[8]);
 				toggle_class(div, "approved", Number(/*summary*/ ctx[0].summary_details.rating) === 1);
@@ -1877,7 +1879,7 @@ var summaryengine_review = (function () {
 		let saving = false;
 
 		String.prototype.nl2br = function () {
-			return this.replace(/([^>])\n/g, '$1<br/>');
+			return this.replace(/([^>])\n/g, "$1<br/>");
 		};
 
 		onMount(async () => {
@@ -1899,17 +1901,27 @@ var summaryengine_review = (function () {
 			try {
 				$$invalidate(0, summary.summarising = true, summary);
 				const result = await ajaxExports.apiPost(`/summaryengine/v1/summarise`, { type_id, post_id: post.id });
-				if (!result?.summary) throw "No summary returned";
+				console.log("API response:", result);
+
+				if (!result) {
+					throw new Error("No result returned from API");
+				}
+
+				// if (typeof result.summary === "undefined") {
+				//     throw new Error("Summary is undefined in the API response");
+				// }
 				$$invalidate(0, summary.summary = result.summary, summary);
+
 				$$invalidate(0, summary.summary_id = result.ID, summary);
 				$$invalidate(0, summary.summary_details = result, summary);
 				$$invalidate(0, summary.summary_details.rating = 0, summary);
 				$$invalidate(0, summary.summarising = false, summary);
+				console.log("Summary updated:", summary);
 				$$invalidate(7, approved = false);
 				$$invalidate(8, just_summarised = true);
 			} catch(err) {
-				console.error(err);
-				alert("An error occured: " + err);
+				console.error("Summarisation error:", err);
+				alert("An error occurred while summarising: " + err.message);
 				$$invalidate(0, summary.summarising = false, summary);
 			}
 		}
@@ -2898,7 +2910,7 @@ var summaryengine_review = (function () {
 		return child_ctx;
 	}
 
-	// (93:0) {#if show_modal}
+	// (108:0) {#if show_modal}
 	function create_if_block_2(ctx) {
 		let modal;
 		let current;
@@ -2944,7 +2956,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (94:4) <Modal on:close={() => show_modal = false}>
+	// (109:4) <Modal on:close={() => (show_modal = false)}>
 	function create_default_slot(ctx) {
 		let iframe;
 		let iframe_src_value;
@@ -2973,7 +2985,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (118:16) {#each $types as type}
+	// (143:16) {#each $types as type}
 	function create_each_block_2(ctx) {
 		let th;
 		let t_value = /*type*/ ctx[21].name + "";
@@ -2999,7 +3011,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (135:20) {#each $types as type}
+	// (167:20) {#each $types as type}
 	function create_each_block_1(ctx) {
 		let td;
 		let summarise;
@@ -3051,7 +3063,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (141:24) {#if !checkSummariesSet(post)}
+	// (178:24) {#if !checkSummariesSet(post)}
 	function create_if_block(ctx) {
 		let if_block_anchor;
 
@@ -3095,7 +3107,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (144:28) {:else}
+	// (184:28) {:else}
 	function create_else_block(ctx) {
 		let button;
 		let mounted;
@@ -3133,7 +3145,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (142:28) {#if (summarising_all)}
+	// (179:28) {#if summarising_all}
 	function create_if_block_1(ctx) {
 		let button;
 
@@ -3156,7 +3168,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (125:12) {#each $posts as post}
+	// (150:12) {#each $posts as post}
 	function create_each_block(ctx) {
 		let tr;
 		let td0;
@@ -3692,6 +3704,7 @@ var summaryengine_review = (function () {
 					summary.summarising = true;
 					posts.set($posts);
 					const result = await ajaxExports.apiPost(`/summaryengine/v1/summarise`, { type_id: type.ID, post_id: post.id });
+					console.log(result);
 					if (!result?.summary) throw "No summary returned";
 					post.summaries[type.slug].summary = result.summary;
 					post.summaries[type.slug].summary_id = result.ID;
