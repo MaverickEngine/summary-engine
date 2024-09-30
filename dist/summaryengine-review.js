@@ -1187,7 +1187,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (176:34) 
+	// (172:34) 
 	function create_if_block_10(ctx) {
 		let input;
 
@@ -1212,7 +1212,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (132:4) {#if summary.summary}
+	// (128:4) {#if summary.summary}
 	function create_if_block_6(ctx) {
 		let t;
 		let if_block1_anchor;
@@ -1277,7 +1277,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (162:8) {:else}
+	// (158:8) {:else}
 	function create_else_block_2(ctx) {
 		let div;
 		let raw_value = /*summary*/ ctx[0].summary?.nl2br() + "";
@@ -1301,7 +1301,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (133:8) {#if editing}
+	// (129:8) {#if editing}
 	function create_if_block_8(ctx) {
 		let textarea;
 		let t;
@@ -1368,7 +1368,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (153:12) {:else}
+	// (149:12) {:else}
 	function create_else_block_1(ctx) {
 		let input;
 
@@ -1393,7 +1393,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (138:12) {#if !saving}
+	// (134:12) {#if !saving}
 	function create_if_block_9(ctx) {
 		let input0;
 		let t;
@@ -1443,7 +1443,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (167:8) {#if custom_action}
+	// (163:8) {#if custom_action}
 	function create_if_block_7(ctx) {
 		let html_tag;
 		let raw_value = /*custom_action*/ ctx[2].replace("[post_url]", /*post*/ ctx[1].permalink).replace("[summary_encoded]", encodeURIComponent(/*summary*/ ctx[0].summary || "")).replace("[summary]", /*summary*/ ctx[0].summary) + "";
@@ -1471,7 +1471,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (193:4) {#if hovering || just_summarised}
+	// (189:4) {#if hovering || just_summarised}
 	function create_if_block$1(ctx) {
 		let div;
 		let if_block = /*summary*/ ctx[0]?.summary && !/*editing*/ ctx[4] && create_if_block_1$1(ctx);
@@ -1510,7 +1510,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (195:12) {#if summary?.summary && !editing}
+	// (191:12) {#if summary?.summary && !editing}
 	function create_if_block_1$1(ctx) {
 		let t0;
 		let t1;
@@ -1596,7 +1596,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (196:16) {#if !approved && !disapproving}
+	// (192:16) {#if !approved && !disapproving}
 	function create_if_block_4(ctx) {
 		let if_block_anchor;
 
@@ -1640,7 +1640,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (205:20) {:else}
+	// (201:20) {:else}
 	function create_else_block$1(ctx) {
 		let input;
 		let mounted;
@@ -1674,7 +1674,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (197:20) {#if approving}
+	// (193:20) {#if approving}
 	function create_if_block_5(ctx) {
 		let input;
 
@@ -1699,7 +1699,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (223:37) 
+	// (219:37) 
 	function create_if_block_3(ctx) {
 		let input;
 		let mounted;
@@ -1733,7 +1733,7 @@ var summaryengine_review = (function () {
 		};
 	}
 
-	// (215:16) {#if disapproving}
+	// (211:16) {#if disapproving}
 	function create_if_block_2$1(ctx) {
 		let input;
 
@@ -1900,23 +1900,22 @@ var summaryengine_review = (function () {
 		async function summarise() {
 			try {
 				$$invalidate(0, summary.summarising = true, summary);
-				const result = await ajaxExports.apiPost(`/summaryengine/v1/summarise`, { type_id, post_id: post.id });
-				console.log("API response:", result);
+				const response = await ajaxExports.apiPost(`/summaryengine/v1/summarise`, { type_id, post_id: post.id });
+				const result = response.result;
 
 				if (!result) {
 					throw new Error("No result returned from API");
 				}
 
-				// if (typeof result.summary === "undefined") {
-				//     throw new Error("Summary is undefined in the API response");
-				// }
-				$$invalidate(0, summary.summary = result.summary, summary);
+				if (typeof result.summary === "undefined") {
+					throw new Error("Summary is undefined in the API response");
+				}
 
+				$$invalidate(0, summary.summary = result.summary, summary);
 				$$invalidate(0, summary.summary_id = result.ID, summary);
 				$$invalidate(0, summary.summary_details = result, summary);
 				$$invalidate(0, summary.summary_details.rating = 0, summary);
 				$$invalidate(0, summary.summarising = false, summary);
-				console.log("Summary updated:", summary);
 				$$invalidate(7, approved = false);
 				$$invalidate(8, just_summarised = true);
 			} catch(err) {

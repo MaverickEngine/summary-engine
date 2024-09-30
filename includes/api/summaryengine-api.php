@@ -6,6 +6,8 @@ require_once(plugin_dir_path( __FILE__ ) . '../db/summaryengine-db.php');
 require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-content.php');
 
 class SummaryEngineAPI {
+    private $table_name;
+
     public function __construct() {
         global $wpdb;
         $this->table_name = $wpdb->prefix . 'summaryengine_summaries';

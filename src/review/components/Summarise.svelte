@@ -37,26 +37,22 @@
     async function summarise() {
         try {
             summary.summarising = true;
-            const result = await apiPost(`/summaryengine/v1/summarise`, {
+            const response = await apiPost(`/summaryengine/v1/summarise`, {
                 type_id,
                 post_id: post.id,
             });
-            console.log("API response:", result);
-
+            const result = response.result;
             if (!result) {
                 throw new Error("No result returned from API");
             }
-
-            // if (typeof result.summary === "undefined") {
-            //     throw new Error("Summary is undefined in the API response");
-            // }
-
+            if (typeof result.summary === "undefined") {
+                throw new Error("Summary is undefined in the API response");
+            }
             summary.summary = result.summary;
             summary.summary_id = result.ID;
             summary.summary_details = result;
             summary.summary_details.rating = 0;
             summary.summarising = false;
-            console.log("Summary updated:", summary);
             approved = false;
             just_summarised = true;
         } catch (err) {
