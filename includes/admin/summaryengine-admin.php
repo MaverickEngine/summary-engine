@@ -13,6 +13,8 @@ class SummaryEngineAdmin {
         new SummaryEngineAdminTypes();
         require_once('summaryengine-admin-reports.php' );
         new SummaryEngineReports();
+        require_once('summaryengine-admin-tests.php' );
+        new SummaryEngineAdminTests();
     }
 
     function menu() {

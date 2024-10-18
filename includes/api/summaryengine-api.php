@@ -4,6 +4,7 @@ require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-openai.php');
 require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-chatgpt.php');
 require_once(plugin_dir_path( __FILE__ ) . '../db/summaryengine-db.php');
 require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-content.php');
+require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-summarise.php');
 
 class SummaryEngineAPI {
     private $table_name;
@@ -216,6 +217,7 @@ class SummaryEngineAPI {
     public function post_summarise(WP_REST_Request $request) {
         global $wpdb;
         try {
+            $summarise = new SummaryEngineSummarise();
             $post_id = intval($request->get_param('post_id'));
             if (empty($post_id)) {
                 throw new Exception("Post ID is empty");
@@ -231,29 +233,7 @@ class SummaryEngineAPI {
             if (empty($type_id)) {
                 throw new Exception("Type ID is empty");
             }
-            $type = SummaryEngineDB::get_type($type_id);
-            $type_settings = [
-                'openai_model' => $type->openai_model,
-                'openai_method' => $type->openai_method,
-                'openai_system' => $type->openai_system,
-                'prompt' => $type->prompt,
-                'append_prompt' => $type->append_prompt,
-                'openai_max_tokens' => $type->openai_max_tokens,
-                'openai_temperature' => $type->openai_temperature,
-                'openai_top_p' => $type->openai_top_p,
-                'openai_frequency_penalty' => $type->openai_frequency_penalty,
-                'openai_presence_penalty' => $type->openai_presence_penalty,
-                'word_limit' => $type->word_limit,
-                'cut_at_paragraph' => $type->cut_at_paragraph,
-            ];
-            $user_settings = json_decode($request->get_param('settings'), true);
-            if (empty($user_settings)) {
-                $user_settings = [];
-            }
-            $settings = array_merge($type_settings, $user_settings);
-            if (empty($settings['word_limit'])) {
-                $settings['word_limit'] = 500;
-            }
+            
             // Make sure we still have submissions left
             $max_number_of_submissions_per_post = intval(get_option('summaryengine_max_number_of_submissions_per_post'));
             if ($max_number_of_submissions_per_post > 0) {
@@ -266,54 +246,7 @@ class SummaryEngineAPI {
                     return new WP_Error( 'too_many_submissions', "You have already submitted this post for automated summary a maxiumum number of $max_number_of_submissions_per_post times.", array( 'status' => 400 ) );
                 }
             }
-            if ($settings["cut_at_paragraph"]) {
-                $content = SummaryEngineContent::cut_at_paragraph($content, $settings["word_limit"]);
-            } else {
-                $content = SummaryEngineContent::cut_at_wordcount($content, $settings["word_limit"]);
-            }
-            if (empty($content)) {
-                return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
-            }
-            if (defined('OPENAI_APIKEY')) {
-                $apikey = OPENAI_APIKEY;
-            } else {
-                $apikey = get_option('summaryengine_openai_apikey');
-            }
-            $openai = new SummaryEngineOpenAI($apikey);
-            $chatgpt = new SummaryEngineChatGPT($apikey);
-            $prepend_prompt =  $settings["prompt"];
-            $append_prompt = $settings["append_prompt"];
-            if ($type->openai_method === "chat") {
-                $messages = array();
-                $messages[] = ["role" => "system", "content" => $type->openai_system ];
-                $messages[] = ["role" => "user", "content" => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt];
-                $params = array(
-                    'model' => $settings["openai_model"],
-                    'max_tokens' => intval($settings["openai_max_tokens"]),
-                    'temperature' => floatval($settings["openai_temperature"]),
-                    'top_p' => floatval($settings["openai_top_p"]),
-                    'messages' => $messages,
-                );
-                $summary = $chatgpt->summarise($params);
-            } else {
-                $params = array(
-                    'model' => $settings["openai_model"],
-                    'frequency_penalty' => floatval($settings["openai_frequency_penalty"]),
-                    'max_tokens' => intval($settings["openai_max_tokens"]),
-                    'presence_penalty' => floatval($settings["openai_presence_penalty"]),
-                    'temperature' => floatval($settings["openai_temperature"]),
-                    'top_p' => floatval($settings["openai_top_p"]),
-                    'prompt' => $prepend_prompt . "\n\n" . $content . "\n\n" . $append_prompt,
-                );
-                $summary = $openai->summarise($params);
-            }
-            
-            if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
-            $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $settings, $summary);
-            // Set meta data for post
-            update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
-            update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
-            update_post_meta($post_id, 'summaryengine_' . $type->slug . '_rating', 0);
+            $result = $summarise->summarise($post_id, $content, $type_id);
             $mids = $this->get_mids($post_id, $type->slug);
             return Array("result" => $result, "mids" => $mids);
         } catch (Exception $e) {

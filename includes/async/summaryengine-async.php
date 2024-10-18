@@ -1,9 +1,12 @@
 <?php
 require_once(plugin_dir_path( __FILE__ ) . '../db/summaryengine-db.php');
 require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-content.php');
+require_once(plugin_dir_path( __FILE__ ) . '../libs/summaryengine-summarise.php');
 
 class SummaryEngineAsync {
     public function __construct() {
+        // Add REST API endpoint for testing
+        add_action('rest_api_init', [$this, 'register_rest_routes']);
         $summaryengine_summarise_on_publish = get_option('summaryengine_summarise_on_publish', false);
         if (empty($summaryengine_summarise_on_publish)) {
             return;
@@ -36,30 +39,14 @@ class SummaryEngineAsync {
     }
 
     public static function generate_summary($post_id, $type_id) {
+        $summarise = new SummaryEngineSummarise();
         $type = SummaryEngineDB::get_type($type_id);
         $summary = get_post_meta($post_id, 'summaryengine_' . $type->slug, true);
         if (!empty($summary)) {
             return;
         }
-        $type_settings = [
-            'openai_model' => $type->openai_model,
-            'prompt' => $type->prompt,
-            'append_prompt' => $type->append_prompt,
-            'openai_max_tokens' => $type->openai_max_tokens,
-            'openai_temperature' => $type->openai_temperature,
-            'openai_top_p' => $type->openai_top_p,
-            'openai_frequency_penalty' => $type->openai_frequency_penalty,
-            'openai_presence_penalty' => $type->openai_presence_penalty,
-            'word_limit' => $type->word_limit,
-            'cut_at_paragraph' => $type->cut_at_paragraph,
-        ];
         $post = get_post($post_id);
         $content = $post->post_content;
-        if ($type->cut_at_paragraph) {
-            $content = SummaryEngineContent::cut_at_paragraph($content, $type->word_limit);
-        } else {
-            $content = SummaryEngineContent::cut_at_wordcount($content, $type->word_limit);
-        }
         if (empty($content)) {
             return new WP_Error( 'summaryengine_empty_content', __( 'Content is empty', 'summaryengine' ), array( 'status' => 400 ) );
         }
@@ -68,25 +55,41 @@ class SummaryEngineAsync {
         } else {
             $apikey = get_option('summaryengine_openai_apikey');
         }
-        $openapi = new SummaryEngineOpenAI($apikey);
-        $original_prompt =  $type->prompt;
-        $original_append_prompt = $type->append_prompt;
-        $params = array(
-            'model' => $type->openai_model,
-            'frequency_penalty' => floatval($type->openai_frequency_penalty),
-            'max_tokens' => floatval($type->openai_max_tokens),
-            'presence_penalty' => floatval($type->openai_frequency_penalty),
-            'temperature' => floatval($type->openai_temperature),
-            'top_p' => floatval($type->openai_top_p),
-            'prompt' => $original_prompt . "\n\n" . $content . "\n\n" . $original_append_prompt,
-        );
-        $summary = $openapi->summarise($params);
-        if (empty($summary)) throw new Exception("Did not receive a valid summary from OpenAI");
-        $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $type_settings, $summary);
+        $result = $summarise->summarise($post_id, $content, $type_id);
         // Set meta data for post
         update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
         update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
         update_post_meta($post_id, 'summaryengine_' . $type->slug . '_rating', 0);
     }
-    
+
+    public function register_rest_routes() {
+        register_rest_route('summaryengine/v1', '/test-summary', [
+            'methods' => 'POST',
+            'callback' => [$this, 'test_summary_generation'],
+            'permission_callback' => function() {
+                return current_user_can('edit_posts');
+            },
+        ]);
+    }
+
+    public function test_summary_generation($request) {
+        $post_id = $request->get_param('post_id');
+        $type_id = $request->get_param('type_id');
+
+        if (!$post_id || !$type_id) {
+            return new WP_Error('missing_parameters', 'Post ID and Type ID are required', ['status' => 400]);
+        }
+
+        $result = self::generate_summary($post_id, $type_id);
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Summary generated successfully',
+            'summary' => get_post_meta($post_id, 'summaryengine_' . SummaryEngineDB::get_type($type_id)->slug, true),
+        ], 200);
+    }
 }
