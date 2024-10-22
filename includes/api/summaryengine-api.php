@@ -247,7 +247,8 @@ class SummaryEngineAPI {
                 }
             }
             $result = $summarise->summarise($post_id, $content, $type_id);
-            $mids = $this->get_mids($post_id, $type->slug);
+            $slug = SummaryEngineDB::get_type($type_id)->slug;
+            $mids = $this->get_mids($post_id, $slug);
             return Array("result" => $result, "mids" => $mids);
         } catch (Exception $e) {
             return new WP_Error( 'summaryengine_api_error', __( 'Error summarising content: ' . $e->getMessage(), 'summaryengine' ), array( 'status' => 500 ) );
