@@ -70,7 +70,9 @@ class SummaryEngineSummarise {
         }
 
         $result = SummaryEngineDB::save_summary($post_id, $type_id, $content, $settings, $summary);
-        
+        update_post_meta($post_id, 'summaryengine_' . $type->slug, trim($result['summary']));
+        update_post_meta($post_id, 'summaryengine_' . $type->slug . '_id', $result['ID']);
+        update_post_meta($post_id, 'summaryengine_' . $type->slug . '_rating', 0);
         return $result;
     }
 }
